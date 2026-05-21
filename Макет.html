@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrainerSpace — Кабинет тренера</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+<style>
+:root {
+  --bg:           #F7F8FC;
+  --surface:      #FFFFFF;
+  --sidebar-w:    240px;
+  --accent:       #6366F1;
+  --accent-hover: #4F46E5;
+  --accent-light: #EEF2FF;
+  --accent-mid:   #818CF8;
+  --green:        #10B981;
+  --green-light:  #ECFDF5;
+  --red:          #EF4444;
+  --red-light:    #FEF2F2;
+  --yellow:       #F59E0B;
+  --yellow-light: #FFFBEB;
+  --blue:         #3B82F6;
+  --blue-light:   #EFF6FF;
+  --t1:           #0F172A;
+  --t2:           #475569;
+  --t3:           #94A3B8;
+  --border:       #E2E8F0;
+  --border-light: #F1F5F9;
+  --sh-sm:        0 1px 3px rgba(15,23,42,.05), 0 1px 2px rgba(15,23,42,.04);
+  --sh-md:        0 4px 16px rgba(15,23,42,.07), 0 2px 4px rgba(15,23,42,.04);
+  --r-sm:  8px;
+  --r-md:  12px;
+  --r-lg:  16px;
+  --r-xl:  24px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: radial-gradient(ellipse 80% 60% at top left, #EEF2FF 0%, #F7F8FC 55%);
+  min-height: 100vh;
+  color: var(--t1);
+  display: flex;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ═══════════════ SIDEBAR ═══════════════ */
+.sidebar {
+  width: var(--sidebar-w);
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(12px);
+  border-right: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0;
+  height: 100vh;
+  z-index: 100;
+}
+
+.sidebar-logo {
+  padding: 24px 18px 18px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.logo-mark {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-mid));
+  border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 19px; color: #fff;
+  box-shadow: 0 4px 14px rgba(99,102,241,.32);
+  margin-bottom: 10px;
+}
+
+.logo-name { font-size: 15px; font-weight: 700; color: var(--t1); letter-spacing: -.3px; }
+.logo-sub  { font-size: 11.5px; color: var(--t3); margin-top: 1px; }
+
+.nav-section { padding: 14px 10px; flex: 1; overflow-y: auto; }
+
+.nav-group-label {
+  font-size: 10px; font-weight: 600;
+  color: var(--t3); text-transform: uppercase;
+  letter-spacing: .08em;
+  padding: 0 8px; margin: 14px 0 5px;
+}
+.nav-group-label:first-child { margin-top: 0; }
+
+.nav-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 8px;
+  font-size: 13.5px; font-weight: 500;
+  color: var(--t2);
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  transition: all .15s ease;
+  user-select: none;
+}
+.nav-item:hover { background: var(--bg); color: var(--t1); }
+.nav-item.active { background: var(--accent-light); color: var(--accent); }
+.nav-item i { font-size: 18px; opacity: .65; flex-shrink: 0; }
+.nav-item.active i { opacity: 1; }
+
+.badge {
+  background: var(--red); color: #fff;
+  font-size: 10px; font-weight: 600;
+  border-radius: 99px; padding: 2px 7px;
+  margin-left: auto; min-width: 19px; text-align: center;
+}
+
+.sidebar-profile {
+  padding: 14px 10px 16px;
+  border-top: 1px solid var(--border-light);
+  display: flex; align-items: center; gap: 10px;
+}
+
+.s-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #A5B4FC);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0;
+}
+.s-name  { font-size: 13px; font-weight: 600; color: var(--t1); }
+.s-role  { font-size: 11px; color: var(--t3); margin-top: 1px; }
+
+/* ═══════════════ MAIN ═══════════════ */
+.main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+/* ═══════════════ TOPBAR ═══════════════ */
+.topbar {
+  background: rgba(255,255,255,.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-light);
+  padding: 0 32px;
+  height: 64px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 10;
+}
+
+.page-title { font-size: 17px; font-weight: 700; color: var(--t1); letter-spacing: -.4px; }
+.page-sub   { font-size: 12px; color: var(--t3); margin-top: 1px; }
+
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+
+.icon-btn {
+  width: 36px; height: 36px;
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--t2); font-size: 17px;
+  transition: all .15s;
+  position: relative;
+}
+.icon-btn:hover { background: var(--border-light); color: var(--t1); }
+.notif-dot {
+  width: 7px; height: 7px;
+  background: var(--red); border-radius: 50%;
+  position: absolute; top: 7px; right: 7px;
+  border: 1.5px solid #fff;
+}
+
+.btn-primary {
+  background: var(--accent); color: #fff; border: none;
+  border-radius: var(--r-sm); padding: 8px 16px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: inherit;
+  display: flex; align-items: center; gap: 6px;
+  box-shadow: 0 2px 10px rgba(99,102,241,.3);
+  transition: all .15s;
+}
+.btn-primary:hover {
+  background: var(--accent-hover);
+  box-shadow: 0 4px 18px rgba(99,102,241,.38);
+  transform: translateY(-1px);
+}
+
+/* ═══════════════ CONTENT ═══════════════ */
+.content { padding: 28px 32px; flex: 1; }
+
+.section { display: none; }
+.section.active {
+  display: block;
+  animation: fadeUp .22s ease both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════ CARDS ═══════════════ */
+.card {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--sh-sm);
+  padding: 20px;
+  transition: box-shadow .2s;
+}
+
+.card-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.card-title { font-size: 14px; font-weight: 600; color: var(--t1); }
+.card-sub   { font-size: 12px; color: var(--t3); margin-top: 2px; }
+
+.section-label {
+  font-size: 10.5px; font-weight: 600;
+  color: var(--t3); text-transform: uppercase;
+  letter-spacing: .08em; margin-bottom: 12px;
+}
+
+/* ═══════════════ WELCOME BANNER ═══════════════ */
+.welcome-banner {
+  background: linear-gradient(130deg, #6366F1 0%, #818CF8 55%, #A5B4FC 100%);
+  border-radius: var(--r-xl); padding: 28px 32px;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 22px;
+  position: relative; overflow: hidden;
+  box-shadow: 0 8px 32px rgba(99,102,241,.28);
+}
+.welcome-banner::before {
+  content: '';
+  position: absolute; width: 220px; height: 220px;
+  background: rgba(255,255,255,.07); border-radius: 50%;
+  top: -70px; right: 100px; pointer-events: none;
+}
+.welcome-banner::after {
+  content: '';
+  position: absolute; width: 120px; height: 120px;
+  background: rgba(255,255,255,.05); border-radius: 50%;
+  top: 30px; right: 70px; pointer-events: none;
+}
+
+.welcome-greeting { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -.4px; position: relative; z-index: 1; }
+.welcome-sub { font-size: 13px; color: rgba(255,255,255,.75); margin-top: 5px; position: relative; z-index: 1; }
+
+.welcome-right { text-align: right; position: relative; z-index: 1; }
+.w-date { font-size: 12px; color: rgba(255,255,255,.65); margin-bottom: 3px; }
+.w-sessions { font-size: 30px; font-weight: 800; color: #fff; letter-spacing: -1px; line-height: 1; }
+.w-sessions small { font-size: 12px; font-weight: 400; opacity: .72; display: block; margin-top: 2px; }
+
+/* ═══════════════ STATS ═══════════════ */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px; margin-bottom: 22px;
+}
+
+.stat-card {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--sh-sm);
+  padding: 18px 18px 16px;
+  position: relative; overflow: hidden;
+  transition: all .2s ease; cursor: default;
+}
+.stat-card::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 3px; border-radius: 3px 3px 0 0;
+}
+.stat-card.c-purple::after { background: linear-gradient(90deg, #6366F1, #818CF8); }
+.stat-card.c-green::after  { background: linear-gradient(90deg, #10B981, #34D399); }
+.stat-card.c-yellow::after { background: linear-gradient(90deg, #F59E0B, #FCD34D); }
+.stat-card.c-blue::after   { background: linear-gradient(90deg, #3B82F6, #60A5FA); }
+.stat-card:hover { box-shadow: var(--sh-md); transform: translateY(-2px); }
+
+.stat-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; margin-bottom: 12px;
+}
+.c-purple .stat-icon { background: var(--accent-light); color: var(--accent); }
+.c-green  .stat-icon { background: var(--green-light);  color: var(--green);  }
+.c-yellow .stat-icon { background: var(--yellow-light); color: var(--yellow); }
+.c-blue   .stat-icon { background: var(--blue-light);   color: var(--blue);   }
+
+.stat-val   { font-size: 28px; font-weight: 700; color: var(--t1); letter-spacing: -1.2px; line-height: 1; margin-bottom: 3px; }
+.stat-lbl   { font-size: 12px; color: var(--t3); }
+.stat-trend { font-size: 11px; font-weight: 500; margin-top: 8px; color: var(--green); }
+.stat-trend.warn { color: var(--yellow); }
+
+/* ═══════════════ DASHBOARD GRID ═══════════════ */
+.dash-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+/* ═══════════════ REQUEST ITEMS ═══════════════ */
+.request-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+.request-item:first-child { padding-top: 0; }
+.request-item:last-child  { border-bottom: none; padding-bottom: 0; }
+
+.req-avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: var(--accent-light); color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11.5px; font-weight: 700; flex-shrink: 0;
+}
+
+.req-info  { flex: 1; min-width: 0; }
+.req-name  { font-size: 13.5px; font-weight: 500; color: var(--t1); }
+.req-time  { font-size: 12px; color: var(--t3); margin-top: 2px; display: flex; align-items: center; gap: 4px; }
+.req-actions { display: flex; gap: 7px; flex-shrink: 0; }
+
+.btn-ok {
+  background: var(--green-light); color: var(--green);
+  border: 1px solid rgba(16,185,129,.2);
+  font-size: 12px; font-weight: 500;
+  padding: 6px 12px; border-radius: var(--r-sm);
+  cursor: pointer; font-family: inherit; transition: all .15s;
+}
+.btn-ok:hover { background: var(--green); color: #fff; }
+
+.btn-no {
+  background: var(--red-light); color: var(--red);
+  border: 1px solid rgba(239,68,68,.2);
+  font-size: 12px; font-weight: 500;
+  padding: 6px 12px; border-radius: var(--r-sm);
+  cursor: pointer; font-family: inherit; transition: all .15s;
+}
+.btn-no:hover { background: var(--red); color: #fff; }
+
+/* ═══════════════ STATUS ═══════════════ */
+.pill { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 99px; white-space: nowrap; }
+.pill-ok  { background: var(--green-light);  color: var(--green);  }
+.pill-no  { background: var(--red-light);    color: var(--red);    }
+.pill-pnd { background: var(--yellow-light); color: var(--yellow); }
+
+/* ═══════════════ ACTIVITY ═══════════════ */
+.activity-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+.activity-item:first-child { padding-top: 0; }
+.activity-item:last-child  { border-bottom: none; padding-bottom: 0; }
+
+.a-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.a-text { font-size: 13px; color: var(--t2); flex: 1; line-height: 1.45; }
+.a-time { font-size: 11px; color: var(--t3); white-space: nowrap; }
+
+/* ═══════════════ PROGRESS BARS ═══════════════ */
+.prog-row { display: flex; flex-direction: column; gap: 9px; }
+.prog-item {}
+.prog-meta { display: flex; justify-content: space-between; margin-bottom: 5px; }
+.prog-name { font-size: 12px; color: var(--t2); }
+.prog-val  { font-size: 12px; font-weight: 500; color: var(--t1); }
+.prog-track { height: 6px; background: var(--bg); border-radius: 99px; overflow: hidden; }
+.prog-fill  { height: 100%; border-radius: 99px; transition: width .4s ease; }
+
+/* ═══════════════ TOGGLE ═══════════════ */
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0; border-bottom: 1px solid var(--border-light);
+}
+.toggle-row:last-child { border-bottom: none; }
+.toggle-label { font-size: 13.5px; font-weight: 500; color: var(--t1); }
+.toggle-time  { font-size: 12px; color: var(--t3); margin-top: 1px; }
+
+.toggle {
+  width: 40px; height: 22px; background: var(--border); border-radius: 99px;
+  cursor: pointer; transition: background .2s; position: relative; flex-shrink: 0;
+}
+.toggle.on { background: var(--green); }
+.toggle::after {
+  content: ''; position: absolute;
+  width: 16px; height: 16px; background: #fff; border-radius: 50%;
+  top: 3px; left: 3px;
+  transition: left .2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,.15);
+}
+.toggle.on::after { left: 21px; }
+
+/* ═══════════════ SCHEDULE WEEK ═══════════════ */
+.week-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
+}
+.day-col { text-align: center; }
+.day-name {
+  font-size: 10px; font-weight: 600; color: var(--t3);
+  text-transform: uppercase; letter-spacing: .05em;
+  margin-bottom: 7px;
+}
+.day-name.today { color: var(--accent); }
+
+.slot {
+  font-size: 10px; padding: 4px 2px; border-radius: 5px;
+  margin-bottom: 3px; cursor: pointer;
+  transition: opacity .15s; user-select: none;
+}
+.slot:hover { opacity: .7; }
+.slot-free    { background: #DCFCE7; color: #15803D; }
+.slot-booked  { background: #DBEAFE; color: #1D4ED8; }
+.slot-blocked { background: var(--bg); color: var(--t3); border: 1px solid var(--border-light); }
+
+.legend { display: flex; gap: 14px; margin-top: 14px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--t3); }
+.legend-dot  { width: 10px; height: 10px; border-radius: 3px; }
+
+/* ═══════════════ BLOCK ITEMS ═══════════════ */
+.block-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 10px 12px;
+  background: var(--bg); border-radius: var(--r-sm);
+  border: 1px solid var(--border-light);
+  margin-bottom: 8px;
+}
+.block-item-text { flex: 1; font-size: 13px; color: var(--t2); }
+.block-del { font-size: 15px; color: var(--t3); cursor: pointer; transition: color .15s; }
+.block-del:hover { color: var(--red); }
+
+.add-row { display: flex; gap: 8px; margin-top: 12px; }
+
+/* ═══════════════ INPUTS ═══════════════ */
+.input {
+  font-size: 13px; border: 1px solid var(--border);
+  border-radius: var(--r-sm); padding: 9px 12px;
+  background: var(--surface); color: var(--t1);
+  font-family: inherit; outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
+.input::placeholder { color: var(--t3); }
+
+.btn-sec {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--t1); font-size: 13px; font-weight: 500;
+  padding: 9px 14px; border-radius: var(--r-sm);
+  cursor: pointer; white-space: nowrap; font-family: inherit;
+  transition: all .15s;
+}
+.btn-sec:hover { background: var(--bg); border-color: var(--t3); }
+
+/* ═══════════════ CLIENTS ═══════════════ */
+.client-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 0; border-bottom: 1px solid var(--border-light);
+}
+.client-row:first-child { padding-top: 0; }
+.client-row:last-child  { border-bottom: none; padding-bottom: 0; }
+.client-row:hover { background: none; }
+
+.c-avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11.5px; font-weight: 700; flex-shrink: 0;
+}
+.c-info { flex: 1; }
+.c-name { font-size: 13.5px; font-weight: 500; color: var(--t1); }
+.c-meta { font-size: 12px; color: var(--t3); margin-top: 2px; }
+.c-stat { text-align: right; }
+.c-val  { font-size: 13px; font-weight: 500; color: var(--t1); }
+.c-lbl  { font-size: 11px; color: var(--t3); margin-top: 1px; }
+
+/* ═══════════════ BOT ═══════════════ */
+.tg-wrap {
+  background: linear-gradient(135deg, #0088cc, #00A8E8);
+  border-radius: var(--r-lg); padding: 20px;
+  box-shadow: 0 6px 24px rgba(0,136,204,.25);
+}
+.tg-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.tg-icon {
+  width: 36px; height: 36px;
+  background: rgba(255,255,255,.18); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: 16px;
+}
+.tg-bot-name { font-size: 14px; font-weight: 600; color: #fff; }
+.tg-online   { font-size: 11px; color: rgba(255,255,255,.65); }
+
+.tg-bubble {
+  background: #fff; border-radius: 10px 10px 10px 2px;
+  padding: 10px 12px; margin-bottom: 8px;
+  max-width: 82%;
+  box-shadow: 0 2px 8px rgba(0,0,0,.12);
+}
+.tg-bubble-text { font-size: 12.5px; color: #1a1a2e; line-height: 1.55; }
+.tg-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.tg-btn {
+  background: rgba(255,255,255,.14);
+  border: 1px solid rgba(255,255,255,.28);
+  color: #fff; font-size: 11.5px; font-weight: 500;
+  padding: 6px 11px; border-radius: 7px;
+  cursor: pointer; font-family: inherit; transition: background .15s;
+}
+.tg-btn:hover { background: rgba(255,255,255,.26); }
+
+.tg-user {
+  background: #e7fdd4; border-radius: 10px 10px 2px 10px;
+  padding: 10px 12px; margin-bottom: 8px;
+  max-width: 80%; margin-left: auto;
+  box-shadow: 0 2px 8px rgba(0,0,0,.09);
+}
+.tg-user-text { font-size: 12.5px; color: #1a2e1a; }
+
+.link-box {
+  background: var(--bg); border: 1px solid var(--border-light);
+  border-radius: var(--r-sm); padding: 11px 14px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  font-size: 13px; font-family: 'SF Mono', Consolas, monospace;
+  color: var(--t1); margin-bottom: 10px;
+}
+.copy-btn {
+  background: #fff; border: 1px solid var(--border);
+  color: var(--t2); font-size: 12px; font-weight: 500;
+  padding: 5px 11px; border-radius: 6px;
+  cursor: pointer; font-family: inherit; white-space: nowrap; transition: all .15s;
+}
+.copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.bot-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.bot-stat-cell {
+  background: var(--bg); border-radius: var(--r-md);
+  padding: 14px; text-align: center;
+  border: 1px solid var(--border-light);
+}
+.bot-stat-val { font-size: 26px; font-weight: 700; color: var(--t1); letter-spacing: -1px; line-height: 1; }
+.bot-stat-lbl { font-size: 11.5px; color: var(--t3); margin-top: 3px; }
+
+/* ═══════════════ TWO COL ═══════════════ */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+/* ═══════════════ UTILITIES ═══════════════ */
+.mb-12 { margin-bottom: 12px; }
+.mb-16 { margin-bottom: 16px; }
+.mb-20 { margin-bottom: 20px; }
+.flex-between { display: flex; align-items: center; justify-content: space-between; }
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+</style>
+</head>
+<body>
+
+<!-- ══════════ SIDEBAR ══════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark"><i class="ti ti-barbell"></i></div>
+    <div class="logo-name">TrainerSpace</div>
+    <div class="logo-sub">Кабинет тренера</div>
+  </div>
+
+  <nav class="nav-section">
+    <div class="nav-group-label">Главное</div>
+    <div class="nav-item active" onclick="showSection('dashboard',this)">
+      <i class="ti ti-layout-dashboard"></i> Обзор
+    </div>
+    <div class="nav-item" onclick="showSection('requests',this)">
+      <i class="ti ti-calendar-event"></i> Заявки
+      <span class="badge" id="req-badge">3</span>
+    </div>
+    <div class="nav-item" onclick="showSection('schedule',this)">
+      <i class="ti ti-calendar-week"></i> Расписание
+    </div>
+
+    <div class="nav-group-label">Клиенты</div>
+    <div class="nav-item" onclick="showSection('clients',this)">
+      <i class="ti ti-users"></i> Мои клиенты
+    </div>
+
+    <div class="nav-group-label">Инструменты</div>
+    <div class="nav-item" onclick="showSection('bot',this)">
+      <i class="ti ti-brand-telegram"></i> Telegram-бот
+    </div>
+    <div class="nav-item" onclick="showSection('settings',this)">
+      <i class="ti ti-settings"></i> Настройки
+    </div>
+  </nav>
+
+  <div class="sidebar-profile">
+    <div class="s-avatar">АС</div>
+    <div>
+      <div class="s-name">Алексей Смирнов</div>
+      <div class="s-role">Персональный тренер</div>
+    </div>
+  </div>
+</aside>
+
+<!-- ══════════ MAIN ══════════ -->
+<main class="main">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div>
+      <div class="page-title" id="page-title">Обзор</div>
+      <div class="page-sub"  id="page-sub">Среда, 21 мая 2025</div>
+    </div>
+    <div class="topbar-right">
+      <div class="icon-btn">
+        <i class="ti ti-bell"></i>
+        <span class="notif-dot"></span>
+      </div>
+      <div class="icon-btn"><i class="ti ti-search"></i></div>
+      <button class="btn-primary"><i class="ti ti-plus"></i> Новая запись</button>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- ══════ DASHBOARD ══════ -->
+    <div class="section active" id="s-dashboard">
+
+      <div class="welcome-banner">
+        <div>
+          <div class="welcome-greeting">Добрый день, Алексей 👋</div>
+          <div class="welcome-sub">Сегодня у вас 4 тренировки. Отличного рабочего дня!</div>
+        </div>
+        <div class="welcome-right">
+          <div class="w-date">Среда, 21 мая</div>
+          <div class="w-sessions">4 <small>тренировки сегодня</small></div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card c-purple">
+          <div class="stat-icon"><i class="ti ti-calendar-check"></i></div>
+          <div class="stat-val">47</div>
+          <div class="stat-lbl">Сессий в мае</div>
+          <div class="stat-trend">↑ 12% vs прошлый месяц</div>
+        </div>
+        <div class="stat-card c-green">
+          <div class="stat-icon"><i class="ti ti-users"></i></div>
+          <div class="stat-val">12</div>
+          <div class="stat-lbl">Активных клиентов</div>
+          <div class="stat-trend">↑ 2 новых на этой неделе</div>
+        </div>
+        <div class="stat-card c-yellow">
+          <div class="stat-icon"><i class="ti ti-clock-hour-4"></i></div>
+          <div class="stat-val" id="stat-pending">3</div>
+          <div class="stat-lbl">Ждут подтверждения</div>
+          <div class="stat-trend warn">Требует внимания</div>
+        </div>
+        <div class="stat-card c-blue">
+          <div class="stat-icon"><i class="ti ti-currency-ruble"></i></div>
+          <div class="stat-val">84к</div>
+          <div class="stat-lbl">Доход в мае</div>
+          <div class="stat-trend">↑ 8% vs апрель</div>
+        </div>
+      </div>
+
+      <div class="dash-grid">
+
+        <!-- Сегодня -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Сегодня</div>
+              <div class="card-sub">21 мая — ваше расписание</div>
+            </div>
+          </div>
+          <div class="request-item">
+            <div class="req-avatar" style="background:#EDE9FE;color:#7C3AED;">АИ</div>
+            <div class="req-info">
+              <div class="req-name">Анна Иванова</div>
+              <div class="req-time"><i class="ti ti-clock" style="font-size:11px"></i> 09:00 – 10:00</div>
+            </div>
+            <span class="pill pill-ok">Подтверждено</span>
+          </div>
+          <div class="request-item">
+            <div class="req-avatar" style="background:#DCFCE7;color:#15803D;">ДМ</div>
+            <div class="req-info">
+              <div class="req-name">Дмитрий Макаров</div>
+              <div class="req-time"><i class="ti ti-clock" style="font-size:11px"></i> 12:00 – 13:00</div>
+            </div>
+            <span class="pill pill-ok">Подтверждено</span>
+          </div>
+          <div class="request-item">
+            <div class="req-avatar" style="background:#FEF3C7;color:#D97706;">МК</div>
+            <div class="req-info">
+              <div class="req-name">Михаил Козлов</div>
+              <div class="req-time"><i class="ti ti-clock" style="font-size:11px"></i> 15:00 – 16:00</div>
+            </div>
+            <span class="pill pill-ok">Подтверждено</span>
+          </div>
+          <div class="request-item">
+            <div class="req-avatar" style="background:#FEE2E2;color:#DC2626;">ЕП</div>
+            <div class="req-info">
+              <div class="req-name">Елена Петрова</div>
+              <div class="req-time"><i class="ti ti-clock" style="font-size:11px"></i> 18:00 – 19:00</div>
+            </div>
+            <span class="pill pill-ok">Подтверждено</span>
+          </div>
+        </div>
+
+        <!-- Новые заявки -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Новые заявки</div>
+              <div class="card-sub">Ожидают вашего ответа</div>
+            </div>
+            <span class="badge" id="db-badge" style="font-size:11px;padding:3px 9px;">3</span>
+          </div>
+          <div id="dash-req">
+            <div class="request-item" data-rid="d1">
+              <div class="req-avatar">НС</div>
+              <div class="req-info">
+                <div class="req-name">Наталья Соколова</div>
+                <div class="req-time"><i class="ti ti-calendar" style="font-size:11px"></i> Чт 22 мая · 10:00–11:00</div>
+              </div>
+              <div class="req-actions">
+                <button class="btn-ok" onclick="approve(this)">✓</button>
+                <button class="btn-no" onclick="reject(this)">✕</button>
+              </div>
+            </div>
+            <div class="request-item" data-rid="d2">
+              <div class="req-avatar">ПВ</div>
+              <div class="req-info">
+                <div class="req-name">Павел Волков</div>
+                <div class="req-time"><i class="ti ti-calendar" style="font-size:11px"></i> Пт 23 мая · 17:00–18:00</div>
+              </div>
+              <div class="req-actions">
+                <button class="btn-ok" onclick="approve(this)">✓</button>
+                <button class="btn-no" onclick="reject(this)">✕</button>
+              </div>
+            </div>
+            <div class="request-item" data-rid="d3">
+              <div class="req-avatar">ОК</div>
+              <div class="req-info">
+                <div class="req-name">Ольга Кириллова</div>
+                <div class="req-time"><i class="ti ti-calendar" style="font-size:11px"></i> Сб 24 мая · 11:00–12:00</div>
+              </div>
+              <div class="req-actions">
+                <button class="btn-ok" onclick="approve(this)">✓</button>
+                <button class="btn-no" onclick="reject(this)">✕</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Активность -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Последние события</div>
+          </div>
+          <div class="activity-item">
+            <div class="a-dot" style="background:var(--green)"></div>
+            <div class="a-text">Дмитрий Макаров записался на 21 мая</div>
+            <div class="a-time">5 мин</div>
+          </div>
+          <div class="activity-item">
+            <div class="a-dot" style="background:var(--accent)"></div>
+            <div class="a-text">Анна Иванова подтвердила запись</div>
+            <div class="a-time">1 ч</div>
+          </div>
+          <div class="activity-item">
+            <div class="a-dot" style="background:var(--yellow)"></div>
+            <div class="a-text">Павел Волков оставил заявку</div>
+            <div class="a-time">2 ч</div>
+          </div>
+          <div class="activity-item">
+            <div class="a-dot" style="background:var(--red)"></div>
+            <div class="a-text">Сергей Лобанов отменил запись</div>
+            <div class="a-time">5 ч</div>
+          </div>
+          <div class="activity-item">
+            <div class="a-dot" style="background:var(--green)"></div>
+            <div class="a-text">Ольга Кириллова подключилась к боту</div>
+            <div class="a-time">Вчера</div>
+          </div>
+        </div>
+
+        <!-- Загруженность -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Загруженность недели</div>
+          </div>
+          <div class="prog-row">
+            <div class="prog-item">
+              <div class="prog-meta"><span class="prog-name">Понедельник</span><span class="prog-val">5/6</span></div>
+              <div class="prog-track"><div class="prog-fill" style="width:83%;background:linear-gradient(90deg,var(--accent),var(--accent-mid))"></div></div>
+            </div>
+            <div class="prog-item">
+              <div class="prog-meta"><span class="prog-name">Вторник</span><span class="prog-val">4/6</span></div>
+              <div class="prog-track"><div class="prog-fill" style="width:67%;background:linear-gradient(90deg,var(--accent),var(--accent-mid))"></div></div>
+            </div>
+            <div class="prog-item">
+              <div class="prog-meta"><span class="prog-name">Среда <span style="color:var(--accent);font-size:10px;">● сегодня</span></span><span class="prog-val">4/5</span></div>
+              <div class="prog-track"><div class="prog-fill" style="width:80%;background:linear-gradient(90deg,var(--green),#34D399)"></div></div>
+            </div>
+            <div class="prog-item">
+              <div class="prog-meta"><span class="prog-name">Четверг</span><span class="prog-val">3/6</span></div>
+              <div class="prog-track"><div class="prog-fill" style="width:50%;background:linear-gradient(90deg,var(--accent),var(--accent-mid))"></div></div>
+            </div>
+            <div class="prog-item">
+              <div class="prog-meta"><span class="prog-name">Пятница</span><span class="prog-val">5/5</span></div>
+              <div class="prog-track"><div class="prog-fill" style="width:100%;background:linear-gradient(90deg,var(--yellow),#FCD34D)"></div></div>
+            </div>
+            <div class="prog-item">
+              <div class="prog-meta"><span class="prog-name">Суббота</span><span class="prog-val">2/3</span></div>
+              <div class="prog-track"><div class="prog-fill" style="width:67%;background:linear-gradient(90deg,var(--accent),var(--accent-mid))"></div></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /dashboard -->
+
+    <!-- ══════ REQUESTS ══════ -->
+    <div class="section" id="s-requests">
+      <div class="section-label mb-12">Ожидают подтверждения</div>
+      <div class="card mb-16" id="req-list">
+        <div class="request-item" data-rid="r1">
+          <div class="req-avatar">НС</div>
+          <div class="req-info">
+            <div class="req-name">Наталья Соколова</div>
+            <div class="req-time"><i class="ti ti-calendar" style="font-size:11px"></i> Четверг 22 мая · 10:00–11:00</div>
+          </div>
+          <div class="req-actions">
+            <button class="btn-ok" onclick="approve(this)">Принять</button>
+            <button class="btn-no" onclick="reject(this)">Отклонить</button>
+          </div>
+        </div>
+        <div class="request-item" data-rid="r2">
+          <div class="req-avatar">ПВ</div>
+          <div class="req-info">
+            <div class="req-name">Павел Волков</div>
+            <div class="req-time"><i class="ti ti-calendar" style="font-size:11px"></i> Пятница 23 мая · 17:00–18:00</div>
+          </div>
+          <div class="req-actions">
+            <button class="btn-ok" onclick="approve(this)">Принять</button>
+            <button class="btn-no" onclick="reject(this)">Отклонить</button>
+          </div>
+        </div>
+        <div class="request-item" data-rid="r3">
+          <div class="req-avatar">ОК</div>
+          <div class="req-info">
+            <div class="req-name">Ольга Кириллова</div>
+            <div class="req-time"><i class="ti ti-calendar" style="font-size:11px"></i> Суббота 24 мая · 11:00–12:00</div>
+          </div>
+          <div class="req-actions">
+            <button class="btn-ok" onclick="approve(this)">Принять</button>
+            <button class="btn-no" onclick="reject(this)">Отклонить</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-label mb-12">Обработанные</div>
+      <div class="card">
+        <div class="request-item">
+          <div class="req-avatar" style="background:#DBEAFE;color:#1D4ED8;">ДМ</div>
+          <div class="req-info">
+            <div class="req-name">Дмитрий Макаров</div>
+            <div class="req-time"><i class="ti ti-calendar" style="font-size:11px"></i> 21 мая · 12:00–13:00</div>
+          </div>
+          <span class="pill pill-ok">принято</span>
+        </div>
+        <div class="request-item">
+          <div class="req-avatar" style="background:#F1F5F9;color:#94A3B8;">СЛ</div>
+          <div class="req-info">
+            <div class="req-name">Сергей Лобанов</div>
+            <div class="req-time"><i class="ti ti-calendar" style="font-size:11px"></i> 20 мая · 15:00–16:00</div>
+          </div>
+          <span class="pill pill-no">отклонено</span>
+        </div>
+      </div>
+    </div><!-- /requests -->
+
+    <!-- ══════ SCHEDULE ══════ -->
+    <div class="section" id="s-schedule">
+      <div class="two-col mb-16">
+        <div>
+          <div class="section-label mb-12">Рабочие дни и часы</div>
+          <div class="card">
+            <div class="toggle-row">
+              <div><div class="toggle-label">Понедельник</div><div class="toggle-time">09:00 – 20:00</div></div>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="toggle-row">
+              <div><div class="toggle-label">Вторник</div><div class="toggle-time">09:00 – 20:00</div></div>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="toggle-row">
+              <div><div class="toggle-label">Среда</div><div class="toggle-time">12:00 – 20:00</div></div>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="toggle-row">
+              <div><div class="toggle-label">Четверг</div><div class="toggle-time">09:00 – 20:00</div></div>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="toggle-row">
+              <div><div class="toggle-label">Пятница</div><div class="toggle-time">09:00 – 18:00</div></div>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="toggle-row">
+              <div><div class="toggle-label">Суббота</div><div class="toggle-time">10:00 – 15:00</div></div>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="toggle-row">
+              <div><div class="toggle-label">Воскресенье</div><div class="toggle-time">—</div></div>
+              <div class="toggle" onclick="this.classList.toggle('on')"></div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-label mb-12">Заблокированное время</div>
+          <div class="card">
+            <div id="blocks">
+              <div class="block-item">
+                <i class="ti ti-ban" style="font-size:14px;color:var(--t3)"></i>
+                <div class="block-item-text">24 мая · 14:00–16:00</div>
+                <i class="ti ti-x block-del" onclick="this.parentElement.remove()"></i>
+              </div>
+              <div class="block-item">
+                <i class="ti ti-ban" style="font-size:14px;color:var(--t3)"></i>
+                <div class="block-item-text">28 мая · весь день</div>
+                <i class="ti ti-x block-del" onclick="this.parentElement.remove()"></i>
+              </div>
+            </div>
+            <div class="add-row">
+              <input type="text" id="block-input" class="input" placeholder="напр. 30 мая · 10:00–12:00" style="flex:1">
+              <button class="btn-sec" onclick="addBlock()">+ Добавить</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-label mb-12">Обзор недели · 19–25 мая</div>
+      <div class="card">
+        <div class="week-grid">
+          <div class="day-col">
+            <div class="day-name">ПН</div>
+            <div class="slot slot-booked">09:00</div>
+            <div class="slot slot-booked">10:00</div>
+            <div class="slot slot-free">11:00</div>
+            <div class="slot slot-booked">12:00</div>
+            <div class="slot slot-free">13:00</div>
+            <div class="slot slot-booked">15:00</div>
+          </div>
+          <div class="day-col">
+            <div class="day-name">ВТ</div>
+            <div class="slot slot-free">09:00</div>
+            <div class="slot slot-booked">10:00</div>
+            <div class="slot slot-booked">11:00</div>
+            <div class="slot slot-free">14:00</div>
+            <div class="slot slot-booked">17:00</div>
+          </div>
+          <div class="day-col">
+            <div class="day-name today">СР ●</div>
+            <div class="slot slot-booked">09:00</div>
+            <div class="slot slot-free">10:00</div>
+            <div class="slot slot-booked">12:00</div>
+            <div class="slot slot-booked">15:00</div>
+            <div class="slot slot-free">16:00</div>
+            <div class="slot slot-booked">18:00</div>
+          </div>
+          <div class="day-col">
+            <div class="day-name">ЧТ</div>
+            <div class="slot slot-free">10:00</div>
+            <div class="slot slot-booked">12:00</div>
+            <div class="slot slot-free">14:00</div>
+            <div class="slot slot-booked">16:00</div>
+          </div>
+          <div class="day-col">
+            <div class="day-name">ПТ</div>
+            <div class="slot slot-booked">09:00</div>
+            <div class="slot slot-booked">10:00</div>
+            <div class="slot slot-booked">11:00</div>
+            <div class="slot slot-booked">13:00</div>
+            <div class="slot slot-booked">17:00</div>
+          </div>
+          <div class="day-col">
+            <div class="day-name">СБ</div>
+            <div class="slot slot-free">10:00</div>
+            <div class="slot slot-blocked">14:00</div>
+            <div class="slot slot-blocked">15:00</div>
+          </div>
+          <div class="day-col">
+            <div class="day-name">ВС</div>
+            <div class="slot slot-blocked">—</div>
+          </div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#DBEAFE"></div>занято</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#DCFCE7"></div>свободно</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--bg);border:1px solid var(--border)"></div>заблокировано</div>
+        </div>
+      </div>
+    </div><!-- /schedule -->
+
+    <!-- ══════ CLIENTS ══════ -->
+    <div class="section" id="s-clients">
+      <div class="section-label mb-12">Мои клиенты · 12 активных</div>
+      <div class="card">
+        <div style="display:flex;gap:8px;margin-bottom:18px;">
+          <input type="text" class="input" placeholder="🔍  Поиск клиента..." style="flex:1;max-width:280px;">
+          <button class="btn-sec">Все</button>
+          <button class="btn-sec" style="background:var(--accent-light);border-color:rgba(99,102,241,.3);color:var(--accent)">Активные</button>
+        </div>
+        <div class="client-row">
+          <div class="c-avatar" style="background:#EDE9FE;color:#7C3AED">АИ</div>
+          <div class="c-info"><div class="c-name">Анна Иванова</div><div class="c-meta">С января 2025 · Следующая: 21 мая · 09:00</div></div>
+          <div class="c-stat"><div class="c-val">24 сессии</div><div class="c-lbl">всего</div></div>
+        </div>
+        <div class="client-row">
+          <div class="c-avatar" style="background:#DCFCE7;color:#15803D">ДМ</div>
+          <div class="c-info"><div class="c-name">Дмитрий Макаров</div><div class="c-meta">С марта 2025 · Следующая: 21 мая · 12:00</div></div>
+          <div class="c-stat"><div class="c-val">12 сессий</div><div class="c-lbl">всего</div></div>
+        </div>
+        <div class="client-row">
+          <div class="c-avatar" style="background:#FEF3C7;color:#D97706">МК</div>
+          <div class="c-info"><div class="c-name">Михаил Козлов</div><div class="c-meta">С апреля 2025 · Следующая: 21 мая · 15:00</div></div>
+          <div class="c-stat"><div class="c-val">8 сессий</div><div class="c-lbl">всего</div></div>
+        </div>
+        <div class="client-row">
+          <div class="c-avatar" style="background:#FEE2E2;color:#DC2626">ЕП</div>
+          <div class="c-info"><div class="c-name">Елена Петрова</div><div class="c-meta">С февраля 2025 · Следующая: 21 мая · 18:00</div></div>
+          <div class="c-stat"><div class="c-val">18 сессий</div><div class="c-lbl">всего</div></div>
+        </div>
+        <div class="client-row">
+          <div class="c-avatar" style="background:#F0FDF4;color:#16A34A">НС</div>
+          <div class="c-info"><div class="c-name">Наталья Соколова</div><div class="c-meta">С мая 2025 · Заявка: 22 мая · 10:00</div></div>
+          <div class="c-stat"><div class="c-val">1 сессия</div><div class="c-lbl">всего</div></div>
+        </div>
+        <div class="client-row">
+          <div class="c-avatar" style="background:#EFF6FF;color:#2563EB">ПВ</div>
+          <div class="c-info"><div class="c-name">Павел Волков</div><div class="c-meta">С мая 2025 · Заявка: 23 мая · 17:00</div></div>
+          <div class="c-stat"><div class="c-val">3 сессии</div><div class="c-lbl">всего</div></div>
+        </div>
+        <div class="client-row">
+          <div class="c-avatar" style="background:#FDF4FF;color:#9333EA">ОК</div>
+          <div class="c-info"><div class="c-name">Ольга Кириллова</div><div class="c-meta">С мая 2025 · Заявка: 24 мая · 11:00</div></div>
+          <div class="c-stat"><div class="c-val">0 сессий</div><div class="c-lbl">всего</div></div>
+        </div>
+      </div>
+    </div><!-- /clients -->
+
+    <!-- ══════ BOT ══════ -->
+    <div class="section" id="s-bot">
+      <div class="two-col">
+        <div>
+          <div class="section-label mb-12">Ваша ссылка на бот</div>
+          <div class="card mb-16">
+            <p style="font-size:13px;color:var(--t2);line-height:1.65;margin-bottom:14px;">Отправьте клиентам ссылку — они запишутся самостоятельно через Telegram:</p>
+            <div class="link-box">
+              <span>t.me/your_trainer_bot</span>
+              <button class="copy-btn" onclick="copyLink(this)">Скопировать</button>
+            </div>
+          </div>
+
+          <div class="section-label mb-12">Статистика бота</div>
+          <div class="card">
+            <div class="bot-stat-grid">
+              <div class="bot-stat-cell">
+                <div class="bot-stat-val">12</div>
+                <div class="bot-stat-lbl">Активных пользователей</div>
+              </div>
+              <div class="bot-stat-cell">
+                <div class="bot-stat-val">47</div>
+                <div class="bot-stat-lbl">Записей через бот</div>
+              </div>
+              <div class="bot-stat-cell">
+                <div class="bot-stat-val" style="color:var(--green)">94%</div>
+                <div class="bot-stat-lbl">Конверсия</div>
+              </div>
+              <div class="bot-stat-cell">
+                <div class="bot-stat-val">2</div>
+                <div class="bot-stat-lbl">Новых за неделю</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-label mb-12">Предпросмотр бота</div>
+          <div class="tg-wrap">
+            <div class="tg-head">
+              <div class="tg-icon">🤖</div>
+              <div>
+                <div class="tg-bot-name">TrainerSpace Bot</div>
+                <div class="tg-online">онлайн</div>
+              </div>
+            </div>
+            <div class="tg-bubble">
+              <div class="tg-bubble-text">
+                👋 Привет! Я помогу записаться на тренировку к <strong>Алексею Смирнову</strong>.<br><br>Выберите действие:
+              </div>
+              <div class="tg-btns">
+                <button class="tg-btn">📅 Записаться</button>
+                <button class="tg-btn">👤 Мои записи</button>
+                <button class="tg-btn">❓ Помощь</button>
+              </div>
+            </div>
+            <div class="tg-user"><div class="tg-user-text">📅 Записаться</div></div>
+            <div class="tg-bubble">
+              <div class="tg-bubble-text">Отлично! Выберите удобный день:</div>
+              <div class="tg-btns">
+                <button class="tg-btn">ПН 19</button>
+                <button class="tg-btn">ВТ 20</button>
+                <button class="tg-btn">СР 21</button>
+                <button class="tg-btn">ЧТ 22</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /bot -->
+
+    <!-- ══════ SETTINGS ══════ -->
+    <div class="section" id="s-settings">
+      <div class="section-label mb-12">Настройки профиля</div>
+      <div class="card" style="max-width:520px;">
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div>
+            <label style="font-size:12px;font-weight:500;color:var(--t2);display:block;margin-bottom:5px;">Имя</label>
+            <input class="input" type="text" value="Алексей Смирнов" style="width:100%">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:500;color:var(--t2);display:block;margin-bottom:5px;">Специализация</label>
+            <input class="input" type="text" value="Персональный тренер" style="width:100%">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:500;color:var(--t2);display:block;margin-bottom:5px;">Email</label>
+            <input class="input" type="email" value="alex@trainerspace.ru" style="width:100%">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:500;color:var(--t2);display:block;margin-bottom:5px;">Длительность слота</label>
+            <select class="input" style="width:100%">
+              <option>60 минут</option>
+              <option>45 минут</option>
+              <option>90 минут</option>
+            </select>
+          </div>
+          <button class="btn-primary" style="align-self:flex-start">Сохранить изменения</button>
+        </div>
+      </div>
+    </div><!-- /settings -->
+
+  </div><!-- /content -->
+</main><!-- /main -->
+
+<script>
+const titles = {
+  dashboard: ['Обзор',           'Среда, 21 мая 2025'],
+  requests:  ['Заявки',          'Управление записями клиентов'],
+  schedule:  ['Расписание',      'Рабочие часы и доступность'],
+  clients:   ['Мои клиенты',     '12 активных клиентов'],
+  bot:       ['Telegram-бот',    'Управление ботом и ссылкой'],
+  settings:  ['Настройки',       'Профиль и параметры'],
+};
+
+function showSection(id, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('s-' + id).classList.add('active');
+  el.classList.add('active');
+  document.getElementById('page-title').textContent = titles[id][0];
+  document.getElementById('page-sub').textContent   = titles[id][1];
+}
+
+let pending = 3;
+
+function syncBadges() {
+  ['req-badge','db-badge'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent   = pending;
+    el.style.display = pending > 0 ? '' : 'none';
+  });
+  const sp = document.getElementById('stat-pending');
+  if (sp) sp.textContent = pending;
+}
+
+function approve(btn) {
+  const item = btn.closest('.request-item');
+  item.querySelector('.req-actions').innerHTML = '<span class="pill pill-ok">принято ✓</span>';
+  pending = Math.max(0, pending - 1);
+  syncBadges();
+}
+
+function reject(btn) {
+  const item = btn.closest('.request-item');
+  item.querySelector('.req-actions').innerHTML = '<span class="pill pill-no">отклонено</span>';
+  pending = Math.max(0, pending - 1);
+  syncBadges();
+}
+
+function addBlock() {
+  const inp = document.getElementById('block-input');
+  const val = inp.value.trim();
+  if (!val) return;
+  const d = document.createElement('div');
+  d.className = 'block-item';
+  d.innerHTML = `<i class="ti ti-ban" style="font-size:14px;color:var(--t3)"></i>
+                 <div class="block-item-text">${val}</div>
+                 <i class="ti ti-x block-del" onclick="this.parentElement.remove()"></i>`;
+  document.getElementById('blocks').appendChild(d);
+  inp.value = '';
+}
+
+function copyLink(btn) {
+  navigator.clipboard.writeText('https://t.me/your_trainer_bot').then(() => {
+    const orig = btn.textContent;
+    btn.textContent = 'Скопировано ✓';
+    btn.style.cssText += 'color:var(--green);border-color:var(--green)';
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.style.color = '';
+      btn.style.borderColor = '';
+    }, 2000);
+  });
+}
+</script>
+</body>
+</html>
