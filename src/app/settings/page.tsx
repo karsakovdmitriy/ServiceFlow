@@ -13,10 +13,14 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
 
-  // Fetch real data if Supabase is configured
+  // Initial load from local storage to keep prototype consistent
   useEffect(() => {
-    async function getProfile() {
-      if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    const saved = localStorage.getItem('trainer_profile');
+    if (saved) {
+      setProfile(JSON.parse(saved));
+    } else if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      // fallback to Supabase if local is empty but URL is provided
+      async function getProfile() {
         const { data, error } = await supabase
           .from('trainers')
           .select('*')
@@ -31,16 +35,18 @@ export default function SettingsPage() {
           });
         }
       }
+      getProfile();
     }
-    getProfile();
   }, []);
 
   const handleSave = async () => {
     setSaving(true);
     setMessage('');
 
-    // Demonstrate "working" logic
-    if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    // Save to local storage for prototype functionality
+    localStorage.setItem('trainer_profile', JSON.stringify(profile));
+
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY !== 'your-anon-key') {
        const { error } = await supabase
         .from('trainers')
         .update({
@@ -52,11 +58,10 @@ export default function SettingsPage() {
         .eq('email', profile.email);
 
         if (error) setMessage('Ошибка при сохранении: ' + error.message);
-        else setMessage('Изменения сохранены!');
+        else setMessage('Изменения сохранены в облаке!');
     } else {
-      // Mock success for prototype
-      await new Promise(r => setTimeout(r, 800));
-      setMessage('Изменения сохранены (демо-режим)');
+      await new Promise(r => setTimeout(r, 600));
+      setMessage('Изменения сохранены локально!');
     }
     setSaving(false);
   };
