@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import {
   IconCalendarCheck,
@@ -9,23 +11,29 @@ import {
   IconCheck,
   IconX
 } from '@tabler/icons-react';
+import { useStore } from '@/lib/store';
 
 export default function Dashboard() {
+  const { sessions, requests, approveRequest, rejectRequest } = useStore();
+
+  // Dynamic stats
+  const activeClients = new Set(sessions.map(s => s.name)).size + new Set(requests.map(r => r.name)).size;
+  const pendingCount = requests.length;
+
   return (
     <div className="animate-fade-up">
       {/* Welcome Banner */}
       <div className="bg-gradient-to-br from-[#6366F1] via-[#818CF8] to-[#A5B4FC] rounded-r-xl p-[28px_32px] flex items-center justify-between mb-[22px] relative overflow-hidden shadow-[0_8px_32px_rgba(99,102,241,0.28)]">
         <div className="relative z-10">
           <div className="text-[22px] font-bold text-white tracking-[-0.4px]">Добрый день, Алексей 👋</div>
-          <div className="text-[13px] text-white/75 mt-[5px]">Сегодня у вас 4 тренировки. Отличного рабочего дня!</div>
+          <div className="text-[13px] text-white/75 mt-[5px]">Сегодня у вас {sessions.filter(s => s.date === '2025-05-21').length} тренировки. Отличного рабочего дня!</div>
         </div>
         <div className="text-right relative z-10">
           <div className="text-[12px] text-white/65 mb-[3px]">Среда, 21 мая</div>
           <div className="text-[30px] font-extrabold text-white tracking-[-1px] leading-none">
-            4 <small className="text-[12px] font-normal opacity-70 block mt-[2px]">тренировки сегодня</small>
+            {sessions.filter(s => s.date === '2025-05-21').length} <small className="text-[12px] font-normal opacity-70 block mt-[2px]">тренировки сегодня</small>
           </div>
         </div>
-        {/* Decorative circles */}
         <div className="absolute w-[220px] h-[220px] bg-white/5 rounded-full -top-[70px] right-[100px] pointer-events-none"></div>
         <div className="absolute w-[120px] h-[120px] bg-white/5 rounded-full top-[30px] right-[70px] pointer-events-none"></div>
       </div>
@@ -34,8 +42,8 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-[14px] mb-[22px]">
         {[
           { icon: <IconCalendarCheck size={18} />, val: '47', lbl: 'Сессий в мае', trend: '↑ 12% vs прошлый месяц', color: 'purple' },
-          { icon: <IconUsers size={18} />, val: '12', lbl: 'Активных клиентов', trend: '↑ 2 новых на этой неделе', color: 'green' },
-          { icon: <IconClockHour4 size={18} />, val: '3', lbl: 'Ждут подтверждения', trend: 'Требует внимания', color: 'yellow', warn: true },
+          { icon: <IconUsers size={18} />, val: activeClients, lbl: 'Активных клиентов', trend: '↑ 2 новых на этой неделе', color: 'green' },
+          { icon: <IconClockHour4 size={18} />, val: pendingCount, lbl: 'Ждут подтверждения', trend: pendingCount > 0 ? 'Требует внимания' : 'Все обработано', color: 'yellow', warn: pendingCount > 0 },
           { icon: <IconCurrencyRubel size={18} />, val: '84к', lbl: 'Доход в мае', trend: '↑ 8% vs апрель', color: 'blue' },
         ].map((stat, i) => (
           <div key={i} className={`card relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px] before:rounded-[3px_3px_0_0] ${
@@ -70,12 +78,10 @@ export default function Dashboard() {
               <div className="text-[12px] text-t3 mt-[2px]">21 мая — ваше расписание</div>
             </div>
           </div>
-          {[
-            { name: 'Анна Иванова', time: '09:00 – 10:00', initials: 'АИ', bg: '#EDE9FE', color: '#7C3AED' },
-            { name: 'Дмитрий Макаров', time: '12:00 – 13:00', initials: 'ДМ', bg: '#DCFCE7', color: '#15803D' },
-            { name: 'Михаил Козлов', time: '15:00 – 16:00', initials: 'МК', bg: '#FEF3C7', color: '#D97706' },
-            { name: 'Елена Петрова', time: '18:00 – 19:00', initials: 'ЕП', bg: '#FEE2E2', color: '#DC2626' },
-          ].map((session, i) => (
+          {sessions.filter(s => s.date === '2025-05-21').length === 0 && (
+            <div className="text-center py-8 text-t3 text-[13px]">На сегодня нет записей</div>
+          )}
+          {sessions.filter(s => s.date === '2025-05-21').map((session, i) => (
             <div key={i} className="flex items-center gap-3 py-[13px] border-b border-border-light last:border-none last:pb-0 first:pt-0">
               <div className="w-[38px] h-[38px] rounded-full flex items-center justify-center text-[11.5px] font-bold shrink-0" style={{ backgroundColor: session.bg, color: session.color }}>
                 {session.initials}
@@ -98,13 +104,14 @@ export default function Dashboard() {
               <div className="text-[14px] font-semibold text-t1">Новые заявки</div>
               <div className="text-[12px] text-t3 mt-[2px]">Ожидают вашего ответа</div>
             </div>
-            <span className="bg-red-custom text-white text-[11px] font-semibold rounded-full px-[9px] py-[3px]">3</span>
+            {pendingCount > 0 && (
+              <span className="bg-red-custom text-white text-[11px] font-semibold rounded-full px-[9px] py-[3px]">{pendingCount}</span>
+            )}
           </div>
-          {[
-            { name: 'Наталья Соколова', time: 'Чт 22 мая · 10:00–11:00', initials: 'НС' },
-            { name: 'Павел Волков', time: 'Пт 23 мая · 17:00–18:00', initials: 'ПВ' },
-            { name: 'Ольга Кириллова', time: 'Сб 24 мая · 11:00–12:00', initials: 'ОК' },
-          ].map((req, i) => (
+          {requests.length === 0 && (
+            <div className="text-center py-8 text-t3 text-[13px]">Новых заявок нет</div>
+          )}
+          {requests.map((req, i) => (
             <div key={i} className="flex items-center gap-3 py-[13px] border-b border-border-light last:border-none last:pb-0 first:pt-0">
               <div className="w-[38px] h-[38px] rounded-full bg-accent-light text-accent flex items-center justify-center text-[11.5px] font-bold shrink-0">
                 {req.initials}
@@ -116,10 +123,16 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="flex gap-[7px] shrink-0">
-                <button className="bg-green-light text-green-custom border border-green-custom/20 text-[12px] font-medium p-1.5 rounded-r-sm hover:bg-green-custom hover:text-white transition-all">
+                <button
+                  onClick={() => approveRequest(req.id)}
+                  className="bg-green-light text-green-custom border border-green-custom/20 text-[12px] font-medium p-1.5 rounded-r-sm hover:bg-green-custom hover:text-white transition-all"
+                >
                   <IconCheck size={14} />
                 </button>
-                <button className="bg-red-light text-red-custom border border-red-custom/20 text-[12px] font-medium p-1.5 rounded-r-sm hover:bg-red-custom hover:text-white transition-all">
+                <button
+                  onClick={() => rejectRequest(req.id)}
+                  className="bg-red-light text-red-custom border border-red-custom/20 text-[12px] font-medium p-1.5 rounded-r-sm hover:bg-red-custom hover:text-white transition-all"
+                >
                   <IconX size={14} />
                 </button>
               </div>
