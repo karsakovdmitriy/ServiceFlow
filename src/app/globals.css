@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+@theme {
+  --color-accent: #6366F1;
+  --color-accent-hover: #4F46E5;
+  --color-accent-light: #EEF2FF;
+  --color-accent-mid: #818CF8;
+  --color-green-custom: #10B981;
+  --color-green-light: #ECFDF5;
+  --color-red-custom: #EF4444;
+  --color-red-light: #FEF2F2;
+  --color-yellow-custom: #F59E0B;
+  --color-yellow-light: #FFFBEB;
+  --color-blue-custom: #3B82F6;
+  --color-blue-light: #EFF6FF;
+  --color-t1: #0F172A;
+  --color-t2: #475569;
+  --color-t3: #94A3B8;
+  --color-border-custom: #E2E8F0;
+  --color-border-light: #F1F5F9;
+  --color-surface: #FFFFFF;
+  --color-bg-custom: #F7F8FC;
+
+  --shadow-sh-sm: 0 1px 3px rgba(15, 23, 42, .05), 0 1px 2px rgba(15, 23, 42, .04);
+  --shadow-sh-md: 0 4px 16px rgba(15, 23, 42, .07), 0 2px 4px rgba(15, 23, 42, .04);
+
+  --radius-r-sm: 8px;
+  --radius-r-md: 12px;
+  --radius-r-lg: 16px;
+  --radius-r-xl: 24px;
+}
+
+:root {
+  --bg: #F7F8FC;
+  --surface: #FFFFFF;
+  --sidebar-w: 240px;
+  --accent: #6366F1;
+  --accent-hover: #4F46E5;
+  --accent-light: #EEF2FF;
+  --accent-mid: #818CF8;
+  --green: #10B981;
+  --green-light: #ECFDF5;
+  --red: #EF4444;
+  --red-light: #FEF2F2;
+  --yellow: #F59E0B;
+  --yellow-light: #FFFBEB;
+  --blue: #3B82F6;
+  --blue-light: #EFF6FF;
+  --t1: #0F172A;
+  --t2: #475569;
+  --t3: #94A3B8;
+  --border: #E2E8F0;
+  --border-light: #F1F5F9;
+  --sh-sm: 0 1px 3px rgba(15, 23, 42, .05), 0 1px 2px rgba(15, 23, 42, .04);
+  --sh-md: 0 4px 16px rgba(15, 23, 42, .07), 0 2px 4px rgba(15, 23, 42, .04);
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 24px;
+}
+
+body {
+  @apply bg-[radial-gradient(ellipse_80%_60%_at_top_left,#EEF2FF_0%,#F7F8FC_55%)] min-h-screen text-t1 antialiased;
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-accent text-white border-none rounded-r-sm px-4 py-2 text-[13px] font-semibold cursor-pointer flex items-center gap-1.5 shadow-[0_2_10px_rgba(99,102,241,0.3)] transition-all hover:bg-accent-hover hover:shadow-[0_4_18px_rgba(99,102,241,0.38)] hover:-translate-y-px;
+  }
+
+  .card {
+    @apply bg-surface rounded-r-lg border border-border-light shadow-sh-sm p-5 transition-shadow duration-200;
+  }
+
+  .section-label {
+    @apply text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3;
+  }
+}
