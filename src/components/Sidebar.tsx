@@ -12,7 +12,8 @@ import {
   IconBrandTelegram,
   IconSettings,
   IconMenu2,
-  IconX
+  IconX,
+  IconStethoscope
 } from '@tabler/icons-react';
 
 const Sidebar = () => {
@@ -27,6 +28,7 @@ const Sidebar = () => {
     { label: 'Клиенты', type: 'group' },
     { label: 'Мои клиенты', icon: <IconUsers size={18} />, href: '/clients', id: 'clients' },
     { label: 'Инструменты', type: 'group' },
+    { label: 'Услуги', icon: <IconStethoscope size={18} />, href: '/services', id: 'services' },
     { label: 'Telegram-бот', icon: <IconBrandTelegram size={18} />, href: '/bot', id: 'bot' },
     { label: 'Настройки', icon: <IconSettings size={18} />, href: '/settings', id: 'settings' },
   ];

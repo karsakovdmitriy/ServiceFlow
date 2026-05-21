@@ -1,12 +1,17 @@
 'use client';
 
 import React, { useState } from 'react';
-import { IconBan, IconX } from '@tabler/icons-react';
+import { IconBan, IconX, IconPlus } from '@tabler/icons-react';
 import { useStore } from '@/lib/store';
 
 export default function SchedulePage() {
-  const { schedule, blocks, toggleDay, addBlock, removeBlock } = useStore();
-  const [newBlockText, setNewBlockText] = useState('');
+  const { schedule, blocks, toggleDay, updateScheduleTime, addBlock, removeBlock } = useStore();
+  const [newBlock, setNewBlock] = useState({
+    date: new Date().toISOString().split('T')[0],
+    startTime: '09:00',
+    endTime: '12:00',
+    allDay: false
+  });
 
   const gridData = [
     { day: 'ПН', slots: [{ t: '09:00', s: 'booked' }, { t: '10:00', s: 'booked' }, { t: '11:00', s: 'free' }, { t: '12:00', s: 'booked' }, { t: '13:00', s: 'free' }, { t: '15:00', s: 'booked' }] },
@@ -19,10 +24,12 @@ export default function SchedulePage() {
   ];
 
   const handleAddBlock = () => {
-    if (newBlockText.trim()) {
-      addBlock(newBlockText);
-      setNewBlockText('');
-    }
+    addBlock(newBlock);
+  };
+
+  const formatBlock = (block: any) => {
+    const d = new Date(block.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    return block.allDay ? `${d} · весь день` : `${d} · ${block.startTime}–${block.endTime}`;
   };
 
   return (
@@ -33,9 +40,27 @@ export default function SchedulePage() {
           <div className="card">
             {schedule.map((day, i) => (
               <div key={i} className="flex items-center justify-between py-3 border-b border-border-light last:border-none">
-                <div>
+                <div className="flex-1">
                   <div className="text-[13.5px] font-medium text-t1">{day.name}</div>
-                  <div className="text-[12px] text-t3 mt-[1px]">{day.on ? day.time : '—'}</div>
+                  {day.on ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <input
+                        type="time"
+                        value={day.startTime}
+                        onChange={(e) => updateScheduleTime(i, e.target.value, day.endTime)}
+                        className="text-[12px] text-t2 bg-bg-custom border border-border-light rounded px-1.5 py-0.5 outline-none focus:border-accent"
+                      />
+                      <span className="text-t3">–</span>
+                      <input
+                        type="time"
+                        value={day.endTime}
+                        onChange={(e) => updateScheduleTime(i, day.startTime, e.target.value)}
+                        className="text-[12px] text-t2 bg-bg-custom border border-border-light rounded px-1.5 py-0.5 outline-none focus:border-accent"
+                      />
+                    </div>
+                  ) : (
+                    <div className="text-[12px] text-t3 mt-[1px]">Выходной</div>
+                  )}
                 </div>
                 <div
                   onClick={() => toggleDay(i)}
@@ -48,48 +73,89 @@ export default function SchedulePage() {
           </div>
         </div>
 
-        <div>
-          <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Заблокированное время</div>
-          <div className="card">
-            <div className="flex flex-col gap-2">
-              {blocks.length === 0 && (
-                <div className="text-center py-4 text-t3 text-[13px]">Нет заблокированных слотов</div>
-              )}
-              {blocks.map((block, i) => (
-                <div key={i} className="flex items-center gap-[9px] p-[10px_12px] bg-bg-custom rounded-r-sm border border-border-light">
-                  <IconBan size={14} className="text-t3" />
-                  <div className="flex-1 text-[13px] text-t2">{block}</div>
-                  <IconX
-                    size={15}
-                    className="text-t3 cursor-pointer hover:text-red-custom transition-all"
-                    onClick={() => removeBlock(i)}
+        <div className="flex flex-col gap-4">
+          <div>
+            <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Заблокировать время</div>
+            <div className="card">
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="col-span-2">
+                  <label className="text-[11px] text-t3 block mb-1">Дата</label>
+                  <input
+                    type="date"
+                    value={newBlock.date}
+                    onChange={e => setNewBlock({...newBlock, date: e.target.value})}
+                    className="w-full text-[13px] border border-border-custom rounded-r-sm p-[8px_12px] bg-surface text-t1 outline-none focus:border-accent"
                   />
                 </div>
-              ))}
-            </div>
-            <div className="flex gap-2 mt-3">
-              <input
-                type="text"
-                placeholder="напр. 30 мая · 10:00–12:00"
-                value={newBlockText}
-                onChange={e => setNewBlockText(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleAddBlock()}
-                className="text-[13px] border border-border-custom rounded-r-sm p-[9px_12px] bg-surface text-t1 outline-none transition-all focus:border-accent flex-1"
-              />
+                {!newBlock.allDay && (
+                  <>
+                    <div>
+                      <label className="text-[11px] text-t3 block mb-1">Начало</label>
+                      <input
+                        type="time"
+                        value={newBlock.startTime}
+                        onChange={e => setNewBlock({...newBlock, startTime: e.target.value})}
+                        className="w-full text-[13px] border border-border-custom rounded-r-sm p-[8px_12px] bg-surface text-t1 outline-none focus:border-accent"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-t3 block mb-1">Конец</label>
+                      <input
+                        type="time"
+                        value={newBlock.endTime}
+                        onChange={e => setNewBlock({...newBlock, endTime: e.target.value})}
+                        className="w-full text-[13px] border border-border-custom rounded-r-sm p-[8px_12px] bg-surface text-t1 outline-none focus:border-accent"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="flex items-center gap-2 mb-4">
+                <input
+                  type="checkbox"
+                  id="allDay"
+                  checked={newBlock.allDay}
+                  onChange={e => setNewBlock({...newBlock, allDay: e.target.checked})}
+                  className="rounded border-border-custom text-accent focus:ring-accent"
+                />
+                <label htmlFor="allDay" className="text-[13px] text-t2">Весь день</label>
+              </div>
               <button
                 onClick={handleAddBlock}
-                className="bg-surface border border-border-custom text-t1 text-[13px] font-medium p-[9px_14px] rounded-r-sm cursor-pointer whitespace-nowrap transition-all hover:bg-bg-custom hover:border-t3"
+                className="w-full bg-accent text-white text-[13px] font-semibold py-2.5 rounded-r-sm transition-all hover:bg-accent-hover flex items-center justify-center gap-2"
               >
-                + Добавить
+                <IconPlus size={16} /> Добавить блокировку
               </button>
+            </div>
+          </div>
+
+          <div>
+            <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Заблокированные слоты</div>
+            <div className="card">
+              <div className="flex flex-col gap-2">
+                {blocks.length === 0 && (
+                  <div className="text-center py-4 text-t3 text-[13px]">Нет заблокированных слотов</div>
+                )}
+                {blocks.map((block) => (
+                  <div key={block.id} className="flex items-center gap-[9px] p-[10px_12px] bg-bg-custom rounded-r-sm border border-border-light">
+                    <IconBan size={14} className="text-t3" />
+                    <div className="flex-1 text-[13px] text-t2">{formatBlock(block)}</div>
+                    <IconX
+                      size={15}
+                      className="text-t3 cursor-pointer hover:text-red-custom transition-all"
+                      onClick={() => removeBlock(block.id)}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Обзор недели · 19–25 мая</div>
-      <div className="card">
-        <div className="grid grid-cols-7 gap-1.5">
+      <div className="card overflow-x-auto">
+        <div className="grid grid-cols-7 gap-1.5 min-w-[600px]">
           {gridData.map((day, i) => (
             <div key={i} className="text-center">
               <div className={`text-[10px] font-semibold mb-[7px] uppercase tracking-[0.05em] ${day.today ? 'text-accent' : 'text-t3'}`}>
