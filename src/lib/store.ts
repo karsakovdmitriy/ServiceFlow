@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { supabase } from './supabase';
 
 // Types
 export interface Service {
   id: string;
   name: string;
-  duration: number; // in minutes
+  duration: number;
   price: number;
 }
 
@@ -15,8 +16,8 @@ export interface Session {
   name: string;
   time: string;
   initials: string;
-  bg: string;
-  color: string;
+  bg?: string;
+  color?: string;
   status: string;
   date: string;
   service?: string;
@@ -37,178 +38,203 @@ export interface BlockedSlot {
   allDay: boolean;
 }
 
-// Initial Mock Data
-const initialServices: Service[] = [
-  { id: 's1', name: 'Персональная тренировка', duration: 60, price: 2500 },
-  { id: 's2', name: 'Сплит-тренировка', duration: 60, price: 3500 },
-  { id: 's3', name: 'Консультация по питанию', duration: 30, price: 1500 },
-];
-
-const initialSessions: Session[] = [
-  { id: '1', name: 'Анна Иванова', time: '09:00 – 10:00', initials: 'АИ', bg: '#EDE9FE', color: '#7C3AED', status: 'confirmed', date: '2025-05-21' },
-  { id: '2', name: 'Дмитрий Макаров', time: '12:00 – 13:00', initials: 'ДМ', bg: '#DCFCE7', color: '#15803D', status: 'confirmed', date: '2025-05-21' },
-  { id: '3', name: 'Михаил Козлов', time: '15:00 – 16:00', initials: 'МК', bg: '#FEF3C7', color: '#D97706', status: 'confirmed', date: '2025-05-21' },
-  { id: '4', name: 'Елена Петрова', time: '18:00 – 19:00', initials: 'ЕП', bg: '#FEE2E2', color: '#DC2626', status: 'confirmed', date: '2025-05-21' },
-];
-
-const initialCompletedSessions: Session[] = [
-  { id: 'c1', name: 'Иван Сергеев', time: 'Вчера · 18:00 – 19:00', initials: 'ИС', bg: '#F3F4F6', color: '#6B7280', status: 'completed', date: '2025-05-20' },
-];
-
-const initialRequests = [
-  { id: 'r1', name: 'Наталья Соколова', time: 'Чт 22 мая · 10:00–11:00', initials: 'НС', status: 'pending' },
-  { id: 'r2', name: 'Павел Волков', time: 'Пт 23 мая · 17:00–18:00', initials: 'ПВ', status: 'pending' },
-  { id: 'r3', name: 'Ольга Кириллова', time: 'Сб 24 мая · 11:00–12:00', initials: 'ОК', status: 'pending' },
-];
-
-const initialSchedule: ScheduleDay[] = [
-  { name: 'Понедельник', startTime: '09:00', endTime: '20:00', on: true },
-  { name: 'Вторник', startTime: '09:00', endTime: '20:00', on: true },
-  { name: 'Среда', startTime: '12:00', endTime: '20:00', on: true },
-  { name: 'Четверг', startTime: '09:00', endTime: '20:00', on: true },
-  { name: 'Пятница', startTime: '09:00', endTime: '18:00', on: true },
-  { name: 'Суббота', startTime: '10:00', endTime: '15:00', on: true },
-  { name: 'Воскресенье', startTime: '09:00', endTime: '18:00', on: false },
-];
-
-const initialBlocks: BlockedSlot[] = [
-  { id: 'b1', date: '2025-05-24', startTime: '14:00', endTime: '16:00', allDay: false },
-  { id: 'b2', date: '2025-05-28', startTime: '00:00', endTime: '23:59', allDay: true }
-];
+const DAYS = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
 
 export function useStore() {
-  const [sessions, setSessions] = useState<Session[]>(initialSessions);
-  const [completedSessions, setCompletedSessions] = useState<Session[]>(initialCompletedSessions);
-  const [requests, setRequests] = useState(initialRequests);
-  const [schedule, setSchedule] = useState<ScheduleDay[]>(initialSchedule);
-  const [blocks, setBlocks] = useState<BlockedSlot[]>(initialBlocks);
-  const [services, setServices] = useState<Service[]>(initialServices);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [completedSessions, setCompletedSessions] = useState<Session[]>([]);
+  const [requests, setRequests] = useState<Session[]>([]);
+  const [schedule, setSchedule] = useState<ScheduleDay[]>([]);
+  const [blocks, setBlocks] = useState<BlockedSlot[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Persistence logic
+  // For prototype simplicity, we'll use a fixed trainer_id if none exists
+  const TRAINER_ID = '00000000-0000-0000-0000-000000000000';
+
   useEffect(() => {
-    const saved = localStorage.getItem('trainer_space_data_v3');
-    if (saved) {
-      const data = JSON.parse(saved);
-      setSessions(data.sessions || initialSessions);
-      setCompletedSessions(data.completedSessions || initialCompletedSessions);
-      setRequests(data.requests || initialRequests);
-      setSchedule(data.schedule || initialSchedule);
-      setBlocks(data.blocks || initialBlocks);
-      setServices(data.services || initialServices);
-    }
+    fetchData();
   }, []);
 
-  const save = (updated: any) => {
-    const current = { sessions, completedSessions, requests, schedule, blocks, services, ...updated };
-    localStorage.setItem('trainer_space_data_v3', JSON.stringify(current));
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // Fetch Services
+      const { data: servicesData } = await supabase
+        .from('services')
+        .select('*')
+        .order('name');
+      if (servicesData) setServices(servicesData);
+
+      // Fetch Sessions (Requests, Active, Completed)
+      const { data: sessionsData } = await supabase
+        .from('sessions')
+        .select(`
+          id,
+          status,
+          start_time,
+          end_time,
+          clients (full_name),
+          services (name)
+        `)
+        .order('start_time', { ascending: true });
+
+      if (sessionsData) {
+        const formatted = sessionsData.map((s: any) => ({
+          id: s.id,
+          name: s.clients?.full_name || 'Клиент',
+          service: s.services?.name,
+          status: s.status,
+          date: s.start_time.split('T')[0],
+          time: `${s.start_time.split('T')[1].slice(0,5)} – ${s.end_time.split('T')[1].slice(0,5)}`,
+          initials: (s.clients?.full_name || 'К').split(' ').map((n: string) => n[0]).join('').toUpperCase()
+        }));
+
+        setRequests(formatted.filter(s => s.status === 'pending'));
+        setSessions(formatted.filter(s => s.status === 'confirmed'));
+        setCompletedSessions(formatted.filter(s => s.status === 'completed'));
+      }
+
+      // Fetch Schedule
+      const { data: schedData } = await supabase
+        .from('schedule_config')
+        .select('*')
+        .order('day_of_week');
+
+      if (schedData && schedData.length > 0) {
+        setSchedule(schedData.map(s => ({
+          name: DAYS[s.day_of_week],
+          startTime: s.start_hour,
+          endTime: s.end_hour,
+          on: s.is_active
+        })));
+      }
+
+      // Fetch Blocked Slots
+      const { data: blocksData } = await supabase
+        .from('blocked_slots')
+        .select('*')
+        .order('date');
+
+      if (blocksData) {
+        setBlocks(blocksData.map(b => ({
+          id: b.id,
+          date: b.date,
+          startTime: b.start_hour,
+          endTime: b.end_hour,
+          allDay: b.all_day
+        })));
+      }
+
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const approveRequest = (id: string) => {
-    const req = requests.find(r => r.id === id);
-    if (!req) return;
+  const updateSessionStatus = async (id: string, status: string) => {
+    const { error } = await supabase
+      .from('sessions')
+      .update({ status })
+      .eq('id', id);
 
-    const newRequests = requests.filter(r => r.id !== id);
-    const newSessions = [...sessions, {
-        id: Math.random().toString(36).substr(2, 9),
-        name: req.name,
-        initials: req.initials,
-        time: '10:00 – 11:00', // simplified
-        status: 'confirmed',
-        bg: '#EDE9FE',
-        color: '#7C3AED',
-        date: '2025-05-22'
-    }];
-
-    setRequests(newRequests);
-    setSessions(newSessions);
-    save({ sessions: newSessions, requests: newRequests });
+    if (!error) fetchData();
   };
 
-  const rejectRequest = (id: string) => {
-    const newRequests = requests.filter(r => r.id !== id);
-    setRequests(newRequests);
-    save({ requests: newRequests });
+  const approveRequest = (id: string) => updateSessionStatus(id, 'confirmed');
+  const rejectRequest = (id: string) => updateSessionStatus(id, 'rejected');
+  const cancelSession = (id: string) => updateSessionStatus(id, 'cancelled');
+  const completeSession = (id: string) => updateSessionStatus(id, 'completed');
+
+  const addSession = async (session: any) => {
+    // 1. Get or create client
+    let clientId;
+    const { data: client } = await supabase
+      .from('clients')
+      .select('id')
+      .eq('full_name', session.name)
+      .single();
+
+    if (client) {
+      clientId = client.id;
+    } else {
+      const { data: newClient } = await supabase
+        .from('clients')
+        .insert({ full_name: session.name, trainer_id: TRAINER_ID })
+        .select()
+        .single();
+      clientId = newClient.id;
+    }
+
+    // 2. Insert session
+    const startTime = `${session.date}T${session.time.split(' – ')[0]}:00Z`;
+    const endTime = `${session.date}T${session.time.split(' – ')[1]}:00Z`;
+
+    await supabase.from('sessions').insert({
+      trainer_id: TRAINER_ID,
+      client_id: clientId,
+      start_time: startTime,
+      end_time: endTime,
+      status: 'confirmed'
+    });
+
+    fetchData();
   };
 
-  const cancelSession = (id: string) => {
-    const newSessions = sessions.filter(s => s.id !== id);
-    setSessions(newSessions);
-    save({ sessions: newSessions });
+  const toggleDay = async (index: number) => {
+    const day = schedule[index];
+    await supabase
+      .from('schedule_config')
+      .update({ is_active: !day.on })
+      .eq('trainer_id', TRAINER_ID)
+      .eq('day_of_week', index);
+
+    fetchData();
   };
 
-  const completeSession = (id: string) => {
-    const session = sessions.find(s => s.id === id);
-    if (!session) return;
+  const updateScheduleTime = async (index: number, startTime: string, endTime: string) => {
+    await supabase
+      .from('schedule_config')
+      .update({ start_hour: startTime, end_hour: endTime })
+      .eq('trainer_id', TRAINER_ID)
+      .eq('day_of_week', index);
 
-    const newSessions = sessions.filter(s => s.id !== id);
-    const newCompleted = [{ ...session, status: 'completed' }, ...completedSessions];
-
-    setSessions(newSessions);
-    setCompletedSessions(newCompleted);
-    save({ sessions: newSessions, completedSessions: newCompleted });
+    fetchData();
   };
 
-  const addSession = (session: Omit<Session, 'id' | 'initials' | 'bg' | 'color' | 'status'>) => {
-    const initials = session.name.split(' ').map(n => n[0]).join('').toUpperCase();
-    const newSession: Session = {
-      ...session,
-      id: Math.random().toString(36).substr(2, 9),
-      initials,
-      status: 'confirmed',
-      bg: '#EDE9FE',
-      color: '#7C3AED',
-    };
-    const newSessions = [...sessions, newSession];
-    setSessions(newSessions);
-    save({ sessions: newSessions });
+  const addBlock = async (block: Omit<BlockedSlot, 'id'>) => {
+    await supabase.from('blocked_slots').insert({
+      trainer_id: TRAINER_ID,
+      date: block.date,
+      start_hour: block.startTime,
+      end_hour: block.endTime,
+      all_day: block.allDay
+    });
+    fetchData();
   };
 
-  const toggleDay = (index: number) => {
-    const newSchedule = [...schedule];
-    newSchedule[index].on = !newSchedule[index].on;
-    setSchedule(newSchedule);
-    save({ schedule: newSchedule });
+  const removeBlock = async (id: string) => {
+    await supabase.from('blocked_slots').delete().eq('id', id);
+    fetchData();
   };
 
-  const updateScheduleTime = (index: number, startTime: string, endTime: string) => {
-    const newSchedule = [...schedule];
-    newSchedule[index].startTime = startTime;
-    newSchedule[index].endTime = endTime;
-    setSchedule(newSchedule);
-    save({ schedule: newSchedule });
+  const addService = async (service: Omit<Service, 'id'>) => {
+    await supabase.from('services').insert({
+      trainer_id: TRAINER_ID,
+      ...service
+    });
+    fetchData();
   };
 
-  const addBlock = (block: Omit<BlockedSlot, 'id'>) => {
-    const newBlock = { ...block, id: Math.random().toString(36).substr(2, 9) };
-    const newBlocks = [...blocks, newBlock];
-    setBlocks(newBlocks);
-    save({ blocks: newBlocks });
+  const updateService = async (id: string, updated: Partial<Service>) => {
+    await supabase.from('services').update(updated).eq('id', id);
+    fetchData();
   };
 
-  const removeBlock = (id: string) => {
-    const newBlocks = blocks.filter(b => b.id !== id);
-    setBlocks(newBlocks);
-    save({ blocks: newBlocks });
-  };
-
-  // Services CRUD
-  const addService = (service: Omit<Service, 'id'>) => {
-    const newService = { ...service, id: Math.random().toString(36).substr(2, 9) };
-    const newServices = [...services, newService];
-    setServices(newServices);
-    save({ services: newServices });
-  };
-
-  const updateService = (id: string, updated: Partial<Service>) => {
-    const newServices = services.map(s => s.id === id ? { ...s, ...updated } : s);
-    setServices(newServices);
-    save({ services: newServices });
-  };
-
-  const removeService = (id: string) => {
-    const newServices = services.filter(s => s.id !== id);
-    setServices(newServices);
-    save({ services: newServices });
+  const removeService = async (id: string) => {
+    await supabase.from('services').delete().eq('id', id);
+    fetchData();
   };
 
   return {
@@ -218,6 +244,7 @@ export function useStore() {
     schedule,
     blocks,
     services,
+    loading,
     approveRequest,
     rejectRequest,
     cancelSession,
