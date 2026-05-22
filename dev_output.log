@@ -22,3 +22,7 @@
  GET /clients 200 in 148ms (next.js: 39ms, application-code: 109ms)
  GET / 200 in 2.3s (next.js: 514ms, application-code: 1821ms)
  GET /requests 200 in 134ms (next.js: 41ms, application-code: 94ms)
+✓ Compiled in 6.8s
+ GET / 200 in 2.2s (next.js: 494ms, application-code: 1692ms)
+○ Compiling /login ...
+ GET /login 200 in 3.9s (next.js: 3.8s, application-code: 43ms)

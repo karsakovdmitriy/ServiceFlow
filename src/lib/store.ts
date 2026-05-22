@@ -48,21 +48,39 @@ export function useStore() {
   const [blocks, setBlocks] = useState<BlockedSlot[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // For prototype simplicity, we'll use a fixed trainer_id if none exists
-  const TRAINER_ID = '00000000-0000-0000-0000-000000000000';
+  const [trainerId, setTrainerId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchData();
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setTrainerId(session.user.id);
+      }
+    };
+    checkUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setTrainerId(session?.user?.id || null);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (trainerId) {
+      fetchData();
+    }
+  }, [trainerId]);
+
   const fetchData = async () => {
+    if (!trainerId) return;
     setLoading(true);
     try {
       // Fetch Services
       const { data: servicesData } = await supabase
         .from('services')
         .select('*')
+        .eq('trainer_id', trainerId)
         .order('name');
       if (servicesData) setServices(servicesData);
 
@@ -77,6 +95,7 @@ export function useStore() {
           clients (full_name),
           services (name)
         `)
+        .eq('trainer_id', trainerId)
         .order('start_time', { ascending: true });
 
       if (sessionsData) {
@@ -99,6 +118,7 @@ export function useStore() {
       const { data: schedData } = await supabase
         .from('schedule_config')
         .select('*')
+        .eq('trainer_id', trainerId)
         .order('day_of_week');
 
       if (schedData && schedData.length > 0) {
@@ -114,6 +134,7 @@ export function useStore() {
       const { data: blocksData } = await supabase
         .from('blocked_slots')
         .select('*')
+        .eq('trainer_id', trainerId)
         .order('date');
 
       if (blocksData) {
@@ -148,20 +169,23 @@ export function useStore() {
   const completeSession = (id: string) => updateSessionStatus(id, 'completed');
 
   const addSession = async (session: any) => {
+    if (!trainerId) return;
+
     // 1. Get or create client
     let clientId;
     const { data: client } = await supabase
       .from('clients')
       .select('id')
+      .eq('trainer_id', trainerId)
       .eq('full_name', session.name)
-      .single();
+      .maybeSingle();
 
     if (client) {
       clientId = client.id;
     } else {
       const { data: newClient } = await supabase
         .from('clients')
-        .insert({ full_name: session.name, trainer_id: TRAINER_ID })
+        .insert({ full_name: session.name, trainer_id: trainerId })
         .select()
         .single();
       clientId = newClient.id;
@@ -172,7 +196,7 @@ export function useStore() {
     const endTime = `${session.date}T${session.time.split(' – ')[1]}:00Z`;
 
     await supabase.from('sessions').insert({
-      trainer_id: TRAINER_ID,
+      trainer_id: trainerId,
       client_id: clientId,
       start_time: startTime,
       end_time: endTime,
@@ -183,29 +207,32 @@ export function useStore() {
   };
 
   const toggleDay = async (index: number) => {
+    if (!trainerId) return;
     const day = schedule[index];
     await supabase
       .from('schedule_config')
       .update({ is_active: !day.on })
-      .eq('trainer_id', TRAINER_ID)
+      .eq('trainer_id', trainerId)
       .eq('day_of_week', index);
 
     fetchData();
   };
 
   const updateScheduleTime = async (index: number, startTime: string, endTime: string) => {
+    if (!trainerId) return;
     await supabase
       .from('schedule_config')
       .update({ start_hour: startTime, end_hour: endTime })
-      .eq('trainer_id', TRAINER_ID)
+      .eq('trainer_id', trainerId)
       .eq('day_of_week', index);
 
     fetchData();
   };
 
   const addBlock = async (block: Omit<BlockedSlot, 'id'>) => {
+    if (!trainerId) return;
     await supabase.from('blocked_slots').insert({
-      trainer_id: TRAINER_ID,
+      trainer_id: trainerId,
       date: block.date,
       start_hour: block.startTime,
       end_hour: block.endTime,
@@ -220,8 +247,9 @@ export function useStore() {
   };
 
   const addService = async (service: Omit<Service, 'id'>) => {
+    if (!trainerId) return;
     await supabase.from('services').insert({
-      trainer_id: TRAINER_ID,
+      trainer_id: trainerId,
       ...service
     });
     fetchData();
@@ -245,6 +273,7 @@ export function useStore() {
     blocks,
     services,
     loading,
+    trainerId,
     approveRequest,
     rejectRequest,
     cancelSession,
