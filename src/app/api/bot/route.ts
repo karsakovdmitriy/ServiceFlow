@@ -36,6 +36,14 @@ async function answerCallbackQuery(callbackQueryId: string) {
 
 export async function POST(request: Request) {
   const supabase = getSupabase();
+  const url = new URL(request.url);
+  const secret = url.searchParams.get('secret');
+
+  // Simple security check via query param
+  if (process.env.TELEGRAM_BOT_SECRET && secret !== process.env.TELEGRAM_BOT_SECRET) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     console.log('Bot Update:', JSON.stringify(body, null, 2));
