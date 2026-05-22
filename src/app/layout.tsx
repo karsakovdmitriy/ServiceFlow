@@ -4,6 +4,7 @@ import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
 import { AuthProvider } from "@/components/AuthProvider";
 import LayoutWrapper from "@/components/LayoutWrapper";
+import { StoreProvider } from "@/lib/store";
 
 export const metadata: Metadata = {
   title: "TrainerSpace — Кабинет тренера",
@@ -19,9 +20,11 @@ export default function RootLayout({
     <html lang="ru">
       <body className="bg-[#F9FAFB]">
         <AuthProvider>
-          <LayoutWrapper>
-            {children}
-          </LayoutWrapper>
+          <StoreProvider>
+            <LayoutWrapper>
+              {children}
+            </LayoutWrapper>
+          </StoreProvider>
         </AuthProvider>
       </body>
     </html>

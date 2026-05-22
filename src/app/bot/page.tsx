@@ -5,7 +5,9 @@ import { useStore } from '@/lib/store';
 import { IconBrandTelegram, IconCopy, IconChartBar, IconDeviceMobile } from '@tabler/icons-react';
 
 export default function BotPage() {
-  const { profile } = useStore();
+  const { profile, trainerId } = useStore();
+  const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'TrainerSpaceBot';
+  const botLink = `https://t.me/${botUsername}?start=${trainerId || 'id'}`;
 
   return (
     <div className="animate-fade-up">
@@ -18,14 +20,14 @@ export default function BotPage() {
                 Отправьте эту ссылку вашим клиентам. Они смогут самостоятельно смотреть ваше расписание и записываться на тренировки.
               </p>
               <div className="bg-bg-custom border border-border-light rounded-r-md p-3 flex items-center justify-between gap-3 group">
-                <div className="flex items-center gap-2 text-[13px] font-mono text-accent truncate">
+                <div className="flex items-center gap-2 text-[12px] font-mono text-accent truncate">
                   <IconBrandTelegram size={18} className="shrink-0" />
-                  <span>t.me/TrainerSpace_bot?start={profile?.email?.split('@')[0] || 'your_id'}</span>
+                  <span>{botLink}</span>
                 </div>
                 <button
                   className="bg-white border border-border-custom text-t2 text-[11px] font-bold p-[6px_12px] rounded-lg cursor-pointer whitespace-nowrap transition-all hover:border-accent hover:text-accent flex items-center gap-1.5"
                   onClick={() => {
-                    navigator.clipboard.writeText(`t.me/TrainerSpace_bot?start=${profile?.email?.split('@')[0] || 'your_id'}`);
+                    navigator.clipboard.writeText(botLink);
                     alert('Ссылка скопирована!');
                   }}
                 >

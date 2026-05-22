@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from './supabase';
 
 // Types and Mock Data
@@ -35,7 +35,36 @@ const MOCK_SCHEDULE = DAYS.map((name, i) => ({
   on: i !== 0
 }));
 
-export function useStore() {
+interface StoreContextType {
+  sessions: Session[];
+  completedSessions: Session[];
+  requests: Session[];
+  schedule: ScheduleDay[];
+  blocks: BlockedSlot[];
+  services: Service[];
+  profile: TrainerProfile | null;
+  loading: boolean;
+  trainerId: string | null;
+  isDemoMode: boolean;
+  updateProfile: (updated: Partial<TrainerProfile>) => Promise<{ error: any }>;
+  approveRequest: (id: string) => Promise<void>;
+  rejectRequest: (id: string) => Promise<void>;
+  cancelSession: (id: string) => Promise<void>;
+  completeSession: (id: string) => Promise<void>;
+  addSession: (session: any) => Promise<void>;
+  addService: (service: Omit<Service, 'id'>) => Promise<void>;
+  updateService: (id: string, service: Partial<Service>) => Promise<void>;
+  addBlock: (block: Omit<BlockedSlot, 'id'>) => Promise<void>;
+  removeBlock: (id: string) => Promise<void>;
+  toggleDay: (idx: number) => Promise<void>;
+  updateScheduleTime: (idx: number, startTime: string, endTime: string) => Promise<void>;
+  removeService: (id: string) => Promise<void>;
+  refresh: () => Promise<void>;
+}
+
+const StoreContext = createContext<StoreContextType | undefined>(undefined);
+
+export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [completedSessions, setCompletedSessions] = useState<Session[]>([]);
   const [requests, setRequests] = useState<Session[]>([]);
@@ -47,7 +76,6 @@ export function useStore() {
   const [trainerId, setTrainerId] = useState<string | null>(null);
   const [isDemoMode, setIsDemoMode] = useState(false);
 
-  // Check Supabase Config
   const hasConfig = process.env.NEXT_PUBLIC_SUPABASE_URL &&
                     process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://your-project.supabase.co';
 
@@ -344,13 +372,24 @@ export function useStore() {
     fetchData();
   };
 
-  return {
+  const value = {
     sessions, completedSessions, requests, schedule, blocks, services, profile,
     loading, trainerId, isDemoMode,
     updateProfile, approveRequest: (id: string) => updateSessionStatus(id, 'confirmed'),
     rejectRequest: (id: string) => updateSessionStatus(id, 'rejected'),
     cancelSession: (id: string) => updateSessionStatus(id, 'cancelled'),
     completeSession: (id: string) => updateSessionStatus(id, 'completed'),
-    addSession, addService, updateService, addBlock, removeBlock, toggleDay, updateScheduleTime, removeService
+    addSession, addService, updateService, addBlock, removeBlock, toggleDay, updateScheduleTime, removeService,
+    refresh: fetchData
   };
+
+  return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
+}
+
+export function useStore() {
+  const context = useContext(StoreContext);
+  if (context === undefined) {
+    throw new Error('useStore must be used within a StoreProvider');
+  }
+  return context;
 }
