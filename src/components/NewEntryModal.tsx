@@ -1,11 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { IconX, IconChevronDown } from '@tabler/icons-react';
 import { useStore } from '@/lib/store';
 
 export default function NewEntryModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const { services, addSession } = useStore();
+  const [mounted, setMounted] = useState(false);
+
   const [formData, setFormData] = useState({
     name: '',
     date: new Date().toISOString().split('T')[0],
@@ -14,7 +17,19 @@ export default function NewEntryModal({ isOpen, onClose }: { isOpen: boolean, on
     serviceId: services[0]?.id || ''
   });
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  // Update serviceId when services load
+  useEffect(() => {
+    if (services.length > 0 && !formData.serviceId) {
+        setFormData(prev => ({ ...prev, serviceId: services[0].id }));
+    }
+  }, [services]);
+
+  if (!isOpen || !mounted) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,8 +43,8 @@ export default function NewEntryModal({ isOpen, onClose }: { isOpen: boolean, on
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
       <div
         className="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
@@ -129,4 +144,6 @@ export default function NewEntryModal({ isOpen, onClose }: { isOpen: boolean, on
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }

@@ -106,7 +106,9 @@ export function useStore() {
 
   const saveDemoData = (updated: any) => {
     const current = JSON.parse(localStorage.getItem('trainer_space_demo') || '{}');
-    localStorage.setItem('trainer_space_demo', JSON.stringify({ ...current, ...updated }));
+    const newData = { ...current, ...updated };
+    localStorage.setItem('trainer_space_demo', JSON.stringify(newData));
+    return newData;
   };
 
   const fetchData = async () => {
@@ -153,7 +155,8 @@ export function useStore() {
       const { data: schedData, error: schErr } = await supabase.from('schedule_config').select('*').eq('trainer_id', trainerId).order('day_of_week');
       if (schErr) throw schErr;
       if (schedData && schedData.length > 0) {
-        setSchedule(schedData.map(s => ({ name: DAYS[s.day_of_week], startTime: s.start_hour, endTime: s.end_hour, on: s.is_active })));
+        const sorted = [...schedData].sort((a, b) => (a.day_of_week === 0 ? 7 : a.day_of_week) - (b.day_of_week === 0 ? 7 : b.day_of_week));
+        setSchedule(sorted.map(s => ({ name: DAYS[s.day_of_week], startTime: s.start_hour, endTime: s.end_hour, on: s.is_active })));
       }
 
       const { data: blocksData, error: bErr } = await supabase.from('blocked_slots').select('*').eq('trainer_id', trainerId).order('date');
@@ -229,6 +232,35 @@ export function useStore() {
     fetchData();
   };
 
+  const toggleDay = async (idx: number) => {
+    const day = schedule[idx];
+    const dayOfWeek = DAYS.indexOf(day.name);
+    if (isDemoMode) {
+        const newSched = [...schedule];
+        newSched[idx].on = !newSched[idx].on;
+        setSchedule(newSched);
+        saveDemoData({ schedule: newSched });
+        return;
+    }
+    await supabase.from('schedule_config').update({ is_active: !day.on }).eq('trainer_id', trainerId).eq('day_of_week', dayOfWeek);
+    fetchData();
+  };
+
+  const updateScheduleTime = async (idx: number, startTime: string, endTime: string) => {
+    const day = schedule[idx];
+    const dayOfWeek = DAYS.indexOf(day.name);
+    if (isDemoMode) {
+        const newSched = [...schedule];
+        newSched[idx].startTime = startTime;
+        newSched[idx].endTime = endTime;
+        setSchedule(newSched);
+        saveDemoData({ schedule: newSched });
+        return;
+    }
+    await supabase.from('schedule_config').update({ start_hour: startTime, end_hour: endTime }).eq('trainer_id', trainerId).eq('day_of_week', dayOfWeek);
+    fetchData();
+  };
+
   const addBlock = async (block: Omit<BlockedSlot, 'id'>) => {
     if (isDemoMode) {
       const newB = { ...block, id: Math.random().toString() };
@@ -259,8 +291,6 @@ export function useStore() {
     rejectRequest: (id: string) => updateSessionStatus(id, 'rejected'),
     cancelSession: (id: string) => updateSessionStatus(id, 'cancelled'),
     completeSession: (id: string) => updateSessionStatus(id, 'completed'),
-    addSession, addService, addBlock, removeBlock,
-    toggleDay: async (idx: number) => { /* implement */ },
-    updateScheduleTime: async (idx: number, s: string, e: string) => { /* implement */ }
+    addSession, addService, addBlock, removeBlock, toggleDay, updateScheduleTime
   };
 }
