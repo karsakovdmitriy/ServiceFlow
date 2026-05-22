@@ -38,6 +38,13 @@ export interface BlockedSlot {
   allDay: boolean;
 }
 
+export interface TrainerProfile {
+  full_name: string;
+  specialization: string;
+  email: string;
+  slot_duration: number;
+}
+
 const DAYS = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
 
 export function useStore() {
@@ -47,6 +54,7 @@ export function useStore() {
   const [schedule, setSchedule] = useState<ScheduleDay[]>([]);
   const [blocks, setBlocks] = useState<BlockedSlot[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [profile, setProfile] = useState<TrainerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [trainerId, setTrainerId] = useState<string | null>(null);
 
@@ -76,6 +84,14 @@ export function useStore() {
     if (!trainerId) return;
     setLoading(true);
     try {
+      // Fetch Profile
+      const { data: profileData } = await supabase
+        .from('trainers')
+        .select('full_name, specialization, email, slot_duration')
+        .eq('id', trainerId)
+        .single();
+      if (profileData) setProfile(profileData);
+
       // Fetch Services
       const { data: servicesData } = await supabase
         .from('services')
@@ -122,7 +138,14 @@ export function useStore() {
         .order('day_of_week');
 
       if (schedData && schedData.length > 0) {
-        setSchedule(schedData.map(s => ({
+        // Map day_of_week correctly (1=Mon, ..., 0=Sun)
+        const sortedSched = [...schedData].sort((a, b) => {
+            const valA = a.day_of_week === 0 ? 7 : a.day_of_week;
+            const valB = b.day_of_week === 0 ? 7 : b.day_of_week;
+            return valA - valB;
+        });
+
+        setSchedule(sortedSched.map(s => ({
           name: DAYS[s.day_of_week],
           startTime: s.start_hour,
           endTime: s.end_hour,
@@ -154,6 +177,17 @@ export function useStore() {
     }
   };
 
+  const updateProfile = async (updated: Partial<TrainerProfile>) => {
+    if (!trainerId) return;
+    const { error } = await supabase
+      .from('trainers')
+      .update(updated)
+      .eq('id', trainerId);
+
+    if (!error) fetchData();
+    return { error };
+  };
+
   const updateSessionStatus = async (id: string, status: string) => {
     const { error } = await supabase
       .from('sessions')
@@ -171,7 +205,6 @@ export function useStore() {
   const addSession = async (session: any) => {
     if (!trainerId) return;
 
-    // 1. Get or create client
     let clientId;
     const { data: client } = await supabase
       .from('clients')
@@ -191,7 +224,6 @@ export function useStore() {
       clientId = newClient.id;
     }
 
-    // 2. Insert session
     const startTime = `${session.date}T${session.time.split(' – ')[0]}:00Z`;
     const endTime = `${session.date}T${session.time.split(' – ')[1]}:00Z`;
 
@@ -208,23 +240,28 @@ export function useStore() {
 
   const toggleDay = async (index: number) => {
     if (!trainerId) return;
-    const day = schedule[index];
+    const dayName = schedule[index].name;
+    const dayOfWeek = DAYS.indexOf(dayName);
+
     await supabase
       .from('schedule_config')
-      .update({ is_active: !day.on })
+      .update({ is_active: !schedule[index].on })
       .eq('trainer_id', trainerId)
-      .eq('day_of_week', index);
+      .eq('day_of_week', dayOfWeek);
 
     fetchData();
   };
 
   const updateScheduleTime = async (index: number, startTime: string, endTime: string) => {
     if (!trainerId) return;
+    const dayName = schedule[index].name;
+    const dayOfWeek = DAYS.indexOf(dayName);
+
     await supabase
       .from('schedule_config')
       .update({ start_hour: startTime, end_hour: endTime })
       .eq('trainer_id', trainerId)
-      .eq('day_of_week', index);
+      .eq('day_of_week', dayOfWeek);
 
     fetchData();
   };
@@ -272,8 +309,10 @@ export function useStore() {
     schedule,
     blocks,
     services,
+    profile,
     loading,
     trainerId,
+    updateProfile,
     approveRequest,
     rejectRequest,
     cancelSession,
