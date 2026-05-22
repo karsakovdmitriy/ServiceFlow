@@ -14,16 +14,9 @@ CREATE TABLE trainers (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Enable RLS
 ALTER TABLE trainers ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Trainers can view their own profile"
-  ON trainers FOR SELECT
-  USING (auth.uid() = id);
-
-CREATE POLICY "Trainers can update their own profile"
-  ON trainers FOR UPDATE
-  USING (auth.uid() = id);
+CREATE POLICY "Trainers can view their own profile" ON trainers FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Trainers can update their own profile" ON trainers FOR UPDATE USING (auth.uid() = id);
 
 -- Services
 CREATE TABLE services (
@@ -36,10 +29,7 @@ CREATE TABLE services (
 );
 
 ALTER TABLE services ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Trainers can manage their own services"
-  ON services FOR ALL
-  USING (auth.uid() = trainer_id);
+CREATE POLICY "Trainers can manage their own services" ON services FOR ALL USING (auth.uid() = trainer_id);
 
 -- Clients
 CREATE TABLE clients (
@@ -53,10 +43,7 @@ CREATE TABLE clients (
 );
 
 ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Trainers can manage their own clients"
-  ON clients FOR ALL
-  USING (auth.uid() = trainer_id);
+CREATE POLICY "Trainers can manage their own clients" ON clients FOR ALL USING (auth.uid() = trainer_id);
 
 -- Sessions
 CREATE TABLE sessions (
@@ -71,10 +58,7 @@ CREATE TABLE sessions (
 );
 
 ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Trainers can manage their own sessions"
-  ON sessions FOR ALL
-  USING (auth.uid() = trainer_id);
+CREATE POLICY "Trainers can manage their own sessions" ON sessions FOR ALL USING (auth.uid() = trainer_id);
 
 -- Schedule Configuration
 CREATE TABLE schedule_config (
@@ -88,10 +72,7 @@ CREATE TABLE schedule_config (
 );
 
 ALTER TABLE schedule_config ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Trainers can manage their own schedule"
-  ON schedule_config FOR ALL
-  USING (auth.uid() = trainer_id);
+CREATE POLICY "Trainers can manage their own schedule" ON schedule_config FOR ALL USING (auth.uid() = trainer_id);
 
 -- Blocked time slots
 CREATE TABLE blocked_slots (
@@ -106,12 +87,9 @@ CREATE TABLE blocked_slots (
 );
 
 ALTER TABLE blocked_slots ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Trainers can manage their own blocked slots" ON blocked_slots FOR ALL USING (auth.uid() = trainer_id);
 
-CREATE POLICY "Trainers can manage their own blocked slots"
-  ON blocked_slots FOR ALL
-  USING (auth.uid() = trainer_id);
-
--- Function to handle new user creation
+-- Auth Trigger
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -132,7 +110,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Trigger to call handle_new_user on signup
 CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();

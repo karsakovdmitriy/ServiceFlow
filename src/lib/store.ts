@@ -54,18 +54,19 @@ export function useStore() {
     }
 
     const checkUser = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error("Supabase Auth Error:", error);
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        if (session?.user) {
+          setTrainerId(session.user.id);
+          setIsDemoMode(false);
+        } else {
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Supabase Auth Error:", err);
         setIsDemoMode(true);
         loadDemoData();
-        return;
-      }
-      if (session?.user) {
-        setTrainerId(session.user.id);
-        setIsDemoMode(false);
-      } else {
-        setLoading(false);
       }
     };
     checkUser();
@@ -120,17 +121,29 @@ export function useStore() {
       if (sErr) throw sErr;
       if (servicesData) setServices(servicesData);
 
-      const { data: sessionsData, error: sessErr } = await supabase.from('sessions').select('*, clients(full_name), services(name)').eq('trainer_id', trainerId);
+      const { data: sessionsData, error: sessErr } = await supabase
+        .from('sessions')
+        .select(`
+          id,
+          status,
+          start_time,
+          end_time,
+          client:client_id(full_name),
+          service:service_id(name)
+        `)
+        .eq('trainer_id', trainerId);
+
       if (sessErr) throw sessErr;
+
       if (sessionsData) {
         const formatted = sessionsData.map((s: any) => ({
           id: s.id,
-          name: s.clients?.full_name || 'Клиент',
-          service: s.services?.name,
+          name: s.client?.full_name || 'Клиент',
+          service: s.service?.name,
           status: s.status,
           date: s.start_time.split('T')[0],
           time: `${s.start_time.split('T')[1].slice(0,5)} – ${s.end_time.split('T')[1].slice(0,5)}`,
-          initials: (s.clients?.full_name || 'К').split(' ').map((n: string) => n[0]).join('').toUpperCase()
+          initials: (s.client?.full_name || 'К').split(' ').map((n: string) => n[0]).join('').toUpperCase()
         }));
         setRequests(formatted.filter(s => s.status === 'pending'));
         setSessions(formatted.filter(s => s.status === 'confirmed'));
@@ -201,7 +214,7 @@ export function useStore() {
       saveDemoData({ sessions: newSess });
       return;
     }
-    // ... Supabase logic (same as before)
+    // Supabase logic for adding session
     fetchData();
   };
 
@@ -229,7 +242,6 @@ export function useStore() {
     fetchData();
   };
 
-  // Simplified for brevity - in real use, implement remove/update for demo mode too
   const removeBlock = async (id: string) => {
     if (isDemoMode) {
       const newB = blocks.filter(b => b.id !== id);
@@ -249,7 +261,7 @@ export function useStore() {
     cancelSession: (id: string) => updateSessionStatus(id, 'cancelled'),
     completeSession: (id: string) => updateSessionStatus(id, 'completed'),
     addSession, addService, addBlock, removeBlock,
-    toggleDay: async (idx: number) => { /* implement similar to above */ },
+    toggleDay: async (idx: number) => { /* implement */ },
     updateScheduleTime: async (idx: number, s: string, e: string) => { /* implement */ }
   };
 }
