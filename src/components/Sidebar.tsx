@@ -20,12 +20,12 @@ import { useStore } from '@/lib/store';
 const Sidebar = () => {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-  const { profile } = useStore();
+  const { profile, requests } = useStore();
 
   const navItems = [
     { label: 'Главное', type: 'group' },
     { label: 'Обзор', icon: <IconLayoutDashboard size={18} />, href: '/', id: 'dashboard' },
-    { label: 'Заявки', icon: <IconCalendarEvent size={18} />, href: '/requests', id: 'requests', badge: 3 },
+    { label: 'Заявки', icon: <IconCalendarEvent size={18} />, href: '/requests', id: 'requests', badge: requests.length > 0 ? requests.length : undefined },
     { label: 'Расписание', icon: <IconCalendarWeek size={18} />, href: '/schedule', id: 'schedule' },
     { label: 'Клиенты', type: 'group' },
     { label: 'Мои клиенты', icon: <IconUsers size={18} />, href: '/clients', id: 'clients' },

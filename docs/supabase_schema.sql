@@ -53,7 +53,8 @@ CREATE TABLE IF NOT EXISTS clients (
   email TEXT,
   telegram_id TEXT,
   is_active BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(trainer_id, telegram_id)
 );
 
 ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
