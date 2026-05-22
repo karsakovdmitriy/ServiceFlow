@@ -1,75 +1,144 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { IconSearch, IconUserPlus, IconDotsVertical, IconCheck, IconClock, IconMail, IconPhone } from '@tabler/icons-react';
+import { useStore } from '@/lib/store';
 
 export default function ClientsPage() {
-  const [filter, setFilter] = useState<'all' | 'active'>('active');
+  const { sessions, requests, completedSessions } = useStore();
+  const [filter, setFilter] = useState('active'); // 'all' or 'active'
+  const [search, setSearch] = useState('');
 
-  const allClients = [
-    { name: 'Анна Иванова', meta: 'С января 2025 · Следующая: 21 мая · 09:00', sessions: '24 сессии', initials: 'АИ', bg: '#EDE9FE', color: '#7C3AED', active: true },
-    { name: 'Дмитрий Макаров', meta: 'С марта 2025 · Следующая: 21 мая · 12:00', sessions: '12 сессий', initials: 'ДМ', bg: '#DCFCE7', color: '#15803D', active: true },
-    { name: 'Михаил Козлов', meta: 'С апреля 2025 · Следующая: 21 мая · 15:00', sessions: '8 сессий', initials: 'МК', bg: '#FEF3C7', color: '#D97706', active: true },
-    { name: 'Елена Петрова', meta: 'С февраля 2025 · Следующая: 21 мая · 18:00', sessions: '18 сессий', initials: 'ЕП', bg: '#FEE2E2', color: '#DC2626', active: true },
-    { name: 'Наталья Соколова', meta: 'С мая 2025 · Заявка: 22 мая · 10:00', sessions: '1 сессия', initials: 'НС', bg: '#F0FDF4', color: '#16A34A', active: true },
-    { name: 'Павел Волков', meta: 'С мая 2025 · Заявка: 23 мая · 17:00', sessions: '3 сессии', initials: 'ПВ', bg: '#EFF6FF', color: '#2563EB', active: true },
-    { name: 'Ольга Кириллова', meta: 'С мая 2025 · Заявка: 24 мая · 11:00', sessions: '0 сессий', initials: 'ОК', bg: '#FDF4FF', color: '#9333EA', active: true },
-    { name: 'Артем Васильев', meta: 'Не занимался с марта 2025', sessions: '10 сессий', initials: 'АВ', bg: '#F3F4F6', color: '#6B7280', active: false },
-    { name: 'Мария Кузнецова', meta: 'Не занималась с февраля 2025', sessions: '5 сессий', initials: 'МК', bg: '#F3F4F6', color: '#6B7280', active: false },
-  ];
+  // Extract unique clients
+  const allClientNames = useMemo(() => {
+    const names = new Set([
+      ...sessions.map(s => s.name),
+      ...requests.map(r => r.name),
+      ...completedSessions.map(c => c.name)
+    ]);
+    return Array.from(names);
+  }, [sessions, requests, completedSessions]);
 
-  const filteredClients = filter === 'all'
-    ? allClients
-    : allClients.filter(c => c.active);
+  const activeClientNames = useMemo(() => {
+    const names = new Set([
+      ...sessions.map(s => s.name),
+      ...requests.map(r => r.name)
+    ]);
+    return Array.from(names);
+  }, [sessions, requests]);
+
+  const clients = useMemo(() => {
+    const targetNames = filter === 'active' ? activeClientNames : allClientNames;
+
+    return targetNames.map(name => {
+      const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
+      const lastSession = sessions.find(s => s.name === name) || completedSessions.find(s => s.name === name);
+      const isPending = requests.some(r => r.name === name);
+
+      return {
+        name,
+        initials,
+        status: isPending ? 'Ожидает' : (sessions.some(s => s.name === name) ? 'Активен' : 'Завершено'),
+        lastDate: lastSession?.date || '—',
+        email: name.toLowerCase().replace(' ', '.') + '@example.com'
+      };
+    }).filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
+  }, [filter, allClientNames, activeClientNames, sessions, requests, completedSessions, search]);
 
   return (
     <div className="animate-fade-up">
-      <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">
-        Мои клиенты · {filteredClients.length} {filter === 'all' ? 'всего' : 'активных'}
-      </div>
-      <div className="card">
-        <div className="flex gap-2 mb-4.5">
-          <input
-            type="text"
-            placeholder="🔍  Поиск клиента..."
-            className="text-[13px] border border-border-custom rounded-r-sm p-[9px_12px] bg-surface text-t1 outline-none transition-all focus:border-accent focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] flex-1 max-w-[280px]"
-          />
-          <button
-            onClick={() => setFilter('all')}
-            className={`text-[13px] font-medium p-[9px_14px] rounded-r-sm cursor-pointer whitespace-nowrap transition-all border ${
-              filter === 'all'
-              ? 'bg-accent-light border-accent/30 text-accent'
-              : 'bg-surface border-border-custom text-t1 hover:bg-bg-custom hover:border-t3'
-            }`}
-          >
-            Все
-          </button>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div className="flex bg-white p-1 rounded-xl border border-border-light shadow-sm self-start">
           <button
             onClick={() => setFilter('active')}
-            className={`text-[13px] font-medium p-[9px_14px] rounded-r-sm cursor-pointer whitespace-nowrap transition-all border ${
-              filter === 'active'
-              ? 'bg-accent-light border-accent/30 text-accent'
-              : 'bg-surface border-border-custom text-t1 hover:bg-bg-custom hover:border-t3'
-            }`}
+            className={`px-4 py-1.5 text-[13px] font-bold rounded-lg transition-all ${filter === 'active' ? 'bg-accent text-white shadow-md shadow-accent/20' : 'text-t3 hover:text-t2'}`}
           >
             Активные
           </button>
+          <button
+            onClick={() => setFilter('all')}
+            className={`px-4 py-1.5 text-[13px] font-bold rounded-lg transition-all ${filter === 'all' ? 'bg-accent text-white shadow-md shadow-accent/20' : 'text-t3 hover:text-t2'}`}
+          >
+            Все
+          </button>
         </div>
 
-        {filteredClients.map((client, i) => (
-          <div key={i} className={`flex items-center gap-3 py-[13px] border-b border-border-light last:border-none last:pb-0 first:pt-0 ${!client.active && 'opacity-60'}`}>
-            <div className="w-[38px] h-[38px] rounded-full flex items-center justify-center text-[11.5px] font-bold shrink-0" style={{ backgroundColor: client.bg, color: client.color }}>
-              {client.initials}
-            </div>
-            <div className="flex-1">
-              <div className="text-[13.5px] font-medium text-t1">{client.name}</div>
-              <div className="text-[12px] text-t3 mt-[2px]">{client.meta}</div>
-            </div>
-            <div className="text-right">
-              <div className="text-[13px] font-medium text-t1">{client.sessions}</div>
-              <div className="text-[11px] text-t3 mt-[1px]">всего</div>
-            </div>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
+            <input
+              type="text"
+              placeholder="Поиск клиента..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-9 pr-4 py-2 bg-white border border-border-light rounded-xl text-[13px] outline-none focus:border-accent w-[200px] sm:w-[240px] transition-all"
+            />
           </div>
-        ))}
+          <button className="bg-white border border-border-light text-t2 p-2 rounded-xl hover:bg-bg-custom transition-all">
+            <IconUserPlus size={18} />
+          </button>
+        </div>
+      </div>
+
+      <div className="card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-border-light">
+                <th className="p-4 text-[11px] font-bold text-t3 uppercase tracking-wider">Клиент</th>
+                <th className="p-4 text-[11px] font-bold text-t3 uppercase tracking-wider">Статус</th>
+                <th className="p-4 text-[11px] font-bold text-t3 uppercase tracking-wider">Последняя сессия</th>
+                <th className="p-4 text-[11px] font-bold text-t3 uppercase tracking-wider">Контакты</th>
+                <th className="p-4"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {clients.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-t3 text-[14px]">Клиенты не найдены</td>
+                </tr>
+              )}
+              {clients.map((client, i) => (
+                <tr key={i} className="border-b border-border-light last:border-none hover:bg-bg-custom/50 transition-colors group">
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-accent-light text-accent flex items-center justify-center text-[12px] font-bold shrink-0">
+                        {client.initials}
+                      </div>
+                      <div className="text-[14px] font-semibold text-t1">{client.name}</div>
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                      client.status === 'Активен' ? 'bg-green-light text-green-custom' :
+                      client.status === 'Ожидает' ? 'bg-yellow-light text-yellow-custom' :
+                      'bg-gray-100 text-gray-500'
+                    }`}>
+                      {client.status}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center gap-2 text-[13px] text-t2">
+                      <IconClock size={14} className="text-t3" />
+                      {client.lastDate}
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      <button title={client.email} className="p-1.5 text-t3 hover:text-accent transition-colors"><IconMail size={16} /></button>
+                      <button className="p-1.5 text-t3 hover:text-accent transition-colors"><IconPhone size={16} /></button>
+                    </div>
+                  </td>
+                  <td className="p-4 text-right">
+                    <button className="p-1.5 text-t3 hover:text-t1 opacity-0 group-hover:opacity-100 transition-all">
+                      <IconDotsVertical size={18} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

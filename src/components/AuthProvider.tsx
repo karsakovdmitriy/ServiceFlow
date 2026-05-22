@@ -24,13 +24,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
 
   useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
-      setLoading(false);
+    // Demo Mode check
+    const isDemo = !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+                   process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://your-project.supabase.co';
 
-      if (!session?.user && pathname !== '/login') {
-        router.push('/login');
+    if (isDemo) {
+        setUser({ id: 'demo-user' } as User);
+        setLoading(false);
+        return;
+    }
+
+    const getSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setUser(session?.user ?? null);
+        setLoading(false);
+
+        if (!session?.user && pathname !== '/login') {
+          router.push('/login');
+        }
+      } catch (err) {
+        setLoading(false);
       }
     };
 
