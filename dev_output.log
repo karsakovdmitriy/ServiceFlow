@@ -16,3 +16,7 @@
  GET / 200 in 121ms (next.js: 5ms, application-code: 116ms)
  GET /services 200 in 1403ms (next.js: 1162ms, application-code: 241ms)
  GET /schedule 200 in 115ms (next.js: 5ms, application-code: 110ms)
+✓ Compiled in 722ms
+ GET / 200 in 1853ms (next.js: 592ms, application-code: 1261ms)
+ GET /requests 200 in 378ms (next.js: 78ms, application-code: 300ms)
+ GET /clients 200 in 148ms (next.js: 39ms, application-code: 109ms)

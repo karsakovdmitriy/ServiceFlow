@@ -51,6 +51,10 @@ const initialSessions: Session[] = [
   { id: '4', name: 'Елена Петрова', time: '18:00 – 19:00', initials: 'ЕП', bg: '#FEE2E2', color: '#DC2626', status: 'confirmed', date: '2025-05-21' },
 ];
 
+const initialCompletedSessions: Session[] = [
+  { id: 'c1', name: 'Иван Сергеев', time: 'Вчера · 18:00 – 19:00', initials: 'ИС', bg: '#F3F4F6', color: '#6B7280', status: 'completed', date: '2025-05-20' },
+];
+
 const initialRequests = [
   { id: 'r1', name: 'Наталья Соколова', time: 'Чт 22 мая · 10:00–11:00', initials: 'НС', status: 'pending' },
   { id: 'r2', name: 'Павел Волков', time: 'Пт 23 мая · 17:00–18:00', initials: 'ПВ', status: 'pending' },
@@ -74,6 +78,7 @@ const initialBlocks: BlockedSlot[] = [
 
 export function useStore() {
   const [sessions, setSessions] = useState<Session[]>(initialSessions);
+  const [completedSessions, setCompletedSessions] = useState<Session[]>(initialCompletedSessions);
   const [requests, setRequests] = useState(initialRequests);
   const [schedule, setSchedule] = useState<ScheduleDay[]>(initialSchedule);
   const [blocks, setBlocks] = useState<BlockedSlot[]>(initialBlocks);
@@ -81,10 +86,11 @@ export function useStore() {
 
   // Persistence logic
   useEffect(() => {
-    const saved = localStorage.getItem('trainer_space_data_v2');
+    const saved = localStorage.getItem('trainer_space_data_v3');
     if (saved) {
       const data = JSON.parse(saved);
       setSessions(data.sessions || initialSessions);
+      setCompletedSessions(data.completedSessions || initialCompletedSessions);
       setRequests(data.requests || initialRequests);
       setSchedule(data.schedule || initialSchedule);
       setBlocks(data.blocks || initialBlocks);
@@ -93,8 +99,8 @@ export function useStore() {
   }, []);
 
   const save = (updated: any) => {
-    const current = { sessions, requests, schedule, blocks, services, ...updated };
-    localStorage.setItem('trainer_space_data_v2', JSON.stringify(current));
+    const current = { sessions, completedSessions, requests, schedule, blocks, services, ...updated };
+    localStorage.setItem('trainer_space_data_v3', JSON.stringify(current));
   };
 
   const approveRequest = (id: string) => {
@@ -128,6 +134,18 @@ export function useStore() {
     const newSessions = sessions.filter(s => s.id !== id);
     setSessions(newSessions);
     save({ sessions: newSessions });
+  };
+
+  const completeSession = (id: string) => {
+    const session = sessions.find(s => s.id === id);
+    if (!session) return;
+
+    const newSessions = sessions.filter(s => s.id !== id);
+    const newCompleted = [{ ...session, status: 'completed' }, ...completedSessions];
+
+    setSessions(newSessions);
+    setCompletedSessions(newCompleted);
+    save({ sessions: newSessions, completedSessions: newCompleted });
   };
 
   const addSession = (session: Omit<Session, 'id' | 'initials' | 'bg' | 'color' | 'status'>) => {
@@ -195,6 +213,7 @@ export function useStore() {
 
   return {
     sessions,
+    completedSessions,
     requests,
     schedule,
     blocks,
@@ -202,6 +221,7 @@ export function useStore() {
     approveRequest,
     rejectRequest,
     cancelSession,
+    completeSession,
     addSession,
     toggleDay,
     updateScheduleTime,
