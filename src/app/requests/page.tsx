@@ -1,11 +1,11 @@
 'use client';
 
 import React from 'react';
-import { IconCalendar } from '@tabler/icons-react';
+import { IconCalendar, IconCheck } from '@tabler/icons-react';
 import { useStore } from '@/lib/store';
 
 export default function RequestsPage() {
-  const { requests, sessions, approveRequest, rejectRequest, cancelSession } = useStore();
+  const { requests, sessions, completedSessions, approveRequest, rejectRequest, cancelSession, completeSession } = useStore();
 
   return (
     <div className="animate-fade-up">
@@ -44,7 +44,7 @@ export default function RequestsPage() {
       </div>
 
       <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Активные записи</div>
-      <div className="card">
+      <div className="card mb-4">
         {sessions.length === 0 && (
           <div className="text-center py-6 text-t3 text-[13px]">Нет активных записей</div>
         )}
@@ -60,13 +60,41 @@ export default function RequestsPage() {
               </div>
             </div>
             <div className="flex gap-2 items-center">
-                <span className="text-[11px] font-semibold px-[10px] py-1 rounded-full bg-green-light text-green-custom">принято</span>
+                <button
+                  onClick={() => completeSession(session.id)}
+                  className="bg-accent-light text-accent border border-accent/20 text-[11px] font-medium px-3 py-1 rounded-r-sm hover:bg-accent hover:text-white transition-all flex items-center gap-1"
+                >
+                  <IconCheck size={12} /> Завершить
+                </button>
                 <button
                   onClick={() => cancelSession(session.id)}
                   className="text-t3 hover:text-red-custom text-[11px] font-medium ml-2"
                 >
                   Отменить
                 </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Завершенные записи</div>
+      <div className="card">
+        {completedSessions.length === 0 && (
+          <div className="text-center py-6 text-t3 text-[13px]">Нет завершенных записей</div>
+        )}
+        {completedSessions.map((session, i) => (
+          <div key={i} className="flex items-center gap-3 py-[13px] border-b border-border-light last:border-none last:pb-0 first:pt-0 opacity-70">
+            <div className="w-[38px] h-[38px] rounded-full flex items-center justify-center text-[11.5px] font-bold shrink-0 bg-gray-100 text-gray-500">
+              {session.initials}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13.5px] font-medium text-t1">{session.name}</div>
+              <div className="text-[12px] text-t3 mt-[2px] flex items-center gap-1">
+                <IconCalendar size={11} /> {session.time}
+              </div>
+            </div>
+            <div className="flex gap-2 items-center">
+                <span className="text-[11px] font-semibold px-[10px] py-1 rounded-full bg-gray-100 text-gray-500">завершено</span>
             </div>
           </div>
         ))}
