@@ -41,7 +41,13 @@ export async function POST(request: Request) {
 
   // Simple security check via query param
   if (process.env.TELEGRAM_BOT_SECRET && secret !== process.env.TELEGRAM_BOT_SECRET) {
+    console.warn('Unauthorized bot request: secret mismatch or missing.');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  if (!BOT_TOKEN) {
+    console.error('TELEGRAM_BOT_TOKEN is missing in environment variables.');
+    return NextResponse.json({ error: 'Bot token not configured' }, { status: 500 });
   }
 
   try {
@@ -60,11 +66,19 @@ export async function POST(request: Request) {
           return NextResponse.json({ ok: true });
         }
 
-        // Fetch trainer info
-        const { data: trainer } = await supabase.from('trainers').select('full_name, specialization').eq('id', trainerId).single();
+        // Validate UUID format to prevent Supabase error
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(trainerId)) {
+          await sendTelegramMessage(chat.id, '❌ Некорректная ссылка (неверный ID тренера).');
+          return NextResponse.json({ ok: true });
+        }
 
-        if (!trainer) {
-          await sendTelegramMessage(chat.id, '❌ Тренер не найден.');
+        // Fetch trainer info
+        const { data: trainer, error: trainerError } = await supabase.from('trainers').select('full_name, specialization').eq('id', trainerId).single();
+
+        if (trainerError || !trainer) {
+          console.error('Trainer lookup error:', trainerError);
+          await sendTelegramMessage(chat.id, '❌ Тренер не найден. Проверьте правильность ссылки.');
           return NextResponse.json({ ok: true });
         }
 
