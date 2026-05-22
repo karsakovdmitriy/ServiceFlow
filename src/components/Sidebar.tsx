@@ -15,10 +15,12 @@ import {
   IconX,
   IconStethoscope
 } from '@tabler/icons-react';
+import { useStore } from '@/lib/store';
 
 const Sidebar = () => {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const { profile } = useStore();
 
   const navItems = [
     { label: 'Главное', type: 'group' },
@@ -32,6 +34,10 @@ const Sidebar = () => {
     { label: 'Telegram-бот', icon: <IconBrandTelegram size={18} />, href: '/bot', id: 'bot' },
     { label: 'Настройки', icon: <IconSettings size={18} />, href: '/settings', id: 'settings' },
   ];
+
+  const initials = profile?.full_name
+    ? profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase()
+    : '??';
 
   const SidebarContent = () => (
     <>
@@ -86,11 +92,11 @@ const Sidebar = () => {
 
       <div className="p-[14px_10px_16px] border-t border-border-light flex items-center gap-[10px]">
         <div className="w-[34px] h-[34px] rounded-full bg-gradient-to-br from-accent to-[#A5B4FC] flex items-center justify-center text-[12px] font-bold text-white shrink-0">
-          АС
+          {initials}
         </div>
         <div>
-          <div className="text-[13px] font-semibold text-t1">Алексей Смирнов</div>
-          <div className="text-[11px] text-t3 mt-[1px]">Персональный тренер</div>
+          <div className="text-[13px] font-semibold text-t1">{profile?.full_name || 'Загрузка...'}</div>
+          <div className="text-[11px] text-t3 mt-[1px]">{profile?.specialization || 'Профиль'}</div>
         </div>
       </div>
     </>
