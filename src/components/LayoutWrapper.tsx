@@ -3,12 +3,22 @@
 import { usePathname } from 'next/navigation';
 import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { loading, user } = useAuth();
   const isLoginPage = pathname === '/login';
 
-  if (isLoginPage) {
+  if (loading) {
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-[#F9FAFB]">
+          <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+        </div>
+    );
+  }
+
+  if (isLoginPage || !user) {
     return <>{children}</>;
   }
 

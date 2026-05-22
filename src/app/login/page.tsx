@@ -12,10 +12,19 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isDemo = !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+                 process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://your-project.supabase.co';
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    if (isDemo) {
+        // Just reload for demo
+        window.location.href = '/';
+        return;
+    }
 
     try {
       if (isSignUp) {
@@ -51,7 +60,7 @@ export default function LoginPage() {
           <div className="w-12 h-12 bg-accent rounded-xl flex items-center justify-center text-white mb-4 shadow-lg shadow-accent/20">
             <IconBarbell size={24} />
           </div>
-          <h1 className="text-2xl font-bold text-t1">TrainerSpace</h1>
+          <h1 className="text-2xl font-bold text-t1 tracking-tight">TrainerSpace</h1>
           <p className="text-t3 text-sm mt-1">Кабинет персонального тренера</p>
         </div>
 

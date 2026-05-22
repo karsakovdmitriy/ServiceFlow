@@ -14,7 +14,7 @@ export default function NewEntryModal({ isOpen, onClose }: { isOpen: boolean, on
     date: new Date().toISOString().split('T')[0],
     startTime: '09:00',
     endTime: '10:00',
-    serviceId: services[0]?.id || ''
+    serviceId: ''
   });
 
   useEffect(() => {
@@ -27,20 +27,30 @@ export default function NewEntryModal({ isOpen, onClose }: { isOpen: boolean, on
     if (services.length > 0 && !formData.serviceId) {
         setFormData(prev => ({ ...prev, serviceId: services[0].id }));
     }
-  }, [services]);
+  }, [services, formData.serviceId]);
 
   if (!isOpen || !mounted) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const service = services.find(s => s.id === formData.serviceId);
-    addSession({
+    await addSession({
       name: formData.name,
       date: formData.date,
-      time: `${formData.startTime} – ${formData.endTime}`,
+      startTime: formData.startTime,
+      endTime: formData.endTime,
+      serviceId: formData.serviceId,
       service: service?.name
     });
     onClose();
+    // Reset form
+    setFormData({
+      name: '',
+      date: new Date().toISOString().split('T')[0],
+      startTime: '09:00',
+      endTime: '10:00',
+      serviceId: services[0]?.id || ''
+    });
   };
 
   const modalContent = (
@@ -65,7 +75,7 @@ export default function NewEntryModal({ isOpen, onClose }: { isOpen: boolean, on
             <input
               type="text"
               required
-              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all text-[14px]"
+              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all text-[14px]"
               placeholder="Введите имя и фамилию"
               value={formData.name}
               onChange={e => setFormData({...formData, name: e.target.value})}
@@ -76,7 +86,7 @@ export default function NewEntryModal({ isOpen, onClose }: { isOpen: boolean, on
             <label className="block text-[13px] font-semibold text-gray-700">Услуга</label>
             <div className="relative">
               <select
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all appearance-none text-[14px]"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all appearance-none text-[14px]"
                 value={formData.serviceId}
                 onChange={e => setFormData({...formData, serviceId: e.target.value})}
               >
@@ -96,7 +106,7 @@ export default function NewEntryModal({ isOpen, onClose }: { isOpen: boolean, on
               <input
                 type="date"
                 required
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all text-[14px]"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all text-[14px]"
                 value={formData.date}
                 onChange={e => setFormData({...formData, date: e.target.value})}
               />
@@ -107,7 +117,7 @@ export default function NewEntryModal({ isOpen, onClose }: { isOpen: boolean, on
                 <input
                   type="time"
                   required
-                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all text-[14px]"
+                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all text-[14px]"
                   value={formData.startTime}
                   onChange={e => setFormData({...formData, startTime: e.target.value})}
                 />
@@ -117,7 +127,7 @@ export default function NewEntryModal({ isOpen, onClose }: { isOpen: boolean, on
                 <input
                   type="time"
                   required
-                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all text-[14px]"
+                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all text-[14px]"
                   value={formData.endTime}
                   onChange={e => setFormData({...formData, endTime: e.target.value})}
                 />
@@ -135,7 +145,7 @@ export default function NewEntryModal({ isOpen, onClose }: { isOpen: boolean, on
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2.5 bg-brand-500 text-white font-bold text-[14px] rounded-xl hover:bg-brand-600 transition-all shadow-lg shadow-brand-500/25 active:scale-[0.98]"
+              className="flex-1 px-4 py-2.5 bg-accent text-white font-bold text-[14px] rounded-xl hover:bg-accent-hover transition-all shadow-lg shadow-accent/25 active:scale-[0.98]"
             >
               Создать запись
             </button>
