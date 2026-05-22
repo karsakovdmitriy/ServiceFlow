@@ -5,7 +5,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Trainers profile
 CREATE TABLE trainers (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
   full_name TEXT NOT NULL,
   specialization TEXT,
   email TEXT UNIQUE NOT NULL,
@@ -13,6 +13,33 @@ CREATE TABLE trainers (
   telegram_bot_token TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Function to handle new user creation
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.trainers (id, full_name, email)
+  VALUES (new.id, COALESCE(new.raw_user_meta_data->>'full_name', 'Новый тренер'), new.email);
+
+  -- Create default schedule config for new trainer
+  INSERT INTO public.schedule_config (trainer_id, day_of_week, start_hour, end_hour, is_active)
+  VALUES
+    (new.id, 1, '09:00', '20:00', true),
+    (new.id, 2, '09:00', '20:00', true),
+    (new.id, 3, '09:00', '20:00', true),
+    (new.id, 4, '09:00', '20:00', true),
+    (new.id, 5, '09:00', '20:00', true),
+    (new.id, 6, '10:00', '15:00', true),
+    (new.id, 0, '09:00', '18:00', false);
+
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger to call handle_new_user on signup
+CREATE OR REPLACE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- Services offered by trainers
 CREATE TABLE services (
