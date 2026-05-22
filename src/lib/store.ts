@@ -128,8 +128,8 @@ export function useStore() {
           status,
           start_time,
           end_time,
-          client:client_id(full_name),
-          service:service_id(name)
+          client:clients!client_id(full_name),
+          service:services!service_id(name)
         `)
         .eq('trainer_id', trainerId);
 
@@ -214,7 +214,6 @@ export function useStore() {
       saveDemoData({ sessions: newSess });
       return;
     }
-    // Supabase logic for adding session
     fetchData();
   };
 
