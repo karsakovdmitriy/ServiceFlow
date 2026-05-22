@@ -26,3 +26,9 @@
  GET / 200 in 2.2s (next.js: 494ms, application-code: 1692ms)
 ○ Compiling /login ...
  GET /login 200 in 3.9s (next.js: 3.8s, application-code: 43ms)
+ GET /settings 200 in 778ms (next.js: 308ms, application-code: 471ms)
+ GET /login 200 in 137ms (next.js: 17ms, application-code: 120ms)
+ GET /schedule 200 in 802ms (next.js: 105ms, application-code: 698ms)
+ GET /login 200 in 54ms (next.js: 6ms, application-code: 48ms)
+ GET /services 200 in 113ms (next.js: 47ms, application-code: 66ms)
+ GET /login 200 in 75ms (next.js: 11ms, application-code: 64ms)
