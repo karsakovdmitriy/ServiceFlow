@@ -111,11 +111,17 @@ export async function POST(request: Request) {
         // Upsert client
         const namePart = `${from.first_name || ''} ${from.last_name || ''}`.trim() || 'Клиент';
         const fullName = from.username ? `${namePart} (@${from.username})` : namePart;
-        await supabase.from('clients').upsert({
+        const { error: upsertError } = await supabase.from('clients').upsert({
           trainer_id: trainerId,
           telegram_id: from.id.toString(),
           full_name: fullName
         }, { onConflict: 'trainer_id, telegram_id' });
+
+        if (upsertError) {
+          console.error('Client upsert error during /start:', upsertError);
+        } else {
+          console.log(`Client ${fullName} upserted successfully.`);
+        }
 
         const servicesKeyboard = await getServicesKeyboard(trainerId);
 
@@ -139,11 +145,17 @@ export async function POST(request: Request) {
         if (serviceForClient) {
           const namePart = `${from.first_name || ''} ${from.last_name || ''}`.trim() || 'Клиент';
           const fullName = from.username ? `${namePart} (@${from.username})` : namePart;
-          await supabase.from('clients').upsert({
+          const { error: upsertError } = await supabase.from('clients').upsert({
             trainer_id: serviceForClient.trainer_id,
             telegram_id: from.id.toString(),
             full_name: fullName
           }, { onConflict: 'trainer_id, telegram_id' });
+
+          if (upsertError) {
+            console.error('Client upsert error during callback:', upsertError);
+          } else {
+            console.log(`Client ${fullName} upserted successfully via callback.`);
+          }
         }
 
         if (action === 'svc') {
@@ -193,7 +205,7 @@ export async function POST(request: Request) {
               end.setMinutes(end.getMinutes() + service.duration);
               const endTime = end.toISOString().replace('.000Z', '+00:00');
 
-              await supabase.from('sessions').insert({
+              const { error: sessErr } = await supabase.from('sessions').insert({
                 trainer_id: service.trainer_id,
                 client_id: client.id,
                 service_id: serviceId,
@@ -201,6 +213,12 @@ export async function POST(request: Request) {
                 end_time: endTime,
                 status: 'pending'
               });
+
+              if (sessErr) {
+                console.error('Session insert error:', sessErr);
+                await sendTelegramMessage(chatId, '❌ Ошибка при создании записи. Пожалуйста, попробуйте позже.');
+                return;
+              }
 
               await sendTelegramMessage(chatId, `✅ <b>Заявка отправлена!</b>\n\nТренер получит уведомление и подтвердит вашу запись. Ожидайте сообщения.`);
             } else {
