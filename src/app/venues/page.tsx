@@ -88,15 +88,21 @@ export default function VenuesPage() {
                     className="w-full text-[13px] border border-border-custom rounded-r-sm p-2 bg-surface outline-none focus:border-accent"
                   />
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-2">
                   <input
                     type="text"
                     value={editData.address}
                     onChange={e => setEditData({...editData, address: e.target.value})}
                     className="w-full text-[13px] border border-border-custom rounded-r-sm p-2 bg-surface outline-none focus:border-accent"
                   />
-                  <button onClick={handleUpdate} className="p-2 text-green-custom hover:bg-green-custom/10 rounded-r-sm"><IconCheck size={20} /></button>
-                  <button onClick={() => setEditingId(null)} className="p-2 text-t3 hover:bg-bg-custom rounded-r-sm"><IconX size={20} /></button>
+                  <div className="flex justify-end gap-2">
+                    <button onClick={() => setEditingId(null)} className="p-2 text-t3 hover:bg-bg-custom rounded-r-sm flex items-center gap-1 text-[13px]">
+                       <IconX size={18} /> <span className="sm:hidden">Отмена</span>
+                    </button>
+                    <button onClick={handleUpdate} className="p-2 text-green-custom hover:bg-green-custom/10 rounded-r-sm flex items-center gap-1 text-[13px]">
+                       <IconCheck size={18} /> <span className="sm:hidden">Сохранить</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -110,7 +116,7 @@ export default function VenuesPage() {
                     <div className="text-[12px] text-t3 mt-0.5">{venue.address || 'Адрес не указан'}</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => startEdit(venue)}
                     className="p-2 text-t3 hover:text-accent hover:bg-accent/5 rounded-r-sm transition-all"
