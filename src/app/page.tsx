@@ -52,14 +52,14 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-[14px] mb-[22px]">
+      <div className="flex lg:grid lg:grid-cols-4 gap-[14px] mb-[22px] overflow-x-auto pb-2 sm:pb-0 sm:overflow-x-visible -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
         {[
-          { icon: <IconCalendarCheck size={18} />, val: sessions.length, lbl: 'Подтвержденных сессий', trend: 'Всё по графику', color: 'purple' },
-          { icon: <IconUsers size={18} />, val: activeClients, lbl: 'Активных клиентов', trend: 'Ваша база растет', color: 'green' },
-          { icon: <IconClockHour4 size={18} />, val: pendingCount, lbl: 'Ждут подтверждения', trend: pendingCount > 0 ? 'Требует внимания' : 'Все обработано', color: 'yellow', warn: pendingCount > 0 },
-          { icon: <IconCurrencyRubel size={18} />, val: (sessions.length * 2500).toLocaleString('ru-RU') + ' ₽', lbl: 'Прогноз дохода', trend: 'На основе активных сессий', color: 'blue' },
+          { icon: <IconCalendarCheck size={18} />, val: sessions.length, lbl: 'Сессии', lblFull: 'Подтвержденных сессий', trend: 'Всё по графику', color: 'purple' },
+          { icon: <IconUsers size={18} />, val: activeClients, lbl: 'Клиенты', lblFull: 'Активных клиентов', trend: 'База растет', color: 'green' },
+          { icon: <IconClockHour4 size={18} />, val: pendingCount, lbl: 'Заявки', lblFull: 'Ждут подтверждения', trend: pendingCount > 0 ? 'Внимание' : 'Ок', color: 'yellow', warn: pendingCount > 0 },
+          { icon: <IconCurrencyRubel size={18} />, val: (sessions.length * 2500).toLocaleString('ru-RU') + ' ₽', lbl: 'Доход', lblFull: 'Прогноз дохода', trend: 'Прогноз', color: 'blue' },
         ].map((stat, i) => (
-          <div key={i} className={`card relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px] before:rounded-[3px_3px_0_0] ${
+          <div key={i} className={`card relative overflow-hidden shrink-0 w-[140px] sm:w-auto before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px] before:rounded-[3px_3px_0_0] ${
             stat.color === 'purple' ? 'before:bg-gradient-to-r before:from-[#6366F1] before:to-[#818CF8]' :
             stat.color === 'green' ? 'before:bg-gradient-to-r before:from-[#10B981] before:to-[#34D399]' :
             stat.color === 'yellow' ? 'before:bg-gradient-to-r before:from-[#F59E0B] before:to-[#FCD34D]' :
@@ -73,8 +73,11 @@ export default function Dashboard() {
             }`}>
               {stat.icon}
             </div>
-            <div className="text-[28px] font-bold text-t1 tracking-[-1.2px] leading-none mb-[3px]">{stat.val}</div>
-            <div className="text-[12px] text-t3">{stat.lbl}</div>
+            <div className="text-[22px] sm:text-[28px] font-bold text-t1 tracking-[-1.2px] leading-none mb-[3px]">{stat.val}</div>
+            <div className="text-[11px] sm:text-[12px] text-t3 truncate">
+              <span className="hidden sm:inline">{stat.lblFull}</span>
+              <span className="sm:hidden">{stat.lbl}</span>
+            </div>
             <div className={`text-[11px] font-medium mt-2 ${stat.warn ? 'text-yellow-custom' : 'text-green-custom'}`}>
               {stat.trend}
             </div>
