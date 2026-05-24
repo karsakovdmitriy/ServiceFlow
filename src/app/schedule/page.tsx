@@ -8,6 +8,8 @@ const DAYS_RU_SHORT = ['ВС', 'ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
 const DAYS_RU_FULL = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
 
 export default function SchedulePage() {
+  const [activeDayIndex, setActiveDayIndex] = useState(0);
+
   const {
     schedule,
     blocks,
@@ -93,6 +95,7 @@ export default function SchedulePage() {
 
       grid.push({
         day: dayShort,
+        dayName: dayName,
         dateLabel: date.getDate(),
         slots,
         today: isToday,
@@ -238,8 +241,26 @@ export default function SchedulePage() {
       </div>
 
       <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Обзор недели · {weekRangeLabel}</div>
+
+      {/* Mobile Weekly Overview Selector */}
+      <div className="flex sm:hidden items-center justify-between bg-white border border-border-light rounded-xl p-1 mb-3">
+        {weekGrid.map((day, i) => (
+          <button
+            key={i}
+            onClick={() => setActiveDayIndex(i)}
+            className={`flex-1 py-2 rounded-lg flex flex-col items-center transition-all ${
+              activeDayIndex === i ? 'bg-accent text-white shadow-md' : 'text-t3'
+            }`}
+          >
+            <span className="text-[9px] font-bold uppercase">{day.day}</span>
+            <span className="text-[13px] font-extrabold">{day.dateLabel}</span>
+          </button>
+        ))}
+      </div>
+
       <div className="card overflow-x-auto">
-        <div className="grid grid-cols-7 gap-1.5 min-w-[600px]">
+        {/* Desktop Grid */}
+        <div className="hidden sm:grid grid-cols-7 gap-1.5 min-w-[600px]">
           {weekGrid.map((day, i) => (
             <div key={i} className="text-center">
               <div className={`text-[10px] font-semibold mb-[2px] uppercase tracking-[0.05em] ${day.today ? 'text-accent' : 'text-t3'}`}>
@@ -262,6 +283,32 @@ export default function SchedulePage() {
               ))}
             </div>
           ))}
+        </div>
+
+        {/* Mobile Single Day View */}
+        <div className="sm:hidden">
+          <div className="text-center mb-4">
+            <div className="text-[12px] font-bold text-accent uppercase tracking-wider mb-1">
+              {weekGrid[activeDayIndex].dayName}
+            </div>
+            <div className="text-[20px] font-extrabold text-t1">
+              {weekGrid[activeDayIndex].dateLabel}
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {weekGrid[activeDayIndex].slots.map((slot, si) => (
+              <div
+                key={si}
+                className={`text-[11px] p-3 rounded-xl text-center font-bold border transition-all ${
+                  slot.s === 'booked' ? 'bg-blue-light text-blue-custom border-blue-custom/20' :
+                  slot.s === 'free' ? 'bg-green-light text-green-custom border-green-custom/20' :
+                  'bg-bg-custom text-t3 border-border-light'
+                }`}
+              >
+                {slot.t}
+              </div>
+            ))}
+          </div>
         </div>
         <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 pt-2 border-t border-border-light">
           <div className="flex items-center gap-[5px] text-[11px] text-t3">

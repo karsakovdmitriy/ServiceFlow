@@ -52,14 +52,14 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="flex lg:grid lg:grid-cols-4 gap-[14px] mb-[22px] overflow-x-auto pb-2 sm:pb-0 sm:overflow-x-visible -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-[14px] mb-[22px]">
         {[
           { icon: <IconCalendarCheck size={18} />, val: sessions.length, lbl: 'Сессии', lblFull: 'Подтвержденных сессий', trend: 'Всё по графику', color: 'purple' },
           { icon: <IconUsers size={18} />, val: activeClients, lbl: 'Клиенты', lblFull: 'Активных клиентов', trend: 'База растет', color: 'green' },
           { icon: <IconClockHour4 size={18} />, val: pendingCount, lbl: 'Заявки', lblFull: 'Ждут подтверждения', trend: pendingCount > 0 ? 'Внимание' : 'Ок', color: 'yellow', warn: pendingCount > 0 },
           { icon: <IconCurrencyRubel size={18} />, val: (sessions.length * 2500).toLocaleString('ru-RU') + ' ₽', lbl: 'Доход', lblFull: 'Прогноз дохода', trend: 'Прогноз', color: 'blue' },
         ].map((stat, i) => (
-          <div key={i} className={`card relative overflow-hidden shrink-0 w-[140px] sm:w-auto before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px] before:rounded-[3px_3px_0_0] ${
+          <div key={i} className={`card relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px] before:rounded-[3px_3px_0_0] ${
             stat.color === 'purple' ? 'before:bg-gradient-to-r before:from-[#6366F1] before:to-[#818CF8]' :
             stat.color === 'green' ? 'before:bg-gradient-to-r before:from-[#10B981] before:to-[#34D399]' :
             stat.color === 'yellow' ? 'before:bg-gradient-to-r before:from-[#F59E0B] before:to-[#FCD34D]' :
