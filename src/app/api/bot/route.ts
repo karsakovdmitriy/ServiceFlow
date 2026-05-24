@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { sendTelegramMessage, answerCallbackQuery, escapeHtml } from '@/lib/telegram';
 
 // Helper to get supabase client
 function getSupabase() {
@@ -14,50 +15,6 @@ function getSupabase() {
 }
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-async function sendTelegramMessage(chatId: number, text: string, replyMarkup?: any) {
-  if (!BOT_TOKEN) return;
-
-  const payload: any = {
-    chat_id: chatId,
-    text,
-    parse_mode: 'HTML'
-  };
-
-  if (replyMarkup && replyMarkup.inline_keyboard && replyMarkup.inline_keyboard.length > 0) {
-    payload.reply_markup = replyMarkup;
-  }
-
-  const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    console.error('Telegram API Error:', JSON.stringify(errorData, null, 2));
-    console.error('Payload was:', JSON.stringify(payload, null, 2));
-  }
-}
-
-async function answerCallbackQuery(callbackQueryId: string) {
-  if (!BOT_TOKEN) return;
-  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ callback_query_id: callbackQueryId })
-  });
-}
 
 export async function POST(request: Request) {
   const supabase = getSupabase();

@@ -1,29 +1,45 @@
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
+export function escapeHtml(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 export async function sendTelegramMessage(chatId: string | number, text: string, replyMarkup?: any) {
   if (!BOT_TOKEN) {
     console.warn('TELEGRAM_BOT_TOKEN is not defined');
     return;
   }
 
+  const payload: any = {
+    chat_id: chatId,
+    text,
+    parse_mode: 'HTML'
+  };
+
+  if (replyMarkup && replyMarkup.inline_keyboard && replyMarkup.inline_keyboard.length > 0) {
+    payload.reply_markup = replyMarkup;
+  }
+
   try {
     const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-        reply_markup: replyMarkup,
-        parse_mode: 'HTML'
-      })
+      body: JSON.stringify(payload)
     });
 
+    const data = await response.json();
     if (!response.ok) {
-      const err = await response.json();
-      console.error('Telegram API Error:', err);
+      console.error('Telegram API Error:', JSON.stringify(data, null, 2));
+      console.error('Payload was:', JSON.stringify(payload, null, 2));
     }
 
-    return response.json();
+    return data;
   } catch (error) {
     console.error('Error sending Telegram message:', error);
   }
@@ -47,7 +63,6 @@ export async function answerCallbackQuery(callbackQueryId: string, text?: string
 }
 
 export function getBotUsername() {
-    // In a real app, you might fetch this once or keep in env
     return process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'TrainerSpaceBot';
 }
 

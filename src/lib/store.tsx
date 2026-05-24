@@ -246,7 +246,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         }
         return;
     }
-    await supabase.from('sessions').update({ status }).eq('id', id);
+    const { error } = await supabase.from('sessions').update({ status }).eq('id', id);
+    if (!error && status === 'confirmed') {
+      // Trigger notification via server API
+      fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: id })
+      }).catch(err => console.error('Notification trigger error:', err));
+    }
     fetchData();
   };
 
