@@ -31,6 +31,7 @@ const Sidebar = () => {
     { label: 'Мои клиенты', icon: <IconUsers size={18} />, href: '/clients', id: 'clients' },
     { label: 'Инструменты', type: 'group' },
     { label: 'Услуги', icon: <IconStethoscope size={18} />, href: '/services', id: 'services' },
+    { label: 'Площадки', icon: <IconBarbell size={18} />, href: '/venues', id: 'venues' },
     { label: 'Telegram-бот', icon: <IconBrandTelegram size={18} />, href: '/bot', id: 'bot' },
     { label: 'Настройки', icon: <IconSettings size={18} />, href: '/settings', id: 'settings' },
   ];

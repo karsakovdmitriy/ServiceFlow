@@ -199,9 +199,9 @@ export async function POST(request: Request) {
 
 async function getServicesKeyboard(trainerId: string) {
   const supabase = getSupabase();
-  const { data: services } = await supabase.from('services').select('id, name, price').eq('trainer_id', trainerId);
+  const { data: services } = await supabase.from('services').select('id, name, price, venues!venue_id(name)').eq('trainer_id', trainerId);
   return (services || []).map(s => ([{
-    text: `${s.name} — ${s.price} ₽`,
+    text: `${s.name} — ${s.price} ₽${(s.venues as any)?.name ? ` (${(s.venues as any).name})` : ''}`,
     callback_data: `svc:${s.id}`
   }]));
 }
