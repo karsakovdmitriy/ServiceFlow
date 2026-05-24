@@ -109,11 +109,11 @@ export async function POST(request: Request) {
         }
 
         // Upsert client
-        const fullName = `${from.first_name || ''} ${from.last_name || ''}`.trim() || 'Клиент';
+        const namePart = `${from.first_name || ''} ${from.last_name || ''}`.trim() || 'Клиент';
+        const fullName = from.username ? `${namePart} (@${from.username})` : namePart;
         await supabase.from('clients').upsert({
           trainer_id: trainerId,
           telegram_id: from.id.toString(),
-          telegram_username: from.username || null,
           full_name: fullName
         }, { onConflict: 'trainer_id, telegram_id' });
 
@@ -137,11 +137,11 @@ export async function POST(request: Request) {
         // Always ensure client exists (in case they use old buttons or direct links)
         const { data: serviceForClient } = await supabase.from('services').select('trainer_id').eq('id', params[0]).single();
         if (serviceForClient) {
-          const fullName = `${from.first_name || ''} ${from.last_name || ''}`.trim() || 'Клиент';
+          const namePart = `${from.first_name || ''} ${from.last_name || ''}`.trim() || 'Клиент';
+          const fullName = from.username ? `${namePart} (@${from.username})` : namePart;
           await supabase.from('clients').upsert({
             trainer_id: serviceForClient.trainer_id,
             telegram_id: from.id.toString(),
-            telegram_username: from.username || null,
             full_name: fullName
           }, { onConflict: 'trainer_id, telegram_id' });
         }
