@@ -72,8 +72,9 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      <div className="card overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="space-y-3 sm:space-y-0 sm:card sm:overflow-hidden">
+        {/* Desktop View */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-border-light">
@@ -141,6 +142,40 @@ export default function ClientsPage() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View */}
+        <div className="sm:hidden space-y-3">
+          {clientsList.length === 0 && (
+            <div className="card p-8 text-center text-t3 text-[14px]">Клиенты не найдены</div>
+          )}
+          {clientsList.map((client, i) => (
+            <div key={i} className="card p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-accent-light text-accent flex items-center justify-center text-[13px] font-bold shrink-0">
+                  {client.initials}
+                </div>
+                <div>
+                  <div className="text-[14px] font-semibold text-t1">{client.name}</div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      client.status === 'Активен' ? 'bg-green-light text-green-custom' :
+                      client.status === 'Ожидает' ? 'bg-yellow-light text-yellow-custom' :
+                      'bg-gray-100 text-gray-500'
+                    }`}>
+                      {client.status}
+                    </span>
+                    <span className="text-[11px] text-t3 flex items-center gap-1">
+                      <IconClock size={12} /> {client.lastDate}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <button className="p-2 text-t3 hover:text-accent transition-colors bg-bg-custom rounded-lg"><IconDotsVertical size={18} /></button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 

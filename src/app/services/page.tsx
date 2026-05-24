@@ -5,16 +5,19 @@ import { IconPlus, IconTrash, IconEdit, IconCheck, IconX } from '@tabler/icons-r
 import { useStore, Service } from '@/lib/store';
 
 export default function ServicesPage() {
-  const { services, addService, updateService, removeService } = useStore();
+  const { services, venues, addService, updateService, removeService } = useStore();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const [newData, setNewData] = useState({ name: '', duration: 60, price: 1000, is_group: false });
+  const [newData, setNewData] = useState({ name: '', duration: 60, price: 1000, is_group: false, venue_id: '' });
   const [editData, setEditData] = useState<Partial<Service>>({});
 
   const handleAdd = () => {
-    addService(newData);
-    setNewData({ name: '', duration: 60, price: 1000, is_group: false });
+    addService({
+      ...newData,
+      venue_id: newData.venue_id || null
+    });
+    setNewData({ name: '', duration: 60, price: 1000, is_group: false, venue_id: '' });
     setIsAdding(false);
   };
 
@@ -74,7 +77,20 @@ export default function ServicesPage() {
                   className="w-full text-[13px] border border-border-custom rounded-r-sm p-2 bg-surface outline-none focus:border-accent"
                 />
               </div>
-              <div className="sm:col-span-3 flex items-center gap-2">
+              <div className="sm:col-span-1">
+                <label className="text-[11px] text-t3 block mb-1">Площадка</label>
+                <select
+                  value={newData.venue_id}
+                  onChange={e => setNewData({...newData, venue_id: e.target.value})}
+                  className="w-full text-[13px] border border-border-custom rounded-r-sm p-2 bg-surface outline-none focus:border-accent"
+                >
+                  <option value="">Без площадки</option>
+                  {venues.map(v => (
+                    <option key={v.id} value={v.id}>{v.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="sm:col-span-2 flex items-center gap-2">
                 <input
                   type="checkbox"
                   id="newIsGroup"
@@ -112,16 +128,32 @@ export default function ServicesPage() {
                     className="w-full text-[13px] border border-border-custom rounded-r-sm p-2 bg-surface outline-none focus:border-accent"
                   />
                 </div>
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-2 sm:col-span-1">
+                  <div className="grid grid-cols-2 gap-2">
                     <input
                       type="number"
                       value={editData.price}
                       onChange={e => setEditData({...editData, price: parseInt(e.target.value)})}
                       className="w-full text-[13px] border border-border-custom rounded-r-sm p-2 bg-surface outline-none focus:border-accent"
                     />
-                    <button onClick={handleUpdate} className="p-2 text-green-custom hover:bg-green-custom/10 rounded-r-sm"><IconCheck size={20} /></button>
-                    <button onClick={() => setEditingId(null)} className="p-2 text-t3 hover:bg-bg-custom rounded-r-sm"><IconX size={20} /></button>
+                    <select
+                      value={editData.venue_id || ''}
+                      onChange={e => setEditData({...editData, venue_id: e.target.value || null})}
+                      className="w-full text-[13px] border border-border-custom rounded-r-sm p-2 bg-surface outline-none focus:border-accent"
+                    >
+                      <option value="">Без площадки</option>
+                      {venues.map(v => (
+                        <option key={v.id} value={v.id}>{v.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <button onClick={() => setEditingId(null)} className="p-2 text-t3 hover:bg-bg-custom rounded-r-sm flex items-center gap-1 text-[13px]">
+                       <IconX size={18} /> <span className="sm:hidden">Отмена</span>
+                    </button>
+                    <button onClick={handleUpdate} className="p-2 text-green-custom hover:bg-green-custom/10 rounded-r-sm flex items-center gap-1 text-[13px]">
+                       <IconCheck size={18} /> <span className="sm:hidden">Сохранить</span>
+                    </button>
                   </div>
                   <div className="flex items-center gap-2">
                     <input
@@ -144,9 +176,12 @@ export default function ServicesPage() {
                       <span className="text-[10px] font-bold bg-blue-light text-blue-custom px-1.5 py-0.5 rounded-full uppercase tracking-wider">Групповая</span>
                     )}
                   </div>
-                  <div className="text-[12px] text-t3 mt-0.5">{service.duration} минут · {service.price} ₽</div>
+                  <div className="text-[12px] text-t3 mt-0.5">
+                    {service.duration} минут · {service.price} ₽
+                    {service.venue && <span className="ml-2 text-accent">· {service.venue.name}</span>}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => startEdit(service)}
                     className="p-2 text-t3 hover:text-accent hover:bg-accent/5 rounded-r-sm transition-all"

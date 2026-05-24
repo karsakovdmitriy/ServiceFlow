@@ -29,16 +29,36 @@ DO $$ BEGIN
     CREATE POLICY "Trainers can update their own profile" ON trainers FOR UPDATE USING (auth.uid() = id);
 EXCEPTION WHEN others THEN NULL; END $$;
 
+-- Venues
+CREATE TABLE IF NOT EXISTS venues (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  trainer_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  address TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE venues ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Trainers can manage their own venues" ON venues;
+    CREATE POLICY "Trainers can manage their own venues" ON venues FOR ALL USING (auth.uid() = trainer_id);
+EXCEPTION WHEN others THEN NULL; END $$;
+
 -- Services
 CREATE TABLE IF NOT EXISTS services (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   trainer_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
+  venue_id UUID REFERENCES venues(id) ON DELETE SET NULL,
   name TEXT NOT NULL,
   duration INTEGER NOT NULL,
   price NUMERIC(10, 2) NOT NULL,
   is_group BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Add venue_id if table already exists without it
+ALTER TABLE services ADD COLUMN IF NOT EXISTS venue_id UUID REFERENCES venues(id) ON DELETE SET NULL;
 
 ALTER TABLE services ENABLE ROW LEVEL SECURITY;
 
@@ -82,11 +102,15 @@ CREATE TABLE IF NOT EXISTS sessions (
   trainer_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
   client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
   service_id UUID REFERENCES services(id) ON DELETE SET NULL,
+  venue_id UUID REFERENCES venues(id) ON DELETE SET NULL,
   start_time TIMESTAMP WITH TIME ZONE NOT NULL,
   end_time TIMESTAMP WITH TIME ZONE NOT NULL,
   status TEXT DEFAULT 'pending',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Add venue_id to sessions if table already exists without it
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS venue_id UUID REFERENCES venues(id) ON DELETE SET NULL;
 
 ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
 
