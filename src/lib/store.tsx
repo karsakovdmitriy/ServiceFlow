@@ -459,6 +459,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       .eq('client_id', clientId)
       .order('created_at', { ascending: true });
     return data || [];
+  };
+
   const addVenue = async (venue: Omit<Venue, 'id'>) => {
     if (isDemoMode) {
       const newV = { ...venue, id: Math.random().toString() };
