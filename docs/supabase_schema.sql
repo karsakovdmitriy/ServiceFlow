@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS clients (
   full_name TEXT NOT NULL,
   email TEXT,
   telegram_id TEXT,
+  telegram_username TEXT,
   is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(trainer_id, telegram_id)

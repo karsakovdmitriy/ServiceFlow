@@ -113,6 +113,7 @@ export async function POST(request: Request) {
         await supabase.from('clients').upsert({
           trainer_id: trainerId,
           telegram_id: from.id.toString(),
+          telegram_username: from.username || null,
           full_name: fullName
         }, { onConflict: 'trainer_id, telegram_id' });
 
@@ -132,6 +133,18 @@ export async function POST(request: Request) {
 
       try {
         const [action, ...params] = data.split(':');
+
+        // Always ensure client exists (in case they use old buttons or direct links)
+        const { data: serviceForClient } = await supabase.from('services').select('trainer_id').eq('id', params[0]).single();
+        if (serviceForClient) {
+          const fullName = `${from.first_name || ''} ${from.last_name || ''}`.trim() || 'Клиент';
+          await supabase.from('clients').upsert({
+            trainer_id: serviceForClient.trainer_id,
+            telegram_id: from.id.toString(),
+            telegram_username: from.username || null,
+            full_name: fullName
+          }, { onConflict: 'trainer_id, telegram_id' });
+        }
 
         if (action === 'svc') {
           const [serviceId] = params;
