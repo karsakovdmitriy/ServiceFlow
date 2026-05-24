@@ -306,10 +306,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const startTime = `${session.date}T${session.startTime}:00`;
     const endTime = `${session.date}T${session.endTime}:00`;
 
+    const selectedService = services.find(s => s.id === session.serviceId);
+
     await supabase.from('sessions').insert({
       trainer_id: trainerId,
       client_id: clientId,
       service_id: session.serviceId,
+      venue_id: selectedService?.venue_id,
       start_time: startTime,
       end_time: endTime,
       status: 'confirmed'
