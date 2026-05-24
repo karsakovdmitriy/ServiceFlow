@@ -130,59 +130,76 @@ export async function POST(request: Request) {
       const { id, data, message, from } = body.callback_query;
       const chatId = message.chat.id;
 
-      const [action, ...params] = data.split(':');
+      try {
+        const [action, ...params] = data.split(':');
 
-      if (action === 'svc') {
-        const [trainerId, serviceId] = params;
-        // Selected service, now show dates
-        await sendTelegramMessage(chatId, '📅 Выберите удобную дату:', {
-          inline_keyboard: await getDatesKeyboard(trainerId, serviceId)
-        });
-      } else if (action === 'date') {
-        const [trainerId, serviceId, date] = params;
-        // Selected date, show times
-        const timesKeyboard = await getTimesKeyboard(trainerId, serviceId, date);
-        if (timesKeyboard.length === 0 || (timesKeyboard.length === 1 && timesKeyboard[0][0].callback_data === 'none')) {
-          await sendTelegramMessage(chatId, `❌ К сожалению, на <b>${date}</b> нет доступного времени для записи. Пожалуйста, выберите другую дату.`, {
-            inline_keyboard: await getDatesKeyboard(trainerId, serviceId)
-          });
-        } else {
-          await sendTelegramMessage(chatId, `🕒 Выберите время на <b>${date}</b>:`, {
-            inline_keyboard: timesKeyboard
-          });
+        if (action === 'svc') {
+          const [serviceId] = params;
+          const { data: service } = await supabase.from('services').select('id').eq('id', serviceId).single();
+          if (!service) {
+             await sendTelegramMessage(chatId, '❌ Ошибка: Услуга не найдена или была удалена.');
+          } else {
+            await sendTelegramMessage(chatId, '📅 Выберите удобную дату:', {
+              inline_keyboard: await getDatesKeyboard(serviceId)
+            });
+          }
+        } else if (action === 'date') {
+          const [serviceId, date] = params;
+          const { data: service } = await supabase.from('services').select('trainer_id').eq('id', serviceId).single();
+
+          if (!service) {
+            await sendTelegramMessage(chatId, '❌ Ошибка: Услуга не найдена.');
+          } else {
+            const timesKeyboard = await getTimesKeyboard(service.trainer_id, serviceId, date);
+            if (timesKeyboard.length === 0 || (timesKeyboard.length === 1 && timesKeyboard[0][0].callback_data === 'none')) {
+              await sendTelegramMessage(chatId, `❌ К сожалению, на <b>${date}</b> нет доступного времени для записи. Пожалуйста, выберите другую дату.`, {
+                inline_keyboard: await getDatesKeyboard(serviceId)
+              });
+            } else {
+              await sendTelegramMessage(chatId, `🕒 Выберите время на <b>${date}</b>:`, {
+                inline_keyboard: timesKeyboard
+              });
+            }
+          }
+        } else if (action === 'book') {
+          const [serviceId, date, time] = params;
+          const { data: service } = await supabase.from('services').select('trainer_id, duration').eq('id', serviceId).single();
+
+          if (!service) {
+            await sendTelegramMessage(chatId, '❌ Ошибка: Услуга не найдена.');
+          } else {
+            const { data: client } = await supabase.from('clients')
+              .select('id')
+              .eq('trainer_id', service.trainer_id)
+              .eq('telegram_id', from.id.toString())
+              .single();
+
+            if (client) {
+              const startTime = `${date}T${time}:00`;
+              const end = new Date(`${date}T${time}:00`);
+              end.setMinutes(end.getMinutes() + service.duration);
+              const endTime = end.toISOString().replace('.000Z', '+00:00');
+
+              await supabase.from('sessions').insert({
+                trainer_id: service.trainer_id,
+                client_id: client.id,
+                service_id: serviceId,
+                start_time: startTime,
+                end_time: endTime,
+                status: 'pending'
+              });
+
+              await sendTelegramMessage(chatId, `✅ <b>Заявка отправлена!</b>\n\nТренер получит уведомление и подтвердит вашу запись. Ожидайте сообщения.`);
+            } else {
+              await sendTelegramMessage(chatId, '❌ Ошибка: Клиент не найден. Попробуйте перезапустить бот через ссылку тренера.');
+            }
+          }
         }
-      } else if (action === 'book') {
-        const [trainerId, serviceId, date, time] = params;
-
-        // Finalize booking
-        const { data: client } = await supabase.from('clients')
-          .select('id')
-          .eq('trainer_id', trainerId)
-          .eq('telegram_id', from.id.toString())
-          .single();
-
-        const { data: service } = await supabase.from('services').select('duration').eq('id', serviceId).single();
-
-        if (client && service) {
-          const startTime = `${date}T${time}:00`;
-          const end = new Date(`${date}T${time}:00`);
-          end.setMinutes(end.getMinutes() + service.duration);
-          const endTime = end.toISOString().replace('.000Z', '+00:00'); // Simple ISO with offset
-
-          await supabase.from('sessions').insert({
-            trainer_id: trainerId,
-            client_id: client.id,
-            service_id: serviceId,
-            start_time: startTime,
-            end_time: endTime,
-            status: 'pending'
-          });
-
-          await sendTelegramMessage(chatId, `✅ <b>Заявка отправлена!</b>\n\nТренер получит уведомление и подтвердит вашу запись. Ожидайте сообщения.`);
-        }
+      } catch (err) {
+        console.error('Callback error:', err);
+      } finally {
+        await answerCallbackQuery(id);
       }
-
-      await answerCallbackQuery(id);
     }
 
     return NextResponse.json({ ok: true });
@@ -197,11 +214,11 @@ async function getServicesKeyboard(trainerId: string) {
   const { data: services } = await supabase.from('services').select('id, name, price').eq('trainer_id', trainerId);
   return (services || []).map(s => ([{
     text: `${s.name} — ${s.price} ₽`,
-    callback_data: `svc:${trainerId}:${s.id}`
+    callback_data: `svc:${s.id}`
   }]));
 }
 
-async function getDatesKeyboard(trainerId: string, serviceId: string) {
+async function getDatesKeyboard(serviceId: string) {
   const dates = [];
   for (let i = 0; i < 7; i++) {
     const d = new Date();
@@ -209,7 +226,7 @@ async function getDatesKeyboard(trainerId: string, serviceId: string) {
     const dateStr = d.toISOString().split('T')[0];
     dates.push([{
       text: d.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' }),
-      callback_data: `date:${trainerId}:${serviceId}:${dateStr}`
+      callback_data: `date:${serviceId}:${dateStr}`
     }]);
   }
   return dates;
@@ -256,7 +273,7 @@ async function getTimesKeyboard(trainerId: string, serviceId: string, date: stri
     if (!isBooked && !isBlocked) {
       times.push({
         text: time,
-        callback_data: `book:${trainerId}:${serviceId}:${date}:${time}`
+        callback_data: `book:${serviceId}:${date}:${time}`
       });
     }
   }
