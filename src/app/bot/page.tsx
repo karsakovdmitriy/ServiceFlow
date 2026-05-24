@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useStore } from '@/lib/store';
-import { IconBrandTelegram, IconCopy, IconChartBar, IconDeviceMobile } from '@tabler/icons-react';
+import { IconBrandTelegram, IconCopy, IconChartBar, IconDeviceMobile, IconId } from '@tabler/icons-react';
 
 export default function BotPage() {
   const { profile, trainerId } = useStore();
@@ -38,6 +38,50 @@ export default function BotPage() {
           </div>
 
           <div>
+            <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Визитка тренера</div>
+            <div className="card mb-6">
+                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 text-white relative overflow-hidden shadow-xl border border-white/10">
+                    <div className="flex items-center gap-4 relative z-10">
+                        {profile?.avatar_url ? (
+                            <img src={profile.avatar_url} alt="Avatar" className="w-16 h-16 rounded-full object-cover border-2 border-accent" />
+                        ) : (
+                            <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center text-2xl border-2 border-accent/40">🏋️</div>
+                        )}
+                        <div>
+                            <div className="text-[18px] font-bold tracking-tight">{profile?.full_name || 'Ваше Имя'}</div>
+                            <div className="text-[12px] text-accent font-medium uppercase tracking-wider">{profile?.specialization || 'Специализация'}</div>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 flex flex-col gap-2 relative z-10">
+                        <div className="flex items-center gap-2 text-[13px] opacity-80">
+                            <IconBrandTelegram size={14} className="text-accent" />
+                            <span>{botUsername}</span>
+                        </div>
+                    </div>
+
+                    <div className="mt-8 relative z-10">
+                        <div className="text-[11px] text-white/40 uppercase tracking-[0.2em] mb-2">Записаться онлайн</div>
+                        <div className="flex items-center justify-between gap-4">
+                             <div className="bg-white p-1.5 rounded-lg shrink-0">
+                                 {/* Placeholder for QR Code */}
+                                 <div className="w-16 h-16 bg-slate-100 flex items-center justify-center text-slate-800">QR</div>
+                             </div>
+                             <div className="text-right flex-1">
+                                 <div className="text-[10px] text-white/60 leading-relaxed max-w-[140px] ml-auto italic">
+                                     Отсканируйте код или перейдите по ссылке выше для записи
+                                 </div>
+                             </div>
+                        </div>
+                    </div>
+
+                    <div className="absolute top-[-20px] right-[-20px] w-32 h-32 bg-accent/10 rounded-full blur-3xl pointer-events-none"></div>
+                </div>
+                <button className="mt-4 w-full bg-bg-custom border border-border-light text-t2 text-[12px] font-bold py-2 rounded-lg hover:border-accent hover:text-accent transition-all flex items-center justify-center gap-2">
+                    <IconCopy size={16} /> Скачать визитку для печати
+                </button>
+            </div>
+
             <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Статистика бота</div>
             <div className="card">
               <div className="grid grid-cols-2 gap-4">

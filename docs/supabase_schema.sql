@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS trainers (
   id UUID PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
   full_name TEXT NOT NULL,
   specialization TEXT,
+  avatar_url TEXT,
   email TEXT UNIQUE NOT NULL,
   slot_duration INTEGER DEFAULT 60,
   telegram_bot_token TEXT,
@@ -134,6 +135,24 @@ ALTER TABLE schedule_config ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
     DROP POLICY IF EXISTS "Trainers can manage their own schedule" ON schedule_config;
     CREATE POLICY "Trainers can manage their own schedule" ON schedule_config FOR ALL USING (auth.uid() = trainer_id);
+EXCEPTION WHEN others THEN NULL; END $$;
+
+-- Messages for trainer-client chat
+CREATE TABLE IF NOT EXISTS messages (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  trainer_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
+  client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
+  sender_type TEXT NOT NULL, -- 'trainer' or 'client'
+  text TEXT NOT NULL,
+  read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Trainers can manage their own messages" ON messages;
+    CREATE POLICY "Trainers can manage their own messages" ON messages FOR ALL USING (auth.uid() = trainer_id);
 EXCEPTION WHEN others THEN NULL; END $$;
 
 -- Blocked time slots

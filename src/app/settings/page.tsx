@@ -9,6 +9,7 @@ export default function SettingsPage() {
   const [formData, setFormData] = useState({
     full_name: '',
     specialization: '',
+    avatar_url: '',
     email: '',
     slot_duration: '60'
   });
@@ -20,6 +21,7 @@ export default function SettingsPage() {
       setFormData({
         full_name: profile.full_name || '',
         specialization: profile.specialization || '',
+        avatar_url: profile.avatar_url || '',
         email: profile.email || '',
         slot_duration: String(profile.slot_duration || 60)
       });
@@ -33,6 +35,7 @@ export default function SettingsPage() {
     const { error } = await updateProfile({
       full_name: formData.full_name,
       specialization: formData.specialization,
+      avatar_url: formData.avatar_url,
       email: formData.email,
       slot_duration: parseInt(formData.slot_duration)
     }) as any;
@@ -61,6 +64,16 @@ export default function SettingsPage() {
                   type="text"
                   value={formData.full_name}
                   onChange={e => setFormData({...formData, full_name: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="text-[12px] font-medium text-t2 block mb-1">URL Фотографии</label>
+                <input
+                  className="text-[13px] border border-border-custom rounded-r-sm p-[9px_12px] bg-surface text-t1 outline-none transition-all focus:border-accent w-full"
+                  type="text"
+                  placeholder="https://example.com/photo.jpg"
+                  value={formData.avatar_url}
+                  onChange={e => setFormData({...formData, avatar_url: e.target.value})}
                 />
               </div>
               <div>

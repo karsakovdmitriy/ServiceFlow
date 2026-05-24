@@ -10,7 +10,8 @@ export interface Client { id: string; full_name: string; email?: string; telegra
 export interface Session { id: string; name: string; time: string; initials: string; bg?: string; color?: string; status: string; date: string; service?: string; serviceId?: string; clientId?: string; }
 export interface ScheduleDay { name: string; startTime: string; endTime: string; on: boolean; }
 export interface BlockedSlot { id: string; date: string; startTime: string; endTime: string; allDay: boolean; }
-export interface TrainerProfile { full_name: string; specialization: string; email: string; slot_duration: number; }
+export interface TrainerProfile { full_name: string; specialization: string; avatar_url?: string; email: string; slot_duration: number; }
+export interface Message { id: string; trainer_id: string; client_id: string; sender_type: 'trainer' | 'client'; text: string; read: boolean; created_at: string; }
 
 const DAYS = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
 
@@ -58,7 +59,9 @@ interface StoreContextType {
   isDemoMode: boolean;
   updateProfile: (updated: Partial<TrainerProfile>) => Promise<{ error: any }>;
   approveRequest: (id: string) => Promise<void>;
-  rejectRequest: (id: string) => Promise<void>;
+  rejectRequest: (id: string, reschedule?: boolean) => Promise<void>;
+  sendMessage: (clientId: string, text: string) => Promise<void>;
+  getMessages: (clientId: string) => Promise<Message[]>;
   cancelSession: (id: string) => Promise<void>;
   completeSession: (id: string) => Promise<void>;
   addSession: (session: any) => Promise<void>;
@@ -251,7 +254,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
-  const updateSessionStatus = async (id: string, status: string) => {
+  const updateSessionStatus = async (id: string, status: string, reschedule: boolean = false) => {
     if (isDemoMode) {
         const all = [...sessions, ...requests, ...completedSessions];
         const session = all.find(s => s.id === id);
@@ -269,8 +272,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         return;
     }
     const { error } = await supabase.from('sessions').update({ status }).eq('id', id);
+    if (!error && status === 'rejected' && reschedule) {
+       // Notify client about rejection with reschedule request
+       const { data: sessionData } = await supabase.from('sessions').select('client:clients!client_id(telegram_id), trainer:trainers!trainer_id(full_name)').eq('id', id).single();
+       if (sessionData && (sessionData.client as any)?.telegram_id) {
+          const message = `❌ <b>Тренер ${(sessionData.trainer as any)?.full_name} отклонил вашу заявку.</b>\n\nНо он предлагает вам выбрать другое время! Пожалуйста, воспользуйтесь меню бота для повторной записи.`;
+          await fetch('/api/notify/custom', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chatId: (sessionData.client as any).telegram_id, message })
+          });
+       }
+    }
+
     if (!error && status === 'confirmed') {
-      // Trigger notification via server API
       fetch('/api/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -415,6 +430,35 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     fetchData();
   };
 
+  const sendMessage = async (clientId: string, text: string) => {
+    if (isDemoMode) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase.from('messages').insert({
+      trainer_id: user.id,
+      client_id: clientId,
+      sender_type: 'trainer',
+      text
+    });
+
+    const { data: client } = await supabase.from('clients').select('telegram_id').eq('id', clientId).single();
+    if (client?.telegram_id) {
+      await fetch('/api/notify/custom', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chatId: client.telegram_id, message: `💬 <b>Сообщение от тренера:</b>\n\n${text}` })
+      });
+    }
+  };
+
+  const getMessages = async (clientId: string) => {
+    if (isDemoMode) return [];
+    const { data } = await supabase.from('messages')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: true });
+    return data || [];
   const addVenue = async (venue: Omit<Venue, 'id'>) => {
     if (isDemoMode) {
       const newV = { ...venue, id: Math.random().toString() };
@@ -453,7 +497,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     sessions, completedSessions, requests, clients, schedule, blocks, services, venues, profile,
     loading, trainerId, isDemoMode,
     updateProfile, approveRequest: (id: string) => updateSessionStatus(id, 'confirmed'),
-    rejectRequest: (id: string) => updateSessionStatus(id, 'rejected'),
+    rejectRequest: (id: string, reschedule: boolean = false) => updateSessionStatus(id, 'rejected', reschedule),
+    sendMessage, getMessages,
     cancelSession: (id: string) => updateSessionStatus(id, 'cancelled'),
     completeSession: (id: string) => updateSessionStatus(id, 'completed'),
     addSession, addService, updateService, addVenue, updateVenue, removeVenue, addBlock, removeBlock, toggleDay, updateScheduleTime, removeService,

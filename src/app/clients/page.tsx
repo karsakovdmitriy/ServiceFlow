@@ -1,13 +1,17 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { IconSearch, IconUserPlus, IconDotsVertical, IconCheck, IconClock, IconMail, IconPhone } from '@tabler/icons-react';
-import { useStore } from '@/lib/store';
+import { IconSearch, IconUserPlus, IconDotsVertical, IconCheck, IconClock, IconMail, IconPhone, IconSend, IconMessage, IconX } from '@tabler/icons-react';
+import { useStore, Message } from '@/lib/store';
 
 export default function ClientsPage() {
-  const { sessions, requests, completedSessions, clients: storeClients } = useStore();
+  const { sessions, requests, completedSessions, clients: storeClients, sendMessage, getMessages } = useStore();
   const [filter, setFilter] = useState('active'); // 'all' or 'active'
   const [search, setSearch] = useState('');
+
+  const [chatClientId, setChatClientId] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState('');
 
   const clientsList = useMemo(() => {
     return storeClients.map(client => {
@@ -114,6 +118,17 @@ export default function ClientsPage() {
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-3">
+                      <button
+                        onClick={async () => {
+                            setChatClientId(client.id);
+                            const msgs = await getMessages(client.id);
+                            setChatMessages(msgs);
+                        }}
+                        className="p-1.5 text-t3 hover:text-accent transition-colors"
+                        title="Написать в бот"
+                      >
+                        <IconMessage size={16} />
+                      </button>
                       <button title={client.email} className="p-1.5 text-t3 hover:text-accent transition-colors"><IconMail size={16} /></button>
                       <button className="p-1.5 text-t3 hover:text-accent transition-colors"><IconPhone size={16} /></button>
                     </div>
@@ -163,6 +178,68 @@ export default function ClientsPage() {
           ))}
         </div>
       </div>
+
+      {/* Chat Modal */}
+      {chatClientId && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-fade-up overflow-hidden flex flex-col h-[500px]">
+                <div className="p-4 border-b border-border-light flex items-center justify-between bg-bg-custom">
+                    <div className="font-bold text-t1">Чат с {storeClients.find(c => c.id === chatClientId)?.full_name}</div>
+                    <button onClick={() => setChatClientId(null)} className="text-t3 hover:text-t1"><IconX size={20} /></button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50">
+                    {chatMessages.length === 0 && (
+                        <div className="text-center text-t3 text-[12px] py-10 italic">История сообщений пуста. Напишите что-нибудь первым!</div>
+                    )}
+                    {chatMessages.map((m, i) => (
+                        <div key={i} className={`flex ${m.sender_type === 'trainer' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[80%] p-3 rounded-2xl text-[13px] shadow-sm ${
+                                m.sender_type === 'trainer'
+                                ? 'bg-accent text-white rounded-br-none'
+                                : 'bg-white text-t1 border border-border-light rounded-bl-none'
+                            }`}>
+                                {m.text}
+                                <div className={`text-[9px] mt-1 opacity-60 ${m.sender_type === 'trainer' ? 'text-right' : 'text-left'}`}>
+                                    {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="p-4 border-t border-border-light bg-white">
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            value={newMessage}
+                            onChange={e => setNewMessage(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && newMessage.trim() && (async () => {
+                                await sendMessage(chatClientId, newMessage);
+                                setNewMessage('');
+                                const msgs = await getMessages(chatClientId);
+                                setChatMessages(msgs);
+                            })()}
+                            placeholder="Введите сообщение..."
+                            className="flex-1 bg-bg-custom border border-border-light rounded-xl px-4 py-2 text-[13px] outline-none focus:border-accent"
+                        />
+                        <button
+                            disabled={!newMessage.trim()}
+                            onClick={async () => {
+                                await sendMessage(chatClientId, newMessage);
+                                setNewMessage('');
+                                const msgs = await getMessages(chatClientId);
+                                setChatMessages(msgs);
+                            }}
+                            className="bg-accent text-white p-2 rounded-xl hover:bg-accent-hover transition-all disabled:opacity-50"
+                        >
+                            <IconSend size={20} />
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 }
