@@ -5,7 +5,8 @@ import { supabase } from './supabase';
 
 // Types and Mock Data
 export interface Service { id: string; name: string; duration: number; price: number; }
-export interface Session { id: string; name: string; time: string; initials: string; bg?: string; color?: string; status: string; date: string; service?: string; serviceId?: string; }
+export interface Client { id: string; full_name: string; email?: string; telegram_id?: string; is_active: boolean; created_at: string; }
+export interface Session { id: string; name: string; time: string; initials: string; bg?: string; color?: string; status: string; date: string; service?: string; serviceId?: string; clientId?: string; }
 export interface ScheduleDay { name: string; startTime: string; endTime: string; on: boolean; }
 export interface BlockedSlot { id: string; date: string; startTime: string; endTime: string; allDay: boolean; }
 export interface TrainerProfile { full_name: string; specialization: string; email: string; slot_duration: number; }
@@ -39,6 +40,7 @@ interface StoreContextType {
   sessions: Session[];
   completedSessions: Session[];
   requests: Session[];
+  clients: Client[];
   schedule: ScheduleDay[];
   blocks: BlockedSlot[];
   services: Service[];
@@ -68,6 +70,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [completedSessions, setCompletedSessions] = useState<Session[]>([]);
   const [requests, setRequests] = useState<Session[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [schedule, setSchedule] = useState<ScheduleDay[]>([]);
   const [blocks, setBlocks] = useState<BlockedSlot[]>([]);
   const [services, setServices] = useState<Service[]>([]);
@@ -153,6 +156,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const { data: servicesData } = await supabase.from('services').select('*').eq('trainer_id', trainerId).order('name');
       if (servicesData) setServices(servicesData);
 
+      const { data: clientsData } = await supabase.from('clients').select('*').eq('trainer_id', trainerId).order('full_name');
+      if (clientsData) setClients(clientsData);
+
       const { data: sessionsData, error: sessErr } = await supabase
         .from('sessions')
         .select(`
@@ -160,7 +166,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           status,
           start_time,
           end_time,
-          client:clients!client_id(full_name),
+          client:clients!client_id(id, full_name),
           service:services!service_id(name, id)
         `)
         .eq('trainer_id', trainerId);
@@ -169,6 +175,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         const formatted = sessionsData.map((s: any) => ({
           id: s.id,
           name: s.client?.full_name || 'Клиент',
+          clientId: s.client?.id,
           service: s.service?.name,
           serviceId: s.service?.id,
           status: s.status,
@@ -373,7 +380,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   };
 
   const value = {
-    sessions, completedSessions, requests, schedule, blocks, services, profile,
+    sessions, completedSessions, requests, clients, schedule, blocks, services, profile,
     loading, trainerId, isDemoMode,
     updateProfile, approveRequest: (id: string) => updateSessionStatus(id, 'confirmed'),
     rejectRequest: (id: string) => updateSessionStatus(id, 'rejected'),

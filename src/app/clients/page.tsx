@@ -5,45 +5,33 @@ import { IconSearch, IconUserPlus, IconDotsVertical, IconCheck, IconClock, IconM
 import { useStore } from '@/lib/store';
 
 export default function ClientsPage() {
-  const { sessions, requests, completedSessions } = useStore();
+  const { sessions, requests, completedSessions, clients: storeClients } = useStore();
   const [filter, setFilter] = useState('active'); // 'all' or 'active'
   const [search, setSearch] = useState('');
 
-  // Extract unique clients
-  const allClientNames = useMemo(() => {
-    const names = new Set([
-      ...sessions.map(s => s.name),
-      ...requests.map(r => r.name),
-      ...completedSessions.map(c => c.name)
-    ]);
-    return Array.from(names);
-  }, [sessions, requests, completedSessions]);
-
-  const activeClientNames = useMemo(() => {
-    const names = new Set([
-      ...sessions.map(s => s.name),
-      ...requests.map(r => r.name)
-    ]);
-    return Array.from(names);
-  }, [sessions, requests]);
-
-  const clients = useMemo(() => {
-    const targetNames = filter === 'active' ? activeClientNames : allClientNames;
-
-    return targetNames.map(name => {
+  const clientsList = useMemo(() => {
+    return storeClients.map(client => {
+      const name = client.full_name;
       const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
-      const lastSession = sessions.find(s => s.name === name) || completedSessions.find(s => s.name === name);
-      const isPending = requests.some(r => r.name === name);
+      const lastSession = sessions.find(s => s.clientId === client.id) || completedSessions.find(s => s.clientId === client.id);
+      const isPending = requests.some(r => r.clientId === client.id);
+      const isActive = sessions.some(s => s.clientId === client.id);
 
       return {
+        id: client.id,
         name,
         initials,
-        status: isPending ? 'Ожидает' : (sessions.some(s => s.name === name) ? 'Активен' : 'Завершено'),
+        status: isPending ? 'Ожидает' : (isActive ? 'Активен' : 'Завершено'),
         lastDate: lastSession?.date || '—',
-        email: name.toLowerCase().replace(' ', '.') + '@example.com'
+        email: client.email || (name.toLowerCase().replace(' ', '.') + '@example.com'),
+        isActive: isPending || isActive
       };
-    }).filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
-  }, [filter, allClientNames, activeClientNames, sessions, requests, completedSessions, search]);
+    }).filter(c => {
+      const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase());
+      if (filter === 'active') return matchesSearch && c.isActive;
+      return matchesSearch;
+    });
+  }, [filter, storeClients, sessions, requests, completedSessions, search]);
 
   return (
     <div className="animate-fade-up">
@@ -93,12 +81,12 @@ export default function ClientsPage() {
               </tr>
             </thead>
             <tbody>
-              {clients.length === 0 && (
+              {clientsList.length === 0 && (
                 <tr>
                   <td colSpan={5} className="p-8 text-center text-t3 text-[14px]">Клиенты не найдены</td>
                 </tr>
               )}
-              {clients.map((client, i) => (
+              {clientsList.map((client, i) => (
                 <tr key={i} className="border-b border-border-light last:border-none hover:bg-bg-custom/50 transition-colors group">
                   <td className="p-4">
                     <div className="flex items-center gap-3">
