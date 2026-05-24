@@ -5,7 +5,7 @@ import { supabase } from './supabase';
 
 // Types and Mock Data
 export interface Service { id: string; name: string; duration: number; price: number; }
-export interface Session { id: string; name: string; time: string; initials: string; bg?: string; color?: string; status: string; date: string; service?: string; serviceId?: string; telegram_username?: string; }
+export interface Session { id: string; name: string; time: string; initials: string; bg?: string; color?: string; status: string; date: string; service?: string; serviceId?: string; }
 export interface ScheduleDay { name: string; startTime: string; endTime: string; on: boolean; }
 export interface BlockedSlot { id: string; date: string; startTime: string; endTime: string; allDay: boolean; }
 export interface TrainerProfile { full_name: string; specialization: string; email: string; slot_duration: number; }
@@ -160,7 +160,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           status,
           start_time,
           end_time,
-          client:clients!client_id(full_name, telegram_username),
+          client:clients!client_id(full_name),
           service:services!service_id(name, id)
         `)
         .eq('trainer_id', trainerId);
@@ -169,7 +169,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         const formatted = sessionsData.map((s: any) => ({
           id: s.id,
           name: s.client?.full_name || 'Клиент',
-          telegram_username: s.client?.telegram_username,
           service: s.service?.name,
           serviceId: s.service?.id,
           status: s.status,
