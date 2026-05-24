@@ -4,7 +4,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from './supabase';
 
 // Types and Mock Data
-export interface Service { id: string; name: string; duration: number; price: number; is_group: boolean; }
+export interface Venue { id: string; name: string; address?: string; }
+export interface Service { id: string; name: string; duration: number; price: number; is_group: boolean; venue_id?: string | null; venue?: Venue; }
 export interface Client { id: string; full_name: string; email?: string; telegram_id?: string; is_active: boolean; created_at: string; }
 export interface Session { id: string; name: string; time: string; initials: string; bg?: string; color?: string; status: string; date: string; service?: string; serviceId?: string; clientId?: string; }
 export interface ScheduleDay { name: string; startTime: string; endTime: string; on: boolean; }
@@ -20,10 +21,15 @@ const getTodayStr = (offset = 0) => {
     return d.toISOString().split('T')[0];
 };
 
+const MOCK_VENUES = [
+  { id: 'v1', name: 'Gym 24/7', address: 'ул. Пушкина, 10' },
+  { id: 'v2', name: 'Спорт-Лайф', address: 'пр. Мира, 5' },
+];
+
 const MOCK_SERVICES = [
-  { id: 's1', name: 'Персональная тренировка', duration: 60, price: 2500, is_group: false },
-  { id: 's2', name: 'Сплит-тренировка', duration: 60, price: 3500, is_group: false },
-  { id: 's3', name: 'Групповая тренировка', duration: 60, price: 1000, is_group: true },
+  { id: 's1', name: 'Персональная тренировка', duration: 60, price: 2500, is_group: false, venue_id: 'v1' },
+  { id: 's2', name: 'Сплит-тренировка', duration: 60, price: 3500, is_group: false, venue_id: 'v1' },
+  { id: 's3', name: 'Групповая тренировка', duration: 60, price: 1000, is_group: true, venue_id: 'v2' },
 ];
 
 const MOCK_SESSIONS = [
@@ -46,6 +52,7 @@ interface StoreContextType {
   schedule: ScheduleDay[];
   blocks: BlockedSlot[];
   services: Service[];
+  venues: Venue[];
   profile: TrainerProfile | null;
   loading: boolean;
   trainerId: string | null;
@@ -58,8 +65,11 @@ interface StoreContextType {
   cancelSession: (id: string) => Promise<void>;
   completeSession: (id: string) => Promise<void>;
   addSession: (session: any) => Promise<void>;
-  addService: (service: Omit<Service, 'id'>) => Promise<void>;
+  addService: (service: Omit<Service, 'id' | 'venue'>) => Promise<void>;
   updateService: (id: string, service: Partial<Service>) => Promise<void>;
+  addVenue: (venue: Omit<Venue, 'id'>) => Promise<void>;
+  updateVenue: (id: string, venue: Partial<Venue>) => Promise<void>;
+  removeVenue: (id: string) => Promise<void>;
   addBlock: (block: Omit<BlockedSlot, 'id'>) => Promise<void>;
   removeBlock: (id: string) => Promise<void>;
   toggleDay: (idx: number) => Promise<void>;
@@ -78,6 +88,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [schedule, setSchedule] = useState<ScheduleDay[]>([]);
   const [blocks, setBlocks] = useState<BlockedSlot[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [venues, setVenues] = useState<Venue[]>([]);
   const [profile, setProfile] = useState<TrainerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [trainerId, setTrainerId] = useState<string | null>(null);
@@ -133,11 +144,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setSchedule(data.schedule || MOCK_SCHEDULE);
       setBlocks(data.blocks || []);
       setServices(data.services || MOCK_SERVICES);
+      setVenues(data.venues || MOCK_VENUES);
       setProfile(data.profile || { full_name: 'Алексей (Демо)', specialization: 'Тренер', email: 'demo@example.com', slot_duration: 60 });
     } else {
       setSessions(MOCK_SESSIONS);
       setSchedule(MOCK_SCHEDULE);
       setServices(MOCK_SERVICES);
+      setVenues(MOCK_VENUES);
       setProfile({ full_name: 'Алексей (Демо)', specialization: 'Тренер', email: 'demo@example.com', slot_duration: 60 });
     }
     setLoading(false);
@@ -157,8 +170,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const { data: profileData } = await supabase.from('trainers').select('*').eq('id', trainerId).maybeSingle();
       if (profileData) setProfile(profileData);
 
-      const { data: servicesData } = await supabase.from('services').select('*').eq('trainer_id', trainerId).order('name');
-      if (servicesData) setServices(servicesData);
+      const { data: venuesData } = await supabase.from('venues').select('*').eq('trainer_id', trainerId).order('name');
+      if (venuesData) setVenues(venuesData);
+
+      const { data: servicesData } = await supabase.from('services').select('*, venues!venue_id(id, name, address)').eq('trainer_id', trainerId).order('name');
+      if (servicesData) {
+        setServices(servicesData.map(s => ({
+          ...s,
+          venue: s.venues
+        })));
+      }
 
       const { data: clientsData } = await supabase.from('clients').select('*').eq('trainer_id', trainerId).order('full_name');
       if (clientsData) setClients(clientsData);
@@ -300,10 +321,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const startTime = `${session.date}T${session.startTime}:00`;
     const endTime = `${session.date}T${session.endTime}:00`;
 
+    const selectedService = services.find(s => s.id === session.serviceId);
+
     await supabase.from('sessions').insert({
       trainer_id: trainerId,
       client_id: clientId,
       service_id: session.serviceId,
+      venue_id: selectedService?.venue_id,
       start_time: startTime,
       end_time: endTime,
       status: 'confirmed'
@@ -369,10 +393,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     fetchData();
   };
 
-  const addService = async (service: Omit<Service, 'id'>) => {
+  const addService = async (service: Omit<Service, 'id' | 'venue'>) => {
     if (isDemoMode) {
-      const newS = { ...service, id: Math.random().toString() };
-      const newServices = [...services, newS];
+      const venue = service.venue_id ? venues.find(v => v.id === service.venue_id) : undefined;
+      const newS = { ...service, id: Math.random().toString(), venue };
+      const newServices = [...services, newS as Service];
       setServices(newServices);
       saveDemoData({ services: newServices });
       return;
@@ -382,13 +407,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateService = async (id: string, service: Partial<Service>) => {
+    const { venue: _v, ...rest } = service;
     if (isDemoMode) {
-      const newServices = services.map(s => s.id === id ? { ...s, ...service } : s);
+      const venue = rest.venue_id ? venues.find(v => v.id === rest.venue_id) : undefined;
+      const newServices = services.map(s => s.id === id ? { ...s, ...rest, venue } : s);
       setServices(newServices);
       saveDemoData({ services: newServices });
       return;
     }
-    await supabase.from('services').update(service).eq('id', id);
+    await supabase.from('services').update(rest).eq('id', id);
     fetchData();
   };
 
@@ -432,17 +459,49 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       .eq('client_id', clientId)
       .order('created_at', { ascending: true });
     return data || [];
+  const addVenue = async (venue: Omit<Venue, 'id'>) => {
+    if (isDemoMode) {
+      const newV = { ...venue, id: Math.random().toString() };
+      const newVenues = [...venues, newV];
+      setVenues(newVenues);
+      saveDemoData({ venues: newVenues });
+      return;
+    }
+    await supabase.from('venues').insert({ trainer_id: trainerId, ...venue });
+    fetchData();
+  };
+
+  const updateVenue = async (id: string, venue: Partial<Venue>) => {
+    if (isDemoMode) {
+      const newVenues = venues.map(v => v.id === id ? { ...v, ...venue } : v);
+      setVenues(newVenues);
+      saveDemoData({ venues: newVenues });
+      return;
+    }
+    await supabase.from('venues').update(venue).eq('id', id);
+    fetchData();
+  };
+
+  const removeVenue = async (id: string) => {
+    if (isDemoMode) {
+      const newV = venues.filter(v => v.id !== id);
+      setVenues(newV);
+      saveDemoData({ venues: newV });
+      return;
+    }
+    await supabase.from('venues').delete().eq('id', id);
+    fetchData();
   };
 
   const value = {
-    sessions, completedSessions, requests, clients, schedule, blocks, services, profile,
+    sessions, completedSessions, requests, clients, schedule, blocks, services, venues, profile,
     loading, trainerId, isDemoMode,
     updateProfile, approveRequest: (id: string) => updateSessionStatus(id, 'confirmed'),
     rejectRequest: (id: string, reschedule: boolean = false) => updateSessionStatus(id, 'rejected', reschedule),
     sendMessage, getMessages,
     cancelSession: (id: string) => updateSessionStatus(id, 'cancelled'),
     completeSession: (id: string) => updateSessionStatus(id, 'completed'),
-    addSession, addService, updateService, addBlock, removeBlock, toggleDay, updateScheduleTime, removeService,
+    addSession, addService, updateService, addVenue, updateVenue, removeVenue, addBlock, removeBlock, toggleDay, updateScheduleTime, removeService,
     refresh: fetchData
   };
 
