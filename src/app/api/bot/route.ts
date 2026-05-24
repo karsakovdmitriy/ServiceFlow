@@ -40,6 +40,20 @@ export async function POST(request: Request) {
       const { chat, text, from } = body.message;
       console.log(`Message from ${from.id}: ${text}`);
 
+      // Handle direct messages to trainer
+      if (text && !text.startsWith('/')) {
+         const { data: client } = await supabase.from('clients').select('id, trainer_id').eq('telegram_id', from.id.toString()).limit(1).single();
+         if (client) {
+            await supabase.from('messages').insert({
+                trainer_id: client.trainer_id,
+                client_id: client.id,
+                sender_type: 'client',
+                text
+            });
+            // We could notify the trainer here via UI (realtime)
+         }
+      }
+
       if (text?.startsWith('/start')) {
         const parts = text.split(' ');
         let trainerId = parts[1];
@@ -85,8 +99,11 @@ export async function POST(request: Request) {
         if (servicesKeyboard.length === 0) {
           await sendTelegramMessage(chat.id, `👋 Привет! Вы записываетесь к тренеру <b>${escapeHtml(trainer.full_name)}</b>.\n\nК сожалению, у тренера пока нет настроенных услуг для записи. Пожалуйста, свяжитесь с ним напрямую.`);
         } else {
-          await sendTelegramMessage(chat.id, `👋 Привет! Вы записываетесь к тренеру <b>${escapeHtml(trainer.full_name)}</b> (${escapeHtml(trainer.specialization || '')}).\n\nВыберите услугу:`, {
-            inline_keyboard: servicesKeyboard
+          await sendTelegramMessage(chat.id, `👋 Привет! Вы записываетесь к тренеру <b>${escapeHtml(trainer.full_name)}</b> (${escapeHtml(trainer.specialization || '')}).\n\nВыберите действие:`, {
+            inline_keyboard: [
+                ...servicesKeyboard,
+                [{ text: '👤 Мои записи / Перенос', callback_data: `my_bookings:${trainerId}` }]
+            ]
           });
         }
       }
@@ -115,7 +132,45 @@ export async function POST(request: Request) {
           }
         }
 
-        if (action === 'svc') {
+        if (action === 'my_bookings') {
+          const [trainerId] = params;
+          const { data: client } = await supabase.from('clients').select('id').eq('trainer_id', trainerId).eq('telegram_id', from.id.toString()).single();
+
+          if (!client) {
+             await sendTelegramMessage(chatId, '❌ У вас пока нет записей к этому тренеру.');
+          } else {
+             const { data: sessions } = await supabase.from('sessions')
+                .select('id, start_time, service:services!service_id(name)')
+                .eq('client_id', client.id)
+                .gte('start_time', new Date().toISOString())
+                .order('start_time');
+
+             if (!sessions || sessions.length === 0) {
+                await sendTelegramMessage(chatId, '📅 У вас нет предстоящих записей.');
+             } else {
+                let msg = '<b>Ваши предстоящие записи:</b>\n\n';
+                const buttons = [];
+
+                for (const s of sessions) {
+                    const d = new Date(s.start_time);
+                    const label = `${d.toLocaleDateString('ru-RU')} ${s.start_time.split('T')[1].slice(0, 5)} — ${(s.service as any)?.name}`;
+                    msg += `• ${label}\n`;
+                    buttons.push([{ text: `🔄 Перенести ${s.start_time.split('T')[1].slice(0, 5)}`, callback_data: `reschedule:${s.id}` }]);
+                }
+
+                await sendTelegramMessage(chatId, msg, { inline_keyboard: buttons });
+             }
+          }
+        } else if (action === 'reschedule') {
+           const [sessionId] = params;
+           const { data: session } = await supabase.from('sessions').select('service_id').eq('id', sessionId).single();
+           if (session) {
+                await sendTelegramMessage(chatId, '📅 Выберите новую дату для переноса:', {
+                    inline_keyboard: await getDatesKeyboard(session.service_id)
+                });
+                // In a real app, we would store that this interaction is a reschedule for sessionId
+           }
+        } else if (action === 'svc') {
           const [serviceId] = params;
           const { data: service } = await supabase.from('services').select('id').eq('id', serviceId).single();
           if (!service) {

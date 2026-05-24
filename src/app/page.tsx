@@ -15,6 +15,12 @@ import { useStore } from '@/lib/store';
 
 export default function Dashboard() {
   const { sessions, requests, approveRequest, rejectRequest, profile } = useStore();
+  const [rejectingId, setRejectingId] = React.useState<string | null>(null);
+
+  const handleReject = (id: string, reschedule: boolean) => {
+    rejectRequest(id, reschedule);
+    setRejectingId(null);
+  };
 
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
   const todayLabel = useMemo(() => {
@@ -143,7 +149,7 @@ export default function Dashboard() {
                   <IconCheck size={14} />
                 </button>
                 <button
-                  onClick={() => rejectRequest(req.id)}
+                  onClick={() => setRejectingId(req.id)}
                   className="bg-red-light text-red-custom border border-red-custom/20 text-[12px] font-medium p-1.5 rounded-r-sm hover:bg-red-custom hover:text-white transition-all"
                 >
                   <IconX size={14} />
@@ -191,6 +197,36 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Reject Modal */}
+      {rejectingId && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-fade-up">
+                <div className="text-[16px] font-bold text-t1 mb-2">Отклонить заявку?</div>
+                <p className="text-[13px] text-t3 mb-6">Вы можете просто отклонить запись или предложить клиенту выбрать другое время в боте.</p>
+                <div className="flex flex-col gap-2">
+                    <button
+                        onClick={() => handleReject(rejectingId, true)}
+                        className="w-full bg-accent text-white py-2.5 rounded-xl text-[13px] font-bold hover:bg-accent-hover transition-all"
+                    >
+                        Предложить перенос
+                    </button>
+                    <button
+                        onClick={() => handleReject(rejectingId, false)}
+                        className="w-full bg-red-custom text-white py-2.5 rounded-xl text-[13px] font-bold hover:bg-red-600 transition-all"
+                    >
+                        Отклонить без переноса
+                    </button>
+                    <button
+                        onClick={() => setRejectingId(null)}
+                        className="w-full bg-bg-custom text-t2 py-2.5 rounded-xl text-[13px] font-bold hover:bg-border-light transition-all"
+                    >
+                        Отмена
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 }

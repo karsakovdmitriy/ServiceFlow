@@ -13,7 +13,8 @@ import {
   IconSettings,
   IconMenu2,
   IconX,
-  IconStethoscope
+  IconStethoscope,
+  IconChartBar
 } from '@tabler/icons-react';
 import { useStore } from '@/lib/store';
 
@@ -29,6 +30,7 @@ const Sidebar = () => {
     { label: 'Расписание', icon: <IconCalendarWeek size={18} />, href: '/schedule', id: 'schedule' },
     { label: 'Клиенты', type: 'group' },
     { label: 'Мои клиенты', icon: <IconUsers size={18} />, href: '/clients', id: 'clients' },
+    { label: 'Аналитика', icon: <IconChartBar size={18} />, href: '/analytics', id: 'analytics' },
     { label: 'Инструменты', type: 'group' },
     { label: 'Услуги', icon: <IconStethoscope size={18} />, href: '/services', id: 'services' },
     { label: 'Telegram-бот', icon: <IconBrandTelegram size={18} />, href: '/bot', id: 'bot' },
