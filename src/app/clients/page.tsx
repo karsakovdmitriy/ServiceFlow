@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { IconSearch, IconUserPlus, IconDotsVertical, IconCheck, IconClock, IconMail, IconPhone } from '@tabler/icons-react';
+import { IconSearch, IconUserPlus, IconDotsVertical, IconCheck, IconClock, IconMail, IconPhone, IconBrandTelegram } from '@tabler/icons-react';
 import { useStore } from '@/lib/store';
 
 export default function ClientsPage() {
@@ -40,7 +40,8 @@ export default function ClientsPage() {
         initials,
         status: isPending ? 'Ожидает' : (sessions.some(s => s.name === name) ? 'Активен' : 'Завершено'),
         lastDate: lastSession?.date || '—',
-        email: name.toLowerCase().replace(' ', '.') + '@example.com'
+        email: name.toLowerCase().replace(' ', '.') + '@example.com',
+        telegram: lastSession?.telegram_username
       };
     }).filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
   }, [filter, allClientNames, activeClientNames, sessions, requests, completedSessions, search]);
@@ -125,6 +126,17 @@ export default function ClientsPage() {
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-3">
+                      {client.telegram && (
+                        <a
+                          href={`https://t.me/${client.telegram}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 text-t3 hover:text-accent transition-colors"
+                          title={`@${client.telegram}`}
+                        >
+                          <IconBrandTelegram size={16} />
+                        </a>
+                      )}
                       <button title={client.email} className="p-1.5 text-t3 hover:text-accent transition-colors"><IconMail size={16} /></button>
                       <button className="p-1.5 text-t3 hover:text-accent transition-colors"><IconPhone size={16} /></button>
                     </div>
