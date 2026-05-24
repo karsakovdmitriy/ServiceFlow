@@ -115,11 +115,19 @@ export default function SchedulePage() {
           <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Рабочие дни и часы</div>
           <div className="card">
             {schedule.map((day, i) => (
-              <div key={i} className="flex items-center justify-between py-3 border-b border-border-light last:border-none">
-                <div className="flex-1">
+              <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-border-light last:border-none gap-3 sm:gap-0">
+                <div className="flex-1 flex items-center justify-between sm:block">
                   <div className="text-[13.5px] font-medium text-t1">{day.name}</div>
+                  <div
+                    onClick={() => toggleDay(i)}
+                    className={`sm:hidden w-10 h-[22px] rounded-full cursor-pointer transition-all relative shrink-0 ${day.on ? 'bg-green-custom' : 'bg-border-custom'}`}
+                  >
+                    <div className={`absolute w-4 h-4 bg-white rounded-full top-[3px] transition-all shadow-[0_1px_4px_rgba(0,0,0,0.15)] ${day.on ? 'left-[21px]' : 'left-[3px]'}`}></div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
                   {day.on ? (
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center gap-2">
                       <input
                         type="time"
                         value={day.startTime}
@@ -140,7 +148,7 @@ export default function SchedulePage() {
                 </div>
                 <div
                   onClick={() => toggleDay(i)}
-                  className={`w-10 h-[22px] rounded-full cursor-pointer transition-all relative shrink-0 ${day.on ? 'bg-green-custom' : 'bg-border-custom'}`}
+                  className={`hidden sm:block w-10 h-[22px] rounded-full cursor-pointer transition-all relative shrink-0 ${day.on ? 'bg-green-custom' : 'bg-border-custom'}`}
                 >
                   <div className={`absolute w-4 h-4 bg-white rounded-full top-[3px] transition-all shadow-[0_1px_4px_rgba(0,0,0,0.15)] ${day.on ? 'left-[21px]' : 'left-[3px]'}`}></div>
                 </div>
@@ -153,8 +161,8 @@ export default function SchedulePage() {
           <div>
             <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Заблокировать время</div>
             <div className="card">
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <div className="col-span-2">
+              <div className="flex flex-col sm:grid sm:grid-cols-2 gap-3 mb-3">
+                <div className="sm:col-span-2">
                   <label className="text-[11px] text-t3 block mb-1">Дата</label>
                   <input
                     type="date"
@@ -165,7 +173,7 @@ export default function SchedulePage() {
                 </div>
                 {!newBlock.allDay && (
                   <>
-                    <div>
+                    <div className="flex-1">
                       <label className="text-[11px] text-t3 block mb-1">Начало</label>
                       <input
                         type="time"
@@ -174,7 +182,7 @@ export default function SchedulePage() {
                         className="w-full text-[13px] border border-border-custom rounded-r-sm p-[8px_12px] bg-surface text-t1 outline-none focus:border-accent"
                       />
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <label className="text-[11px] text-t3 block mb-1">Конец</label>
                       <input
                         type="time"
@@ -255,7 +263,7 @@ export default function SchedulePage() {
             </div>
           ))}
         </div>
-        <div className="flex gap-[14px] mt-4 pt-2 border-t border-border-light">
+        <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 pt-2 border-t border-border-light">
           <div className="flex items-center gap-[5px] text-[11px] text-t3">
             <div className="w-[10px] h-[10px] rounded-[3px] bg-blue-light border border-blue-custom/20"></div>занято
           </div>
