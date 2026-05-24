@@ -145,7 +145,7 @@ export async function POST(request: Request) {
           }
         } else if (action === 'book') {
           const [serviceId, date, time] = params;
-          const { data: service } = await supabase.from('services').select('trainer_id, duration').eq('id', serviceId).single();
+          const { data: service } = await supabase.from('services').select('trainer_id, duration, venue_id').eq('id', serviceId).single();
 
           if (!service) {
             await sendTelegramMessage(chatId, '❌ Ошибка: Услуга не найдена.');
@@ -166,6 +166,7 @@ export async function POST(request: Request) {
                 trainer_id: service.trainer_id,
                 client_id: client.id,
                 service_id: serviceId,
+                venue_id: service.venue_id,
                 start_time: startTime,
                 end_time: endTime,
                 status: 'pending'

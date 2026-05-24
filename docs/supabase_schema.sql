@@ -57,14 +57,7 @@ CREATE TABLE IF NOT EXISTS services (
 );
 
 -- Add venue_id if table already exists without it
-DO $$ BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
-        WHERE TABLE_NAME = 'services' AND COLUMN_NAME = 'venue_id'
-    ) THEN
-        ALTER TABLE services ADD COLUMN venue_id UUID REFERENCES venues(id) ON DELETE SET NULL;
-    END IF;
-END $$;
+ALTER TABLE services ADD COLUMN IF NOT EXISTS venue_id UUID REFERENCES venues(id) ON DELETE SET NULL;
 
 ALTER TABLE services ENABLE ROW LEVEL SECURITY;
 
@@ -108,11 +101,15 @@ CREATE TABLE IF NOT EXISTS sessions (
   trainer_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
   client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
   service_id UUID REFERENCES services(id) ON DELETE SET NULL,
+  venue_id UUID REFERENCES venues(id) ON DELETE SET NULL,
   start_time TIMESTAMP WITH TIME ZONE NOT NULL,
   end_time TIMESTAMP WITH TIME ZONE NOT NULL,
   status TEXT DEFAULT 'pending',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Add venue_id to sessions if table already exists without it
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS venue_id UUID REFERENCES venues(id) ON DELETE SET NULL;
 
 ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
 
