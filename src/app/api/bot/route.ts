@@ -3,26 +3,51 @@ import { createClient } from '@supabase/supabase-js';
 
 // Helper to get supabase client
 function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
-  );
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
+
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.warn('Warning: SUPABASE_SERVICE_ROLE_KEY is not set. Bot may encounter RLS issues.');
+  }
+
+  return createClient(url, key);
 }
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 async function sendTelegramMessage(chatId: number, text: string, replyMarkup?: any) {
   if (!BOT_TOKEN) return;
-  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+
+  const payload: any = {
+    chat_id: chatId,
+    text,
+    parse_mode: 'HTML'
+  };
+
+  if (replyMarkup && replyMarkup.inline_keyboard && replyMarkup.inline_keyboard.length > 0) {
+    payload.reply_markup = replyMarkup;
+  }
+
+  const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text,
-      reply_markup: replyMarkup,
-      parse_mode: 'HTML'
-    })
+    body: JSON.stringify(payload)
   });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    console.error('Telegram API Error:', JSON.stringify(errorData, null, 2));
+    console.error('Payload was:', JSON.stringify(payload, null, 2));
+  }
 }
 
 async function answerCallbackQuery(callbackQueryId: string) {
@@ -56,6 +81,7 @@ export async function POST(request: Request) {
 
     if (body.message) {
       const { chat, text, from } = body.message;
+      console.log(`Message from ${from.id}: ${text}`);
 
       if (text?.startsWith('/start')) {
         const parts = text.split(' ');
@@ -83,15 +109,22 @@ export async function POST(request: Request) {
         }
 
         // Upsert client
+        const fullName = `${from.first_name || ''} ${from.last_name || ''}`.trim() || 'Клиент';
         await supabase.from('clients').upsert({
           trainer_id: trainerId,
           telegram_id: from.id.toString(),
-          full_name: `${from.first_name} ${from.last_name || ''}`.trim()
+          full_name: fullName
         }, { onConflict: 'trainer_id, telegram_id' });
 
-        await sendTelegramMessage(chat.id, `👋 Привет! Вы записываетесь к тренеру <b>${trainer.full_name}</b> (${trainer.specialization}).\n\nВыберите услугу:`, {
-          inline_keyboard: await getServicesKeyboard(trainerId)
-        });
+        const servicesKeyboard = await getServicesKeyboard(trainerId);
+
+        if (servicesKeyboard.length === 0) {
+          await sendTelegramMessage(chat.id, `👋 Привет! Вы записываетесь к тренеру <b>${escapeHtml(trainer.full_name)}</b>.\n\nК сожалению, у тренера пока нет настроенных услуг для записи. Пожалуйста, свяжитесь с ним напрямую.`);
+        } else {
+          await sendTelegramMessage(chat.id, `👋 Привет! Вы записываетесь к тренеру <b>${escapeHtml(trainer.full_name)}</b> (${escapeHtml(trainer.specialization || '')}).\n\nВыберите услугу:`, {
+            inline_keyboard: servicesKeyboard
+          });
+        }
       }
     } else if (body.callback_query) {
       const { id, data, message, from } = body.callback_query;
@@ -108,9 +141,16 @@ export async function POST(request: Request) {
       } else if (action === 'date') {
         const [trainerId, serviceId, date] = params;
         // Selected date, show times
-        await sendTelegramMessage(chatId, `🕒 Выберите время на <b>${date}</b>:`, {
-          inline_keyboard: await getTimesKeyboard(trainerId, serviceId, date)
-        });
+        const timesKeyboard = await getTimesKeyboard(trainerId, serviceId, date);
+        if (timesKeyboard.length === 0 || (timesKeyboard.length === 1 && timesKeyboard[0][0].callback_data === 'none')) {
+          await sendTelegramMessage(chatId, `❌ К сожалению, на <b>${date}</b> нет доступного времени для записи. Пожалуйста, выберите другую дату.`, {
+            inline_keyboard: await getDatesKeyboard(trainerId, serviceId)
+          });
+        } else {
+          await sendTelegramMessage(chatId, `🕒 Выберите время на <b>${date}</b>:`, {
+            inline_keyboard: timesKeyboard
+          });
+        }
       } else if (action === 'book') {
         const [trainerId, serviceId, date, time] = params;
 
