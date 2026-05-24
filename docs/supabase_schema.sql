@@ -57,6 +57,16 @@ CREATE TABLE IF NOT EXISTS clients (
   UNIQUE(trainer_id, telegram_id)
 );
 
+-- Ensure unique constraint exists if table was created without it
+DO $$ BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'clients_trainer_id_telegram_id_key'
+    ) THEN
+        ALTER TABLE clients ADD CONSTRAINT clients_trainer_id_telegram_id_key UNIQUE (trainer_id, telegram_id);
+    END IF;
+END $$;
+
 ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
