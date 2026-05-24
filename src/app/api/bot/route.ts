@@ -200,7 +200,7 @@ export async function POST(request: Request) {
           }
         } else if (action === 'book') {
           const [serviceId, date, time] = params;
-          const { data: service } = await supabase.from('services').select('trainer_id, duration, venue_id').eq('id', serviceId).single();
+          const { data: service } = await supabase.from('services').select('trainer_id, duration').eq('id', serviceId).single();
 
           if (!service) {
             await sendTelegramMessage(chatId, '❌ Ошибка: Услуга не найдена.');
@@ -221,7 +221,6 @@ export async function POST(request: Request) {
                 trainer_id: service.trainer_id,
                 client_id: client.id,
                 service_id: serviceId,
-                venue_id: service.venue_id,
                 start_time: startTime,
                 end_time: endTime,
                 status: 'pending'
@@ -255,9 +254,9 @@ export async function POST(request: Request) {
 
 async function getServicesKeyboard(trainerId: string) {
   const supabase = getSupabase();
-  const { data: services } = await supabase.from('services').select('id, name, price, venues!venue_id(name)').eq('trainer_id', trainerId);
+  const { data: services } = await supabase.from('services').select('id, name, price').eq('trainer_id', trainerId);
   return (services || []).map(s => ([{
-    text: `${s.name} — ${s.price} ₽${(s.venues as any)?.name ? ` (${(s.venues as any).name})` : ''}`,
+    text: `${s.name} — ${s.price} ₽`,
     callback_data: `svc:${s.id}`
   }]));
 }

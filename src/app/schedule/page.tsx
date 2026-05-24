@@ -8,8 +8,6 @@ const DAYS_RU_SHORT = ['ВС', 'ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
 const DAYS_RU_FULL = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
 
 export default function SchedulePage() {
-  const [activeDayIndex, setActiveDayIndex] = useState(0);
-
   const {
     schedule,
     blocks,
@@ -95,7 +93,6 @@ export default function SchedulePage() {
 
       grid.push({
         day: dayShort,
-        dayName: dayName,
         dateLabel: date.getDate(),
         slots,
         today: isToday,
@@ -118,19 +115,11 @@ export default function SchedulePage() {
           <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Рабочие дни и часы</div>
           <div className="card">
             {schedule.map((day, i) => (
-              <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-border-light last:border-none gap-3 sm:gap-0">
-                <div className="flex-1 flex items-center justify-between sm:block">
+              <div key={i} className="flex items-center justify-between py-3 border-b border-border-light last:border-none">
+                <div className="flex-1">
                   <div className="text-[13.5px] font-medium text-t1">{day.name}</div>
-                  <div
-                    onClick={() => toggleDay(i)}
-                    className={`sm:hidden w-10 h-[22px] rounded-full cursor-pointer transition-all relative shrink-0 ${day.on ? 'bg-green-custom' : 'bg-border-custom'}`}
-                  >
-                    <div className={`absolute w-4 h-4 bg-white rounded-full top-[3px] transition-all shadow-[0_1px_4px_rgba(0,0,0,0.15)] ${day.on ? 'left-[21px]' : 'left-[3px]'}`}></div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
                   {day.on ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mt-1">
                       <input
                         type="time"
                         value={day.startTime}
@@ -151,7 +140,7 @@ export default function SchedulePage() {
                 </div>
                 <div
                   onClick={() => toggleDay(i)}
-                  className={`hidden sm:block w-10 h-[22px] rounded-full cursor-pointer transition-all relative shrink-0 ${day.on ? 'bg-green-custom' : 'bg-border-custom'}`}
+                  className={`w-10 h-[22px] rounded-full cursor-pointer transition-all relative shrink-0 ${day.on ? 'bg-green-custom' : 'bg-border-custom'}`}
                 >
                   <div className={`absolute w-4 h-4 bg-white rounded-full top-[3px] transition-all shadow-[0_1px_4px_rgba(0,0,0,0.15)] ${day.on ? 'left-[21px]' : 'left-[3px]'}`}></div>
                 </div>
@@ -164,8 +153,8 @@ export default function SchedulePage() {
           <div>
             <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Заблокировать время</div>
             <div className="card">
-              <div className="flex flex-col sm:grid sm:grid-cols-2 gap-3 mb-3">
-                <div className="sm:col-span-2">
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="col-span-2">
                   <label className="text-[11px] text-t3 block mb-1">Дата</label>
                   <input
                     type="date"
@@ -176,7 +165,7 @@ export default function SchedulePage() {
                 </div>
                 {!newBlock.allDay && (
                   <>
-                    <div className="flex-1">
+                    <div>
                       <label className="text-[11px] text-t3 block mb-1">Начало</label>
                       <input
                         type="time"
@@ -185,7 +174,7 @@ export default function SchedulePage() {
                         className="w-full text-[13px] border border-border-custom rounded-r-sm p-[8px_12px] bg-surface text-t1 outline-none focus:border-accent"
                       />
                     </div>
-                    <div className="flex-1">
+                    <div>
                       <label className="text-[11px] text-t3 block mb-1">Конец</label>
                       <input
                         type="time"
@@ -241,26 +230,8 @@ export default function SchedulePage() {
       </div>
 
       <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Обзор недели · {weekRangeLabel}</div>
-
-      {/* Mobile Weekly Overview Selector */}
-      <div className="flex sm:hidden items-center justify-between bg-white border border-border-light rounded-xl p-1 mb-3">
-        {weekGrid.map((day, i) => (
-          <button
-            key={i}
-            onClick={() => setActiveDayIndex(i)}
-            className={`flex-1 py-2 rounded-lg flex flex-col items-center transition-all ${
-              activeDayIndex === i ? 'bg-accent text-white shadow-md' : 'text-t3'
-            }`}
-          >
-            <span className="text-[9px] font-bold uppercase">{day.day}</span>
-            <span className="text-[13px] font-extrabold">{day.dateLabel}</span>
-          </button>
-        ))}
-      </div>
-
       <div className="card overflow-x-auto">
-        {/* Desktop Grid */}
-        <div className="hidden sm:grid grid-cols-7 gap-1.5 min-w-[600px]">
+        <div className="grid grid-cols-7 gap-1.5 min-w-[600px]">
           {weekGrid.map((day, i) => (
             <div key={i} className="text-center">
               <div className={`text-[10px] font-semibold mb-[2px] uppercase tracking-[0.05em] ${day.today ? 'text-accent' : 'text-t3'}`}>
@@ -284,33 +255,7 @@ export default function SchedulePage() {
             </div>
           ))}
         </div>
-
-        {/* Mobile Single Day View */}
-        <div className="sm:hidden">
-          <div className="text-center mb-4">
-            <div className="text-[12px] font-bold text-accent uppercase tracking-wider mb-1">
-              {weekGrid[activeDayIndex].dayName}
-            </div>
-            <div className="text-[20px] font-extrabold text-t1">
-              {weekGrid[activeDayIndex].dateLabel}
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {weekGrid[activeDayIndex].slots.map((slot, si) => (
-              <div
-                key={si}
-                className={`text-[11px] p-3 rounded-xl text-center font-bold border transition-all ${
-                  slot.s === 'booked' ? 'bg-blue-light text-blue-custom border-blue-custom/20' :
-                  slot.s === 'free' ? 'bg-green-light text-green-custom border-green-custom/20' :
-                  'bg-bg-custom text-t3 border-border-light'
-                }`}
-              >
-                {slot.t}
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 pt-2 border-t border-border-light">
+        <div className="flex gap-[14px] mt-4 pt-2 border-t border-border-light">
           <div className="flex items-center gap-[5px] text-[11px] text-t3">
             <div className="w-[10px] h-[10px] rounded-[3px] bg-blue-light border border-blue-custom/20"></div>занято
           </div>
