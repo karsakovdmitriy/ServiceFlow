@@ -91,9 +91,7 @@ export default function NewEntryModal({ isOpen, onClose }: { isOpen: boolean, on
                 onChange={e => setFormData({...formData, serviceId: e.target.value})}
               >
                 {services.map(s => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} ({s.price} ₽) {s.venue ? `— ${s.venue.name}` : ''}
-                  </option>
+                  <option key={s.id} value={s.id}>{s.name} ({s.price} ₽)</option>
                 ))}
               </select>
               <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
