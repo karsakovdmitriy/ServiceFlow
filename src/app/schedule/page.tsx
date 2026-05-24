@@ -49,7 +49,12 @@ export default function SchedulePage() {
     for (let i = 0; i < 7; i++) {
       const date = new Date(monday);
       date.setDate(monday.getDate() + i);
-      const dateStr = date.toISOString().split('T')[0];
+
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      const dateStr = `${y}-${m}-${d}`;
+
       const dayOfWeek = date.getDay();
       const dayName = DAYS_RU_FULL[dayOfWeek];
       const dayShort = DAYS_RU_SHORT[dayOfWeek];

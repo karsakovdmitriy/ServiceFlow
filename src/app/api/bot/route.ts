@@ -234,9 +234,13 @@ async function getTimesKeyboard(trainerId: string, serviceId: string, date: stri
   const start = parseInt(config.start_hour.split(':')[0]);
   const end = parseInt(config.end_hour.split(':')[0]);
 
+  // Fetch info about the selected service
+  const { data: service } = await supabase.from('services').select('is_group').eq('id', serviceId).single();
+  const isSelectedGroup = service?.is_group || false;
+
   // Fetch existing sessions and blocks
   const { data: sessions } = await supabase.from('sessions')
-    .select('start_time')
+    .select('start_time, service:services!service_id(is_group)')
     .eq('trainer_id', trainerId)
     .filter('start_time', 'gte', `${date}T00:00:00`)
     .filter('start_time', 'lte', `${date}T23:59:59`);
@@ -252,7 +256,21 @@ async function getTimesKeyboard(trainerId: string, serviceId: string, date: stri
   for (let h = start; h < end; h++) {
     const time = `${h.toString().padStart(2, '0')}:00`;
 
-    const isBooked = bookedTimes.includes(time);
+    // Logic for slot availability:
+    // 1. If the selected service is NOT group: the slot must be completely empty.
+    // 2. If the selected service IS group: the slot is available if there are NO individual sessions.
+
+    const existingSessionsAtTime = (sessions || []).filter(s => s.start_time.split('T')[1].slice(0, 5) === time);
+    const hasIndividualSession = existingSessionsAtTime.some(s => !(s.service as any)?.is_group);
+    const hasAnySession = existingSessionsAtTime.length > 0;
+
+    let isBooked = false;
+    if (!isSelectedGroup) {
+      isBooked = hasAnySession;
+    } else {
+      isBooked = hasIndividualSession;
+    }
+
     const isBlocked = (blocks || []).some(b => {
         if (b.all_day) return true;
         return time >= (b.start_hour || '00:00') && time < (b.end_hour || '23:59');

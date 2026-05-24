@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from './supabase';
 
 // Types and Mock Data
-export interface Service { id: string; name: string; duration: number; price: number; }
+export interface Service { id: string; name: string; duration: number; price: number; is_group: boolean; }
 export interface Client { id: string; full_name: string; email?: string; telegram_id?: string; is_active: boolean; created_at: string; }
 export interface Session { id: string; name: string; time: string; initials: string; bg?: string; color?: string; status: string; date: string; service?: string; serviceId?: string; clientId?: string; }
 export interface ScheduleDay { name: string; startTime: string; endTime: string; on: boolean; }
@@ -20,8 +20,9 @@ const getTodayStr = (offset = 0) => {
 };
 
 const MOCK_SERVICES = [
-  { id: 's1', name: 'Персональная тренировка', duration: 60, price: 2500 },
-  { id: 's2', name: 'Сплит-тренировка', duration: 60, price: 3500 },
+  { id: 's1', name: 'Персональная тренировка', duration: 60, price: 2500, is_group: false },
+  { id: 's2', name: 'Сплит-тренировка', duration: 60, price: 3500, is_group: false },
+  { id: 's3', name: 'Групповая тренировка', duration: 60, price: 1000, is_group: true },
 ];
 
 const MOCK_SESSIONS = [
