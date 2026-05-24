@@ -24,7 +24,7 @@ export async function POST(request: Request) {
       .select(`
         start_time,
         client:clients!client_id(telegram_id),
-        service:services!service_id(name),
+        service:services!service_id(name, venues!venue_id(name, address)),
         trainer:trainers!trainer_id(full_name)
       `)
       .eq('id', sessionId)
@@ -42,9 +42,12 @@ export async function POST(request: Request) {
       const dateStr = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
       const timeStr = sessionData.start_time.split('T')[1].slice(0, 5);
 
+      const venueInfo = (sessionData.service as any)?.venues;
+      const venueText = venueInfo ? `\nПлощадка: <b>${venueInfo.name}</b>${venueInfo.address ? ` (${venueInfo.address})` : ''}` : '';
+
       const message = `✅ <b>Ваша запись подтверждена!</b>\n\n` +
         `Тренер: <b>${(sessionData.trainer as any)?.full_name}</b>\n` +
-        `Услуга: <b>${(sessionData.service as any)?.name}</b>\n` +
+        `Услуга: <b>${(sessionData.service as any)?.name}</b>${venueText}\n` +
         `Дата: <b>${dateStr}</b>\n` +
         `Время: <b>${timeStr}</b>\n\n` +
         `Ждем вас на тренировке!`;

@@ -33,6 +33,7 @@ const Sidebar = () => {
     { label: 'Аналитика', icon: <IconChartBar size={18} />, href: '/analytics', id: 'analytics' },
     { label: 'Инструменты', type: 'group' },
     { label: 'Услуги', icon: <IconStethoscope size={18} />, href: '/services', id: 'services' },
+    { label: 'Площадки', icon: <IconBarbell size={18} />, href: '/venues', id: 'venues' },
     { label: 'Telegram-бот', icon: <IconBrandTelegram size={18} />, href: '/bot', id: 'bot' },
     { label: 'Настройки', icon: <IconSettings size={18} />, href: '/settings', id: 'settings' },
   ];
