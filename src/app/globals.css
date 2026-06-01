@@ -19,10 +19,10 @@
   --color-border-custom: #E2E8F0;
   --color-border-light: #F1F5F9;
   --color-surface: #FFFFFF;
-  --color-bg-custom: #F7F8FC;
+  --color-bg-custom: #F8FAFC;
 
-  --shadow-sh-sm: 0 1px 3px rgba(15, 23, 42, .05), 0 1px 2px rgba(15, 23, 42, .04);
-  --shadow-sh-md: 0 4px 16px rgba(15, 23, 42, .07), 0 2px 4px rgba(15, 23, 42, .04);
+  --shadow-sh-sm: 0 1px 3px rgba(15, 23, 42, .03), 0 1px 2px rgba(15, 23, 42, .02);
+  --shadow-sh-md: 0 4px 16px rgba(15, 23, 42, .05), 0 2px 4px rgba(15, 23, 42, .03);
 
   --radius-r-sm: 8px;
   --radius-r-md: 12px;
@@ -31,7 +31,7 @@
 }
 
 :root {
-  --bg: #F7F8FC;
+  --bg: #F8FAFC;
   --surface: #FFFFFF;
   --sidebar-w: 240px;
   --accent: #6366F1;
@@ -51,8 +51,8 @@
   --t3: #94A3B8;
   --border: #E2E8F0;
   --border-light: #F1F5F9;
-  --sh-sm: 0 1px 3px rgba(15, 23, 42, .05), 0 1px 2px rgba(15, 23, 42, .04);
-  --sh-md: 0 4px 16px rgba(15, 23, 42, .07), 0 2px 4px rgba(15, 23, 42, .04);
+  --sh-sm: 0 1px 3px rgba(15, 23, 42, .03), 0 1px 2px rgba(15, 23, 42, .02);
+  --sh-md: 0 4px 16px rgba(15, 23, 42, .05), 0 2px 4px rgba(15, 23, 42, .03);
   --r-sm: 8px;
   --r-md: 12px;
   --r-lg: 16px;
@@ -60,20 +60,41 @@
 }
 
 body {
-  @apply bg-[radial-gradient(ellipse_80%_60%_at_top_left,#EEF2FF_0%,#F7F8FC_55%)] min-h-screen text-t1 antialiased;
+  @apply bg-slate-50 min-h-screen text-t1 antialiased;
   font-family: 'Inter', -apple-system, sans-serif;
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-accent text-white border-none rounded-r-sm px-4 py-2 text-[13px] font-semibold cursor-pointer flex items-center gap-1.5 shadow-[0_2_10px_rgba(99,102,241,0.3)] transition-all hover:bg-accent-hover hover:shadow-[0_4_18px_rgba(99,102,241,0.38)] hover:-translate-y-px;
+    @apply bg-accent text-white border-none rounded-r-sm px-4 py-2 text-[13px] font-semibold cursor-pointer flex items-center gap-1.5 transition-all hover:bg-accent-hover hover:-translate-y-px active:translate-y-0;
   }
 
   .card {
-    @apply bg-surface rounded-r-lg border border-border-light shadow-sh-sm p-5 transition-shadow duration-200;
+    @apply bg-surface rounded-r-lg p-5 transition-all duration-200;
+  }
+
+  .card-flat {
+    @apply bg-slate-100/50 rounded-r-lg p-5 transition-all duration-200;
   }
 
   .section-label {
     @apply text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3;
   }
+
+  .status-dot {
+    @apply w-1.5 h-1.5 rounded-full inline-block mr-2;
+  }
+
+  .input-modern {
+    @apply text-[13px] border border-slate-200 rounded-r-sm p-[9px_12px] bg-surface text-t1 outline-none transition-all focus:border-accent/40 focus:ring-4 focus:ring-accent/5;
+  }
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.4s ease-out forwards;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }

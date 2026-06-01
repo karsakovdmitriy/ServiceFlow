@@ -4,8 +4,6 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  IconBarbell,
-  IconLayoutDashboard,
   IconCalendarEvent,
   IconCalendarWeek,
   IconUsers,
@@ -17,7 +15,6 @@ import {
   IconChartBar,
   IconWindow,
   IconStar,
-  IconMapPin,
   IconCircleCheck
 } from '@tabler/icons-react';
 import { useStore } from '@/lib/store';
@@ -29,19 +26,19 @@ const Sidebar = () => {
 
   const navItems = [
     { label: 'Рабочий стол', type: 'group' },
-    { label: 'Сегодня', icon: <IconCircleCheck size={18} />, href: '/', id: 'dashboard' },
-    { label: 'Заявки', icon: <IconCalendarEvent size={18} />, href: '/requests', id: 'requests', badge: requests.length > 0 ? requests.length : undefined },
-    { label: 'Расписание', icon: <IconCalendarWeek size={18} />, href: '/schedule', id: 'schedule' },
+    { label: 'Сегодня', icon: <IconCircleCheck size={18} stroke={1.5} />, href: '/', id: 'dashboard' },
+    { label: 'Заявки', icon: <IconCalendarEvent size={18} stroke={1.5} />, href: '/requests', id: 'requests', badge: requests.length > 0 ? requests.length : undefined },
+    { label: 'Расписание', icon: <IconCalendarWeek size={18} stroke={1.5} />, href: '/schedule', id: 'schedule' },
 
     { label: 'Клиенты', type: 'group' },
-    { label: 'База клиентов', icon: <IconUsers size={18} />, href: '/clients', id: 'clients' },
-    { label: 'Доходы', icon: <IconChartBar size={18} />, href: '/analytics', id: 'analytics' },
-    { label: 'Отзывы', icon: <IconStar size={18} />, href: '/reviews', id: 'reviews' },
+    { label: 'База клиентов', icon: <IconUsers size={18} stroke={1.5} />, href: '/clients', id: 'clients' },
+    { label: 'Доходы', icon: <IconChartBar size={18} stroke={1.5} />, href: '/analytics', id: 'analytics' },
+    { label: 'Отзывы', icon: <IconStar size={18} stroke={1.5} />, href: '/reviews', id: 'reviews' },
 
     { label: 'Настройка', type: 'group' },
-    { label: 'Услуги и площадки', icon: <IconStethoscope size={18} />, href: '/services', id: 'services' },
-    { label: 'Telegram-бот', icon: <IconBrandTelegram size={18} />, href: '/bot', id: 'bot' },
-    { label: 'Профиль', icon: <IconSettings size={18} />, href: '/settings', id: 'settings' },
+    { label: 'Услуги и площадки', icon: <IconStethoscope size={18} stroke={1.5} />, href: '/services', id: 'services' },
+    { label: 'Telegram-бот', icon: <IconBrandTelegram size={18} stroke={1.5} />, href: '/bot', id: 'bot' },
+    { label: 'Профиль', icon: <IconSettings size={18} stroke={1.5} />, href: '/settings', id: 'settings' },
   ];
 
   const initials = profile?.full_name
@@ -50,27 +47,31 @@ const Sidebar = () => {
 
   const SidebarContent = () => (
     <>
-      <div className="p-[24px_18px_18px] border-b border-border-light relative">
-        <div className="w-[38px] h-[38px] bg-gradient-to-br from-accent to-accent-mid rounded-[11px] flex items-center justify-center text-white shadow-[0_4px_14px_rgba(99,102,241,0.32)] mb-[10px]">
-          <IconWindow size={20} />
+      <div className="p-8 pb-4 relative">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-white shrink-0">
+            <IconWindow size={18} stroke={1.5} />
+          </div>
+          <div>
+            <div className="text-[15px] font-bold text-t1 tracking-tight leading-none">Окошко</div>
+            <div className="text-[11px] text-t3 mt-1 font-medium">Сервис записи</div>
+          </div>
         </div>
-        <div className="text-[16px] font-bold text-t1 tracking-[-0.4px]">Окошко</div>
-        <div className="text-[11px] text-t3 mt-[1px]">Сервис записи</div>
 
         {/* Close button for mobile */}
         <button
           onClick={() => setIsOpen(false)}
-          className="lg:hidden absolute top-6 right-4 p-1 text-t3 hover:text-t1"
+          className="lg:hidden absolute top-8 right-4 p-1 text-t3 hover:text-t1"
         >
           <IconX size={20} />
         </button>
       </div>
 
-      <nav className="p-[14px_10px] flex-1 overflow-y-auto">
+      <nav className="p-4 flex-1 overflow-y-auto">
         {navItems.map((item, index) => {
           if (item.type === 'group') {
             return (
-              <div key={index} className="text-[10px] font-semibold text-t3 uppercase tracking-[0.08em] px-2 mt-[14px] mb-[5px] first:mt-0">
+              <div key={index} className="text-[10px] font-bold text-t3 uppercase tracking-[0.1em] px-3 mt-6 mb-2 first:mt-0">
                 {item.label}
               </div>
             );
@@ -83,14 +84,14 @@ const Sidebar = () => {
               key={item.id}
               href={item.href!}
               onClick={() => setIsOpen(false)}
-              className={`flex items-center gap-[9px] p-[9px_8px] text-[13.5px] font-medium rounded-r-sm transition-all select-none hover:bg-bg-custom hover:text-t1 ${
-                isActive ? 'bg-accent-light text-accent' : 'text-t2'
+              className={`flex items-center gap-3 px-3 py-2 text-[13.5px] font-medium rounded-lg transition-all select-none mb-0.5 ${
+                isActive ? 'bg-slate-100 text-t1' : 'text-t2 hover:bg-slate-50 hover:text-t1'
               }`}
             >
-              <span className={isActive ? 'opacity-100' : 'opacity-65'}>{item.icon}</span>
+              <span className={isActive ? 'text-accent' : 'text-t3 opacity-70'}>{item.icon}</span>
               {item.label}
               {item.badge && (
-                <span className="ml-auto bg-red-custom text-white text-[10px] font-semibold rounded-full px-[7px] py-[2px] min-w-[19px] text-center">
+                <span className="ml-auto bg-accent text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
                   {item.badge}
                 </span>
               )}
@@ -99,13 +100,13 @@ const Sidebar = () => {
         })}
       </nav>
 
-      <div className="p-[14px_10px_16px] border-t border-border-light flex items-center gap-[10px]">
-        <div className="w-[34px] h-[34px] rounded-full bg-gradient-to-br from-accent to-[#A5B4FC] flex items-center justify-center text-[12px] font-bold text-white shrink-0">
+      <div className="p-4 m-4 bg-slate-50 rounded-xl flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-[11px] font-bold text-accent shrink-0 border border-accent/20">
           {initials}
         </div>
-        <div>
-          <div className="text-[13px] font-semibold text-t1">{profile?.full_name || 'Загрузка...'}</div>
-          <div className="text-[11px] text-t3 mt-[1px]">{profile?.specialization || 'Профиль'}</div>
+        <div className="min-w-0">
+          <div className="text-[13px] font-semibold text-t1 truncate">{profile?.full_name?.split(' ')[0] || 'Загрузка...'}</div>
+          <div className="text-[11px] text-t3 truncate">{profile?.specialization || 'Профиль'}</div>
         </div>
       </div>
     </>
@@ -114,23 +115,25 @@ const Sidebar = () => {
   return (
     <>
       {/* Mobile Menu Toggle */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-[110] p-2 bg-white rounded-r-sm border border-border-light shadow-sh-sm text-t2"
-      >
-        <IconMenu2 size={24} />
-      </button>
+      {!isOpen && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="lg:hidden fixed top-4 left-4 z-[110] p-2 bg-white rounded-lg border border-border-light shadow-sm text-t2"
+        >
+          <IconMenu2 size={24} />
+        </button>
+      )}
 
       {/* Sidebar Overlay for mobile */}
       {isOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-[120]"
+          className="lg:hidden fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[120]"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-[240px] bg-white/92 backdrop-blur-md border-r border-border-light flex-col fixed top-0 left-0 h-screen z-[100]">
+      <aside className="hidden lg:flex w-[240px] bg-white border-r border-slate-100 flex-col fixed top-0 left-0 h-screen z-[100]">
         <SidebarContent />
       </aside>
 

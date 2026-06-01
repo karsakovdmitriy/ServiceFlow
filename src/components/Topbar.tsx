@@ -35,32 +35,30 @@ const Topbar = () => {
   const { title, sub } = getPageTitle(pathname);
 
   return (
-    <header className="bg-white/85 backdrop-blur-md border-b border-border-light px-4 lg:px-8 h-16 flex items-center justify-between sticky top-0 z-10">
+    <header className="bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 lg:px-8 h-16 flex items-center justify-between sticky top-0 z-10">
       <div className="pl-12 lg:pl-0">
-        <div className="text-[20px] font-medium text-t1 tracking-tight">{title}</div>
-        <div className="text-[13px] text-t3 mt-[1px]">{sub}</div>
+        <div className="text-[15px] font-semibold text-t1 tracking-tight">{title}</div>
+        <div className="text-[11px] text-t3 mt-[1px] font-medium">{sub}</div>
       </div>
-      <div className="flex items-center gap-[6px] lg:gap-[10px]">
+      <div className="flex items-center gap-2 lg:gap-3">
         <Link
           href="/requests"
-          className="w-8 h-8 lg:w-9 lg:h-9 rounded-r-sm bg-bg-custom border border-border-custom flex items-center justify-center cursor-pointer text-t2 transition-all hover:bg-border-light hover:text-t1 relative"
+          className="w-8 h-8 lg:w-9 lg:h-9 rounded-lg bg-slate-50 flex items-center justify-center cursor-pointer text-t3 transition-all hover:bg-slate-100 hover:text-t1 relative"
         >
-          <IconBell size={18} />
+          <IconBell size={18} stroke={1.5} />
           {requests.length > 0 && (
-            <span className="min-w-[16px] h-[16px] px-1 bg-red-custom text-white text-[9px] font-bold rounded-full absolute -top-1.5 -right-1.5 border-[2px] border-white flex items-center justify-center">
-              {requests.length}
-            </span>
+            <span className="w-2 h-2 bg-accent rounded-full absolute top-2 right-2 border-2 border-white"></span>
           )}
         </Link>
-        <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-r-sm bg-bg-custom border border-border-custom flex items-center justify-center cursor-pointer text-t2 transition-all hover:bg-border-light hover:text-t1">
-          <IconSearch size={18} />
+        <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-lg bg-slate-50 flex items-center justify-center cursor-pointer text-t3 transition-all hover:bg-slate-100 hover:text-t1">
+          <IconSearch size={18} stroke={1.5} />
         </div>
         {(pathname === '/' || pathname === '/requests' || pathname === '/schedule') && (
           <button
             onClick={() => setIsModalOpen(true)}
-            className="bg-accent text-white border-none rounded-r-sm px-2.5 lg:px-4 py-1.5 lg:py-2 text-[12px] lg:text-[13px] font-semibold cursor-pointer flex items-center gap-1.5 shadow-[0_2px_10px_rgba(99,102,241,0.3)] transition-all hover:bg-accent-hover hover:shadow-[0_4px_18px_rgba(99,102,241,0.38)] hover:-translate-y-px"
+            className="bg-accent text-white rounded-lg px-3 lg:px-4 py-2 text-[13px] font-bold flex items-center gap-2 transition-all hover:bg-accent-hover hover:-translate-y-px active:translate-y-0"
           >
-            <IconPlus size={16} /> <span className="hidden sm:inline">Новая запись</span>
+            <IconPlus size={16} stroke={2} /> <span className="hidden sm:inline">Новая запись</span>
           </button>
         )}
       </div>
