@@ -74,6 +74,7 @@ CREATE TABLE IF NOT EXISTS clients (
   trainer_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
   full_name TEXT NOT NULL,
   email TEXT,
+  phone TEXT,
   telegram_id TEXT,
   is_active BOOLEAN DEFAULT TRUE,
   last_bot_state TEXT,
@@ -164,6 +165,7 @@ CREATE TABLE IF NOT EXISTS events (
   trainer_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
   type TEXT NOT NULL,
   message TEXT NOT NULL,
+  read BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
