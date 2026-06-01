@@ -5,8 +5,15 @@ import { useStore } from '@/lib/store';
 import { IconUsers, IconCalendarEvent, IconActivity } from '@tabler/icons-react';
 
 export default function VenueDashboard() {
-  const { venues, sessions, venueStaff } = useStore();
+  const { venues, sessions, venueStaff, schedule } = useStore();
   const currentVenue = venues[0];
+
+  const occupancyRate = React.useMemo(() => {
+    const totalWorkingHours = schedule.filter(d => d.on).length * 10; // Simple estimate
+    if (totalWorkingHours === 0) return 0;
+    const occupiedHours = sessions.filter(s => s.status === 'confirmed').length;
+    return Math.min(Math.round((occupiedHours / totalWorkingHours) * 100), 100);
+  }, [schedule, sessions]);
 
   return (
     <div className="animate-fade-up max-w-[1100px] mx-auto space-y-12">
@@ -41,7 +48,7 @@ export default function VenueDashboard() {
           </div>
           <div>
             <div className="text-[11px] text-t3 font-bold uppercase tracking-wider">Загрузка</div>
-            <div className="text-[24px] font-bold text-t1">45%</div>
+            <div className="text-[24px] font-bold text-t1">{occupancyRate}%</div>
           </div>
         </div>
       </div>

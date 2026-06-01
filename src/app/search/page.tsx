@@ -5,20 +5,26 @@ import { useStore } from '@/lib/store';
 import { IconSearch, IconUser, IconStar, IconMapPin } from '@tabler/icons-react';
 
 export default function SearchMasters() {
+  const { getAllMasters } = useStore();
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('Все');
+  const [masters, setMasters] = useState<any[]>([]);
 
   const categories = ['Все', 'Спорт', 'Бьюти', 'Образование', 'Медицина'];
 
-  // Mock data for search
-  const results = [
-    { name: 'Александр Петров', spec: 'Силовой тренинг', rating: 4.9, location: 'Gold Gym', category: 'Спорт' },
-    { name: 'Елена Соколова', spec: 'Йога и пилатес', rating: 5.0, location: 'Balance Studio', category: 'Спорт' },
-    { name: 'Марина Иванова', spec: 'Стрижка и окрашивание', rating: 4.8, location: 'Beauty Lab', category: 'Бьюти' },
-    { name: 'Dr. Смирнов', spec: 'Кинезиотерапия', rating: 4.9, location: 'Medical Center', category: 'Медицина' },
-  ];
+  React.useEffect(() => {
+    getAllMasters().then(data => {
+      setMasters(data.map(m => ({
+        name: m.full_name,
+        spec: m.specialization,
+        rating: 4.9 + (Math.random() * 0.1),
+        location: 'Окошко',
+        category: m.category || 'Спорт'
+      })));
+    });
+  }, []);
 
-  const filtered = results.filter(r =>
+  const filtered = masters.filter(r =>
     (activeCategory === 'Все' || r.category === activeCategory) &&
     (r.name.toLowerCase().includes(query.toLowerCase()) || r.spec.toLowerCase().includes(query.toLowerCase()))
   );
