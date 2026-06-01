@@ -13,6 +13,9 @@ CREATE TABLE IF NOT EXISTS trainers (
   slot_duration INTEGER DEFAULT 60,
   telegram_bot_token TEXT,
   telegram_id TEXT,
+  is_master BOOLEAN DEFAULT TRUE,
+  is_client BOOLEAN DEFAULT FALSE,
+  is_venue BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -72,6 +75,7 @@ EXCEPTION WHEN others THEN NULL; END $$;
 CREATE TABLE IF NOT EXISTS clients (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   trainer_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES trainers(id) ON DELETE SET NULL,
   full_name TEXT NOT NULL,
   email TEXT,
   phone TEXT,
@@ -216,6 +220,48 @@ ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
     DROP POLICY IF EXISTS "Trainers can view their own reviews" ON reviews;
     CREATE POLICY "Trainers can view their own reviews" ON reviews FOR SELECT USING (auth.uid() = trainer_id);
+EXCEPTION WHEN others THEN NULL; END $$;
+
+-- Partnerships
+CREATE TABLE IF NOT EXISTS partnerships (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
+  partner_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
+  status TEXT DEFAULT 'pending', -- 'pending', 'accepted'
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, partner_id)
+);
+
+ALTER TABLE partnerships ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can manage their own partnerships" ON partnerships;
+    CREATE POLICY "Users can manage their own partnerships" ON partnerships FOR ALL USING (auth.uid() = user_id OR auth.uid() = partner_id);
+EXCEPTION WHEN others THEN NULL; END $$;
+
+-- Venue Staff
+CREATE TABLE IF NOT EXISTS venue_staff (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  venue_id UUID REFERENCES venues(id) ON DELETE CASCADE,
+  trainer_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(venue_id, trainer_id)
+);
+
+ALTER TABLE venue_staff ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Venue owners can manage staff" ON venue_staff;
+    CREATE POLICY "Venue owners can manage staff" ON venue_staff FOR ALL USING (
+      EXISTS (
+        SELECT 1 FROM venues WHERE id = venue_id AND trainer_id = auth.uid()
+      )
+    );
+EXCEPTION WHEN others THEN NULL; END $$;
+
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Staff can view their venues" ON venue_staff;
+    CREATE POLICY "Staff can view their venues" ON venue_staff FOR SELECT USING (trainer_id = auth.uid());
 EXCEPTION WHEN others THEN NULL; END $$;
 
 -- Auth Trigger Function
