@@ -34,19 +34,31 @@ const Sidebar = () => {
   const getNavItems = () => {
     if (activeRole === 'client') {
       return [
-        { label: 'Мой профиль', type: 'group' },
+        { label: 'Личный кабинет', type: 'group' },
         { label: 'Мои записи', icon: <IconCircleCheck size={18} stroke={1.5} />, href: '/my-bookings', id: 'my-bookings' },
         { label: 'Партнеры', icon: <IconFriends size={18} stroke={1.5} />, href: '/partners', id: 'partners' },
         { label: 'Найти мастера', icon: <IconSearch size={18} stroke={1.5} />, href: '/search', id: 'search' },
+        { label: 'Настройки', type: 'group' },
+        { label: 'Мой профиль', icon: <IconSettings size={18} stroke={1.5} />, href: '/client/profile', id: 'client-profile' },
       ];
     }
 
     if (activeRole === 'venue') {
       return [
-        { label: 'Площадка', type: 'group' },
+        { label: 'Управление площадкой', type: 'group' },
         { label: 'Обзор', icon: <IconCircleCheck size={18} stroke={1.5} />, href: '/venue/dashboard', id: 'venue-dashboard' },
+        { label: 'Заявки', icon: <IconCalendarEvent size={18} stroke={1.5} />, href: '/venue/requests', id: 'venue-requests' },
+        { label: 'Расписание', icon: <IconCalendarWeek size={18} stroke={1.5} />, href: '/venue/schedule', id: 'venue-schedule' },
         { label: 'Мастера', icon: <IconUsers size={18} stroke={1.5} />, href: '/venue/masters', id: 'venue-masters' },
         { label: 'Услуги', icon: <IconStethoscope size={18} stroke={1.5} />, href: '/venue/services', id: 'venue-services' },
+
+        { label: 'Клиенты', type: 'group' },
+        { label: 'База клиентов', icon: <IconUsers size={18} stroke={1.5} />, href: '/clients', id: 'venue-clients' },
+        { label: 'Доходы', icon: <IconChartBar size={18} stroke={1.5} />, href: '/analytics', id: 'venue-analytics' },
+        { label: 'Отзывы', icon: <IconStar size={18} stroke={1.5} />, href: '/reviews', id: 'venue-reviews' },
+
+        { label: 'Настройка', type: 'group' },
+        { label: 'Профиль площадки', icon: <IconSettings size={18} stroke={1.5} />, href: '/venue/profile', id: 'venue-profile' },
       ];
     }
 

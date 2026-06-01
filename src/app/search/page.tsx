@@ -6,16 +6,42 @@ import { IconSearch, IconUser, IconStar, IconMapPin } from '@tabler/icons-react'
 
 export default function SearchMasters() {
   const [query, setQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState('Все');
+
+  const categories = ['Все', 'Спорт', 'Бьюти', 'Образование', 'Медицина'];
 
   // Mock data for search
   const results = [
-    { name: 'Александр Петров', spec: 'Силовой тренинг', rating: 4.9, location: 'Gold Gym' },
-    { name: 'Елена Соколова', spec: 'Йога и пилатес', rating: 5.0, location: 'Balance Studio' },
+    { name: 'Александр Петров', spec: 'Силовой тренинг', rating: 4.9, location: 'Gold Gym', category: 'Спорт' },
+    { name: 'Елена Соколова', spec: 'Йога и пилатес', rating: 5.0, location: 'Balance Studio', category: 'Спорт' },
+    { name: 'Марина Иванова', spec: 'Стрижка и окрашивание', rating: 4.8, location: 'Beauty Lab', category: 'Бьюти' },
+    { name: 'Dr. Смирнов', spec: 'Кинезиотерапия', rating: 4.9, location: 'Medical Center', category: 'Медицина' },
   ];
+
+  const filtered = results.filter(r =>
+    (activeCategory === 'Все' || r.category === activeCategory) &&
+    (r.name.toLowerCase().includes(query.toLowerCase()) || r.spec.toLowerCase().includes(query.toLowerCase()))
+  );
 
   return (
     <div className="animate-fade-up max-w-[900px] mx-auto space-y-8">
       <h1 className="text-2xl font-bold text-t1">Найти мастера</h1>
+
+      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        {categories.map(cat => (
+          <button
+            key={cat}
+            onClick={() => setActiveCategory(cat)}
+            className={`px-5 py-2 rounded-full text-[13px] font-bold transition-all whitespace-nowrap ${
+              activeCategory === cat
+                ? 'bg-accent text-white shadow-lg shadow-accent/20'
+                : 'bg-surface text-t2 border border-border-light hover:border-accent/30'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
 
       <div className="relative">
         <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-t3" size={20} />
@@ -29,7 +55,7 @@ export default function SearchMasters() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {results.map((r, i) => (
+        {filtered.map((r, i) => (
           <div key={i} className="bg-surface p-5 rounded-2xl border border-border-light shadow-sh-sm hover:border-accent/30 transition-all cursor-pointer group">
             <div className="flex gap-4">
               <div className="w-14 h-14 rounded-full bg-accent/5 flex items-center justify-center text-accent shrink-0 border border-accent/10">

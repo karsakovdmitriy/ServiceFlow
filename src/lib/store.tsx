@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from './supabase';
 
 // Types and Mock Data
-export interface Venue { id: string; name: string; address?: string; }
+export interface Venue { id: string; name: string; address?: string; phone?: string; email?: string; telegram_id?: string; description?: string; telegram_bot_token?: string; }
 export interface Service { id: string; name: string; duration: number; price: number; is_group: boolean; venue_id?: string | null; venue?: Venue; }
 export interface Client { id: string; full_name: string; email?: string; phone?: string; telegram_id?: string; is_active: boolean; created_at: string; }
 export interface Session { id: string; name: string; time: string; initials: string; bg?: string; color?: string; status: string; date: string; service?: string; serviceId?: string; clientId?: string; }
@@ -20,6 +20,7 @@ export interface TrainerProfile {
   email: string;
   slot_duration: number;
   telegram_id?: string;
+  category?: string;
   is_master: boolean;
   is_client: boolean;
   is_venue: boolean;
@@ -360,7 +361,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             .in('venue_id', venueIds);
 
           if (sessionsData) {
-            setSessions(sessionsData.map((s: any) => ({
+            const formatted = sessionsData.map((s: any) => ({
               id: s.id,
               name: `${s.trainer?.full_name} > ${s.client?.full_name}`,
               service: s.service?.name,
@@ -368,6 +369,24 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
               date: s.start_time.split('T')[0],
               time: `${s.start_time.split('T')[1].slice(0,5)} – ${s.end_time.split('T')[1].slice(0,5)}`,
               initials: 'VS'
+            }));
+            setSessions(formatted.filter(s => s.status === 'confirmed'));
+            setRequests(formatted.filter(s => s.status === 'pending'));
+          }
+
+          // Fetch Clients for Venue
+          const { data: clientsData } = await supabase.from('clients').select('*').in('trainer_id', [trainerId, ...venueStaff.map(s => s.trainer_id)]);
+          if (clientsData) setClients(clientsData);
+
+          // Fetch Reviews for Venue
+          const { data: reviewsData } = await supabase.from('reviews').select('*, clients(full_name)').in('venue_id', venueIds);
+          if (reviewsData) {
+            setReviews(reviewsData.map(r => ({
+              id: r.id,
+              rating: r.rating,
+              comment: r.comment,
+              created_at: r.created_at,
+              client_name: (r.clients as any)?.full_name
             })));
           }
         }

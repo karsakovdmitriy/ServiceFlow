@@ -25,8 +25,8 @@ export default function VenueMasters() {
         <h2 className="text-sm font-bold text-t1 uppercase tracking-wider mb-4">Добавить мастера на площадку</h2>
         <form onSubmit={handleAddStaff} className="flex gap-3">
           <input
-            type="email"
-            placeholder="Email мастера"
+            type="text"
+            placeholder="Email, Telegram или телефон мастера"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="flex-1 px-4 py-2 bg-bg-custom border border-border-light rounded-xl text-[14px] focus:outline-none focus:ring-2 focus:ring-accent/20"

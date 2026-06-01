@@ -11,7 +11,8 @@ export default function SettingsPage() {
     specialization: '',
     avatar_url: '',
     email: '',
-    slot_duration: '60'
+    slot_duration: '60',
+    category: 'Спорт'
   });
 
   const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'TrainerSpaceBot';
@@ -26,7 +27,8 @@ export default function SettingsPage() {
         specialization: profile.specialization || '',
         avatar_url: profile.avatar_url || '',
         email: profile.email || '',
-        slot_duration: String(profile.slot_duration || 60)
+        slot_duration: String(profile.slot_duration || 60),
+        category: (profile as any).category || 'Спорт'
       });
     }
   }, [profile]);
@@ -40,8 +42,9 @@ export default function SettingsPage() {
       specialization: formData.specialization,
       avatar_url: formData.avatar_url,
       email: formData.email,
-      slot_duration: parseInt(formData.slot_duration)
-    }) as any;
+      slot_duration: parseInt(formData.slot_duration),
+      category: formData.category
+    } as any) as any;
 
     if (error) setMessage('Ошибка при сохранении: ' + error.message);
     else {
@@ -94,6 +97,19 @@ export default function SettingsPage() {
                       value={formData.specialization}
                       onChange={e => setFormData({...formData, specialization: e.target.value})}
                     />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Категория (сфера)</label>
+                    <select
+                      className="w-full input-modern bg-bg-custom/50 appearance-none"
+                      value={formData.category}
+                      onChange={e => setFormData({...formData, category: e.target.value})}
+                    >
+                      <option value="Спорт">Спорт</option>
+                      <option value="Бьюти">Бьюти</option>
+                      <option value="Образование">Образование</option>
+                      <option value="Медицина">Медицина</option>
+                    </select>
                   </div>
               </div>
 

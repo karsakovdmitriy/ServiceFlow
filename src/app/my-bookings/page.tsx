@@ -7,6 +7,8 @@ import { IconClock, IconCalendar } from '@tabler/icons-react';
 export default function MyBookings() {
   const { sessions, requests } = useStore();
 
+  const recommendations = sessions.slice(0, 1); // Mock: reuse previous masters
+
   return (
     <div className="animate-fade-up max-w-[800px] mx-auto space-y-8">
       <h1 className="text-2xl font-bold text-t1">Мои записи</h1>
@@ -43,6 +45,32 @@ export default function MyBookings() {
           ))}
         </div>
       </section>
+
+      {recommendations.length > 0 && (
+        <section className="bg-gradient-to-br from-accent/5 to-accent/10 p-6 rounded-xl border border-accent/20 shadow-sh-sm">
+          <h2 className="text-sm font-bold text-accent uppercase tracking-wider mb-4 flex items-center gap-2">
+            Рекомендации: Записаться повторно
+          </h2>
+          <div className="space-y-3">
+            {recommendations.map((rec) => (
+              <div key={`rec-${rec.id}`} className="flex items-center justify-between p-4 rounded-xl bg-surface border border-accent/10 hover:border-accent transition-all">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-accent text-white flex items-center justify-center text-[12px] font-bold">
+                    {rec.initials}
+                  </div>
+                  <div>
+                    <div className="text-[14px] font-bold text-t1">{rec.name}</div>
+                    <div className="text-[12px] text-t3">{rec.service}</div>
+                  </div>
+                </div>
+                <button className="bg-accent text-white px-4 py-1.5 rounded-lg text-[12px] font-bold hover:bg-accent-hover transition-all">
+                  Записаться снова
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="bg-surface p-6 rounded-xl border border-border-light shadow-sh-sm">
         <h2 className="text-sm font-bold text-t1 uppercase tracking-wider mb-4">Заявки на рассмотрении</h2>
