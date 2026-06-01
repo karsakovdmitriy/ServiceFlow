@@ -5,6 +5,7 @@ import Topbar from "@/components/Topbar";
 import { AuthProvider } from "@/components/AuthProvider";
 import LayoutWrapper from "@/components/LayoutWrapper";
 import { StoreProvider } from "@/lib/store";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
   title: "Окошко — Сервис записи",
@@ -17,15 +18,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru">
-      <body className="bg-[#F9FAFB]">
-        <AuthProvider>
-          <StoreProvider>
-            <LayoutWrapper>
-              {children}
-            </LayoutWrapper>
-          </StoreProvider>
-        </AuthProvider>
+    <html lang="ru" suppressHydrationWarning>
+      <body className="bg-bg text-t1 antialiased">
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+          <AuthProvider>
+            <StoreProvider>
+              <LayoutWrapper>
+                {children}
+              </LayoutWrapper>
+            </StoreProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

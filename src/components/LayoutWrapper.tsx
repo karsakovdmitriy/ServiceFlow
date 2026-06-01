@@ -12,7 +12,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
 
   if (loading) {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#F9FAFB]">
+        <div className="min-h-screen flex items-center justify-center bg-bg-custom">
           <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
         </div>
     );

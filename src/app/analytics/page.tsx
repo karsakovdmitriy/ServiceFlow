@@ -9,12 +9,14 @@ export default function AnalyticsPage() {
 
   const stats = useMemo(() => {
     const allDone = completedSessions;
+    const allActive = sessions; // These are 'confirmed' sessions
+
     const totalIncome = allDone.reduce((acc, s) => {
         const svc = services.find(sv => sv.id === s.serviceId);
         return acc + (svc?.price || 0);
     }, 0);
 
-    const projectedIncome = sessions.reduce((acc, s) => {
+    const projectedIncome = allActive.reduce((acc, s) => {
         const svc = services.find(sv => sv.id === s.serviceId);
         return acc + (svc?.price || 0);
     }, 0);
@@ -25,7 +27,7 @@ export default function AnalyticsPage() {
         totalIncome,
         projectedIncome,
         completedCount: allDone.length,
-        activeCount: sessions.length,
+        activeCount: allActive.length,
         clientCount: clients.length,
         avgPrice: avgSessionPrice
     };

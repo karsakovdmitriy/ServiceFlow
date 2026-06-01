@@ -3,10 +3,10 @@
 import React from 'react';
 import { useStore } from '@/lib/store';
 import { IconBrandTelegram, IconCopy, IconChartBar, IconDeviceMobile, IconStarFilled, IconMessage2, IconShare, IconChevronDown, IconChevronUp, IconExternalLink, IconPrinter } from '@tabler/icons-react';
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function BotPage() {
-  const { profile, trainerId, isDemoMode, reviews } = useStore();
-  const [showPreview, setShowPreview] = React.useState(false);
+  const { profile, trainerId, isDemoMode, reviews, sessions, completedSessions } = useStore();
 
   const avgRating = reviews.length > 0
     ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)
@@ -19,35 +19,6 @@ export default function BotPage() {
     <div className="animate-fade-up max-w-[1000px] mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         <div className="space-y-12">
-          {!isDemoMode && (
-            <section>
-                <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-4">Оповещения тренера</div>
-                <div className="p-5 rounded-2xl bg-white border border-slate-100 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${profile?.telegram_id ? 'bg-green-50 text-green-custom' : 'bg-accent/5 text-accent'}`}>
-                            <IconBrandTelegram size={22} stroke={1.5} />
-                        </div>
-                        <div>
-                            <div className="text-[14px] font-bold text-t1 tracking-tight">
-                                {profile?.telegram_id ? 'Telegram подключен' : 'Привязать Telegram'}
-                            </div>
-                            <div className="text-[11px] text-t3 font-medium mt-0.5">
-                                {profile?.telegram_id ? 'Уведомления активны' : 'Получайте уведомления о записях'}
-                            </div>
-                        </div>
-                    </div>
-                    <a
-                        href={linkTgLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[12px] font-bold px-4 py-2 bg-slate-50 text-t2 rounded-lg hover:bg-slate-100 transition-all border border-slate-100"
-                    >
-                        {profile?.telegram_id ? 'Изменить' : 'Настроить'}
-                    </a>
-                </div>
-            </section>
-          )}
-
           <section>
             <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-4">Ссылка на запись</div>
             <div className="space-y-4">
@@ -102,11 +73,21 @@ export default function BotPage() {
 
                     <div className="w-full space-y-4">
                         <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col items-center gap-4">
-                             {/* Light Placeholder for QR Code */}
-                             <div className="w-28 h-28 bg-white p-2 rounded-xl border border-slate-100 flex items-center justify-center relative overflow-hidden">
-                                <IconBrandTelegram size={48} className="text-accent opacity-10" />
-                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,white_100%)] pointer-events-none"></div>
-                                <div className="text-[8px] font-bold text-t3 uppercase absolute bottom-2 opacity-50">QR-код</div>
+                             <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sh-sm">
+                                <QRCodeSVG
+                                    value={botLink}
+                                    size={120}
+                                    level="H"
+                                    includeMargin={false}
+                                    imageSettings={{
+                                        src: "/favicon.ico",
+                                        x: undefined,
+                                        y: undefined,
+                                        height: 24,
+                                        width: 24,
+                                        excavate: true,
+                                    }}
+                                />
                              </div>
                              <div className="text-[11px] font-bold text-t2 uppercase tracking-widest leading-relaxed">
                                 Записаться онлайн
@@ -137,15 +118,9 @@ export default function BotPage() {
           <section>
             <div className="flex items-center justify-between mb-4">
                 <div className="text-[11px] font-bold text-t3 uppercase tracking-widest">Предпросмотр (в Telegram)</div>
-                <button
-                    onClick={() => setShowPreview(!showPreview)}
-                    className="text-[11px] font-bold text-accent px-2 py-1 hover:bg-accent/5 rounded-lg flex items-center gap-1 transition-colors"
-                >
-                    {showPreview ? 'Свернуть' : 'Развернуть'} {showPreview ? <IconChevronUp size={14} stroke={2} /> : <IconChevronDown size={14} stroke={2} />}
-                </button>
             </div>
 
-            <div className={`bg-slate-100/50 rounded-3xl p-6 relative overflow-hidden transition-all duration-500 ease-in-out border border-slate-100 ${showPreview ? 'max-h-[600px] opacity-100' : 'max-h-32 opacity-80'}`}>
+            <div className="bg-slate-100/50 rounded-3xl p-6 relative overflow-hidden transition-all border border-slate-100">
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-8">
                     <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-xl shadow-sm">🤖</div>
@@ -204,10 +179,10 @@ export default function BotPage() {
             <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-4">Аналитика бота</div>
             <div className="grid grid-cols-2 gap-4">
                 {[
-                    { label: 'Активных сессий', val: '12' },
-                    { label: 'Всего записей', val: '47' },
+                    { label: 'Активных сессий', val: sessions.length },
+                    { label: 'Всего записей', val: sessions.length + completedSessions.length },
                 ].map((stat, i) => (
-                    <div key={i} className="p-5 bg-white border border-slate-50 rounded-2xl flex flex-col items-center text-center">
+                    <div key={i} className="p-5 bg-white border border-slate-50 rounded-2xl flex flex-col items-center text-center shadow-sh-sm">
                         <div className="text-[24px] font-extrabold text-t1 tracking-tight">{stat.val}</div>
                         <div className="text-[10px] text-t3 font-bold uppercase tracking-widest mt-1">{stat.label}</div>
                     </div>

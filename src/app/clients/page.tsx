@@ -16,7 +16,7 @@ export default function ClientsPage() {
   const clientsList = useMemo(() => {
     return storeClients.map(client => {
       const name = client.full_name;
-      const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
+      const initials = name.split(/\s+/).filter(p => p.length > 0).slice(0, 2).map(n => n[0]).join('').toUpperCase();
       const lastSession = sessions.find(s => s.clientId === client.id) || completedSessions.find(s => s.clientId === client.id);
       const isPending = requests.some(r => r.clientId === client.id);
       const isActive = sessions.some(s => s.clientId === client.id);

@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useStore } from '@/lib/store';
-import { IconDatabase, IconDatabaseOff, IconInfoCircle, IconShieldCheck, IconLock } from '@tabler/icons-react';
+import { IconDatabase, IconDatabaseOff, IconInfoCircle, IconShieldCheck, IconLock, IconBrandTelegram, IconPhoto } from '@tabler/icons-react';
 
 export default function SettingsPage() {
-  const { profile, updateProfile, loading: storeLoading, isDemoMode } = useStore();
+  const { profile, trainerId, updateProfile, loading: storeLoading, isDemoMode } = useStore();
   const [formData, setFormData] = useState({
     full_name: '',
     specialization: '',
@@ -13,6 +13,9 @@ export default function SettingsPage() {
     email: '',
     slot_duration: '60'
   });
+
+  const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'TrainerSpaceBot';
+  const linkTgLink = `https://t.me/${botUsername}?start=link_${trainerId || 'id'}`;
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -94,15 +97,50 @@ export default function SettingsPage() {
                   </div>
               </div>
 
-              <div>
-                <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">URL Аватара</label>
-                <input
-                  className="w-full input-modern"
-                  type="text"
-                  placeholder="https://images.com/photo.jpg"
-                  value={formData.avatar_url}
-                  onChange={e => setFormData({...formData, avatar_url: e.target.value})}
-                />
+              <div className="space-y-4">
+                <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Фото профиля</label>
+                <div className="flex items-center gap-6">
+                    {formData.avatar_url ? (
+                        <img src={formData.avatar_url} className="w-16 h-16 rounded-full object-cover border-2 border-border shadow-sh-sm" alt="Avatar" />
+                    ) : (
+                        <div className="w-16 h-16 rounded-full bg-bg-custom border-2 border-border flex items-center justify-center text-t3">
+                            <IconPhoto size={24} stroke={1.5} />
+                        </div>
+                    )}
+                    <div className="flex-1 space-y-2">
+                        <input
+                            className="w-full input-modern"
+                            type="text"
+                            placeholder="URL Аватара (напр. https://images.com/photo.jpg)"
+                            value={formData.avatar_url}
+                            onChange={e => setFormData({...formData, avatar_url: e.target.value})}
+                        />
+                        <div className="relative">
+                            <input
+                                type="file"
+                                id="avatar-upload"
+                                className="hidden"
+                                accept="image/*"
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                            setFormData({...formData, avatar_url: reader.result as string});
+                                        };
+                                        reader.readAsDataURL(file);
+                                    }
+                                }}
+                            />
+                            <label
+                                htmlFor="avatar-upload"
+                                className="text-[11px] font-bold text-accent hover:underline cursor-pointer flex items-center gap-1.5"
+                            >
+                                <IconPhoto size={14} /> Загрузить файл с устройства
+                            </label>
+                        </div>
+                    </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-50">
@@ -152,6 +190,35 @@ export default function SettingsPage() {
 
         {/* Sidebar Info */}
         <div className="lg:col-span-4 space-y-10">
+          {!isDemoMode && (
+            <section>
+                <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-4">Оповещения тренера</div>
+                <div className="p-5 rounded-2xl bg-surface border border-border flex flex-col gap-4 shadow-sh-sm">
+                    <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${profile?.telegram_id ? 'bg-green-light text-green-custom' : 'bg-accent-light text-accent'}`}>
+                            <IconBrandTelegram size={22} stroke={1.5} />
+                        </div>
+                        <div>
+                            <div className="text-[14px] font-bold text-t1 tracking-tight">
+                                {profile?.telegram_id ? 'Telegram подключен' : 'Привязать Telegram'}
+                            </div>
+                            <div className="text-[11px] text-t3 font-medium mt-0.5">
+                                {profile?.telegram_id ? 'Уведомления активны' : 'Получайте уведомления'}
+                            </div>
+                        </div>
+                    </div>
+                    <a
+                        href={linkTgLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-center text-[12px] font-bold py-2.5 bg-bg-custom text-t1 rounded-xl hover:bg-surface transition-all border border-border shadow-sh-sm"
+                    >
+                        {profile?.telegram_id ? 'Переподключить' : 'Подключить бота'}
+                    </a>
+                </div>
+            </section>
+          )}
+
           <section>
             <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-4">Статус системы</div>
             <div className={`p-6 rounded-3xl border ${isDemoMode ? 'border-amber-100 bg-amber-50/20' : 'border-green-100 bg-green-50/20'}`}>
