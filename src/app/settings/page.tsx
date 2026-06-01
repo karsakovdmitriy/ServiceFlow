@@ -66,17 +66,16 @@ export default function SettingsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
 
         {/* Main Settings */}
-        <div className="lg:col-span-8 space-y-10">
+        <div className="lg:col-span-8 space-y-16">
           <section>
-            <div className="flex items-center gap-4 mb-8">
-              <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider whitespace-nowrap">Личные данные</h2>
-              <div className="h-px bg-slate-100 flex-1"></div>
+            <div className="flex items-center gap-4 mb-10">
+              <h2 className="text-[12px] font-bold text-t3 uppercase tracking-widest whitespace-nowrap">ЛИЧНЫЕ ДАННЫЕ</h2>
             </div>
 
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                   <div>
-                    <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Полное имя</label>
+                    <label className="text-[10px] font-bold text-t3 uppercase tracking-widest block mb-1 opacity-60">Полное имя</label>
                     <input
                       className="w-full input-modern"
                       type="text"
@@ -86,7 +85,7 @@ export default function SettingsPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Специализация</label>
+                    <label className="text-[10px] font-bold text-t3 uppercase tracking-widest block mb-1 opacity-60">Специализация</label>
                     <input
                       className="w-full input-modern"
                       type="text"
@@ -97,21 +96,21 @@ export default function SettingsPage() {
                   </div>
               </div>
 
-              <div className="space-y-4">
-                <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Фото профиля</label>
-                <div className="flex items-center gap-6">
+              <div className="space-y-6">
+                <label className="text-[10px] font-bold text-t3 uppercase tracking-widest block mb-1 opacity-60">Фото профиля</label>
+                <div className="flex items-center gap-8">
                     {formData.avatar_url ? (
-                        <img src={formData.avatar_url} className="w-16 h-16 rounded-full object-cover border-2 border-border shadow-sh-sm" alt="Avatar" />
+                        <img src={formData.avatar_url} className="w-20 h-20 rounded-full object-cover shadow-2xl" alt="Avatar" />
                     ) : (
-                        <div className="w-16 h-16 rounded-full bg-bg-custom border-2 border-border flex items-center justify-center text-t3">
-                            <IconPhoto size={24} stroke={1.5} />
+                        <div className="w-20 h-20 rounded-full bg-bg-custom border border-border flex items-center justify-center text-t3">
+                            <IconPhoto size={28} stroke={1.5} />
                         </div>
                     )}
-                    <div className="flex-1 space-y-2">
+                    <div className="flex-1 space-y-4">
                         <input
                             className="w-full input-modern"
                             type="text"
-                            placeholder="URL Аватара (напр. https://images.com/photo.jpg)"
+                            placeholder="URL Аватара"
                             value={formData.avatar_url}
                             onChange={e => setFormData({...formData, avatar_url: e.target.value})}
                         />
@@ -134,28 +133,28 @@ export default function SettingsPage() {
                             />
                             <label
                                 htmlFor="avatar-upload"
-                                className="text-[11px] font-bold text-accent hover:underline cursor-pointer flex items-center gap-1.5"
+                                className="text-[11px] font-bold text-accent hover:underline cursor-pointer flex items-center gap-2"
                             >
-                                <IconPhoto size={14} /> Загрузить файл с устройства
+                                <IconPhoto size={14} /> ЗАГРУЗИТЬ ФАЙЛ
                             </label>
                         </div>
                     </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-50">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-8 border-t border-border-light">
                   <div>
-                    <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
+                    <label className="text-[10px] font-bold text-t3 uppercase tracking-widest block mb-1 opacity-60 flex items-center gap-1.5">
                         <IconLock size={12} /> Email (аккаунт)
                     </label>
                     <input
-                      className="w-full input-modern bg-slate-50/50 cursor-not-allowed opacity-60"
+                      className="w-full input-modern opacity-40 cursor-not-allowed"
                       type="email"
                       readOnly
                       value={formData.email}
                     />
                   </div>
-                  <div>
+                  <div className="hidden">
                     <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Длительность слота</label>
                     <select
                       className="w-full input-modern appearance-none"
@@ -240,12 +239,12 @@ export default function SettingsPage() {
             </div>
           </section>
 
-          <section className="p-6 rounded-3xl bg-white border border-slate-100">
-             <div className="flex items-center gap-3 text-accent mb-4">
-                <IconInfoCircle size={20} stroke={1.5} />
-                <h4 className="text-[13px] font-bold uppercase tracking-wider">Безопасность</h4>
+          <section className="p-8 rounded-[32px] bg-surface">
+             <div className="flex items-center gap-3 text-accent mb-6">
+                <IconInfoCircle size={22} stroke={1.5} />
+                <h4 className="text-[11px] font-bold uppercase tracking-widest">Безопасность</h4>
              </div>
-             <p className="text-[12px] text-t2 leading-relaxed font-medium">
+             <p className="text-[13px] text-t2 leading-relaxed font-medium opacity-80">
                 Мы используем Row Level Security (RLS) для защиты ваших данных. Доступ к вашим записям есть только у вас и ваших клиентов через официальный бот.
              </p>
           </section>

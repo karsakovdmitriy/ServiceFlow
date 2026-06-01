@@ -22,8 +22,8 @@
   --color-surface: var(--surface);
   --color-bg-custom: var(--bg);
 
-  --shadow-sh-sm: 0 1px 3px rgba(15, 23, 42, .03), 0 1px 2px rgba(15, 23, 42, .02);
-  --shadow-sh-md: 0 4px 16px rgba(15, 23, 42, .05), 0 2px 4px rgba(15, 23, 42, .03);
+  --shadow-sh-sm: none;
+  --shadow-sh-md: none;
 
   --radius-r-sm: 8px;
   --radius-r-md: 12px;
@@ -63,9 +63,9 @@
 .dark {
   --bg: #0F172A;
   --surface: #1E293B;
-  --t1: #F8FAFC;
-  --t2: #E2E8F0;
-  --t3: #94A3B8;
+  --t1: #FFFFFF;
+  --t2: #CBD5E1;
+  --t3: #64748B;
   --border: #334155;
   --border-light: #1E293B;
 }
@@ -77,27 +77,33 @@ body {
 
 @layer components {
   .btn-primary {
-    @apply bg-accent text-white border-none rounded-r-sm px-4 py-2 text-[13px] font-semibold cursor-pointer flex items-center gap-1.5 transition-all hover:bg-accent-hover hover:-translate-y-px active:translate-y-0;
+    @apply bg-accent text-white border-none rounded-r-sm px-4 py-2 text-[13px] font-semibold cursor-pointer flex items-center gap-1.5 transition-all hover:bg-accent-hover active:translate-y-0;
   }
 
   .card {
-    @apply bg-surface rounded-r-lg p-5 transition-all duration-200;
+    @apply bg-surface rounded-r-lg p-6 transition-all duration-200 border-none shadow-none;
   }
 
   .card-flat {
-    @apply bg-bg-custom rounded-r-lg p-5 transition-all duration-200 border border-border-light;
+    @apply bg-bg-custom rounded-r-lg p-6 transition-all duration-200 border-none shadow-none;
   }
 
   .section-label {
-    @apply text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3;
+    @apply text-[10.5px] font-bold text-t3 uppercase tracking-[0.1em] mb-4;
   }
 
   .status-dot {
     @apply w-1.5 h-1.5 rounded-full inline-block mr-2;
   }
 
+  /* Modern premium inputs: only bottom border */
   .input-modern {
-    @apply text-[13px] border border-border-custom rounded-r-sm p-[9px_12px] bg-surface text-t1 outline-none transition-all focus:border-accent/40 focus:ring-4 focus:ring-accent/5;
+    @apply text-[14px] border-x-0 border-t-0 border-b border-border rounded-none p-[10px_0] bg-transparent text-t1 outline-none transition-all focus:border-accent focus:ring-0;
+  }
+
+  /* Management icons hover effects */
+  .mgmt-icon {
+    @apply opacity-0 transition-opacity duration-200 group-hover:opacity-100;
   }
 }
 

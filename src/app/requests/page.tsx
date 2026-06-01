@@ -69,61 +69,60 @@ export default function RequestsPage() {
   const groupedUpcomingSessions = useMemo(() => groupSessionsByDay(filteredUpcomingSessions), [filteredUpcomingSessions]);
 
   return (
-    <div className="animate-fade-up max-w-[1000px] mx-auto">
-      {/* Header & Tabs */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-10">
-        <div className="flex bg-slate-100 p-1 rounded-xl">
+    <div className="animate-fade-up max-w-[1000px] mx-auto space-y-16">
+      {/* Header & Tabs - minimalist search and tabs */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+        <div className="flex bg-bg-custom p-1 rounded-xl">
            <button
              onClick={() => setActiveTab('active')}
-             className={`px-6 py-2 rounded-lg text-[13px] font-bold transition-all flex items-center gap-2 ${activeTab === 'active' ? 'bg-white text-t1 shadow-sm' : 'text-t3 hover:text-t2'}`}
+             className={`px-6 py-2 rounded-lg text-[12px] font-bold transition-all flex items-center gap-2 ${activeTab === 'active' ? 'bg-surface text-t1' : 'text-t3 hover:text-t2'}`}
            >
-             <IconCalendarTime size={16} /> Активные
+             <IconCalendarTime size={16} stroke={2} /> АКТИВНЫЕ
            </button>
            <button
              onClick={() => setActiveTab('completed')}
-             className={`px-6 py-2 rounded-lg text-[13px] font-bold transition-all flex items-center gap-2 ${activeTab === 'completed' ? 'bg-white text-t1 shadow-sm' : 'text-t3 hover:text-t2'}`}
+             className={`px-6 py-2 rounded-lg text-[12px] font-bold transition-all flex items-center gap-2 ${activeTab === 'completed' ? 'bg-surface text-t1' : 'text-t3 hover:text-t2'}`}
            >
-             <IconHistory size={16} /> История
+             <IconHistory size={16} stroke={2} /> ИСТОРИЯ
            </button>
         </div>
-        <div className="relative w-full md:w-72">
-           <IconSearch size={16} stroke={2} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
+        <div className="relative w-full md:w-64">
+           <IconSearch size={16} stroke={2} className="absolute left-0 top-1/2 -translate-y-1/2 text-t3 opacity-50" />
            <input
               type="text"
-              placeholder="Поиск по клиенту..."
+              placeholder="Поиск..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-100 rounded-xl text-[13px] font-medium outline-none focus:border-accent transition-all shadow-sm"
+              className="w-full pl-7 pr-0 py-2 bg-transparent border-b border-border rounded-none text-[14px] font-medium outline-none focus:border-accent transition-all"
            />
         </div>
       </div>
 
       {activeTab === 'active' ? (
-        <div className="space-y-16">
+        <div className="space-y-24">
           {/* Section: Overdue Sessions */}
           {overdueSessions.length > 0 && (
-            <section className="bg-red-50/30 p-6 rounded-r-xl border border-red-100/50">
-              <div className="flex items-center gap-4 mb-6">
-                <h2 className="text-[14px] font-bold text-red-custom uppercase tracking-wider whitespace-nowrap flex items-center gap-2">
-                  <IconCalendarTime size={18} /> Просроченые записи
+            <section className="bg-red-50/10 p-8 rounded-3xl border-none">
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-[12px] font-bold text-red-custom uppercase tracking-widest flex items-center gap-2">
+                   ПРОСРОЧЕННЫЕ
                 </h2>
-                <div className="h-px bg-red-100 flex-1"></div>
-                <span className="text-[11px] font-bold text-red-custom/60 uppercase">{overdueSessions.length} записей</span>
+                <span className="text-[10px] font-bold text-red-custom/40 uppercase tracking-widest">{overdueSessions.length} ЗАПИСЕЙ</span>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {overdueSessions.map((session, i) => (
-                  <div key={i} className="group relative bg-surface p-4 rounded-2xl border border-red-100/50 hover:shadow-sh-md transition-all">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-red-50 flex items-center justify-center text-[11px] font-bold text-red-custom shrink-0">
+                  <div key={i} className="group relative bg-surface p-6 rounded-3xl transition-all">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-red-50 text-red-custom flex items-center justify-center text-[12px] font-bold shrink-0">
                           {session.initials}
                       </div>
                       <div className="flex-1 min-w-0">
-                          <div className="text-[14px] font-bold text-t1">{session.name}</div>
-                          <div className="text-[12px] text-red-custom/70 font-medium flex items-center gap-1">
-                              <IconCalendar size={12} stroke={2} /> {session.date} · {session.time}
+                          <div className="text-[15px] font-bold text-t1 tracking-tight">{session.name}</div>
+                          <div className="text-[12px] text-red-custom/60 font-bold flex items-center gap-2 mt-0.5">
+                              <IconCalendar size={13} stroke={2} /> {session.date} · {session.time}
                           </div>
                       </div>
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex gap-2 mgmt-icon">
                           <button
                               onClick={() => completeSession(session.id)}
                               className="w-8 h-8 flex items-center justify-center rounded-lg text-green-custom hover:bg-green-50 transition-all"
@@ -149,32 +148,32 @@ export default function RequestsPage() {
           {/* Section: Pending Confirmation */}
           {filteredRequests.length > 0 && (
             <section>
-              <div className="flex items-center gap-4 mb-6">
-                <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider whitespace-nowrap">Ожидают подтверждения</h2>
-                <div className="h-px bg-slate-100 flex-1"></div>
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-[12px] font-bold text-t3 uppercase tracking-widest">ОЖИДАЮТ ПОДТВЕРЖДЕНИЯ</h2>
+                <span className="text-[10px] font-bold text-accent tracking-widest uppercase">{filteredRequests.length} ЗАЯВОК</span>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-4">
                 {filteredRequests.map((req, i) => (
-                  <div key={i} className="group flex items-center gap-4 p-4 rounded-2xl hover:bg-white transition-all">
-                    <div className="w-11 h-11 rounded-full bg-accent/5 flex items-center justify-center text-[12px] font-bold text-accent shrink-0 border border-white">
+                  <div key={i} className="group flex items-center gap-6 py-4 border-b border-border-light last:border-0 hover:bg-bg-custom/50 rounded-xl px-4 -mx-4 transition-all">
+                    <div className="w-10 h-10 rounded-full bg-accent/5 flex items-center justify-center text-[12px] font-bold text-accent shrink-0">
                       {req.initials}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-[15px] font-bold text-t1 tracking-tight">{req.name}</div>
-                      <div className="text-[12px] text-t3 mt-0.5 flex items-center gap-1.5 font-medium">
-                        <IconClock size={13} stroke={2} className="text-accent" /> {req.date} · {req.time}
+                      <div className="text-[12px] text-t3 mt-0.5 flex items-center gap-2 font-bold uppercase tracking-tighter">
+                        <IconClock size={13} stroke={2} className="text-accent opacity-50" /> {req.date} · {req.time}
                       </div>
                     </div>
-                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-2 mgmt-icon">
                       <button
                         onClick={() => approveRequest(req.id)}
-                        className="bg-green-custom text-white text-[12px] font-bold px-5 py-2 rounded-xl hover:bg-green-600 transition-all shadow-lg shadow-green-500/10 active:scale-95"
+                        className="bg-green-custom text-white text-[11px] font-bold px-5 py-2 rounded-xl hover:bg-green-600 transition-all active:scale-95"
                       >
                         Принять
                       </button>
                       <button
                         onClick={() => setRejectingId(req.id)}
-                        className="text-red-custom text-[12px] font-bold px-5 py-2 rounded-xl hover:bg-red-50 transition-all active:scale-95"
+                        className="text-red-custom text-[11px] font-bold px-5 py-2 rounded-xl hover:bg-red-50 transition-all active:scale-95"
                       >
                         Отклонить
                       </button>
@@ -187,68 +186,59 @@ export default function RequestsPage() {
 
           {/* Section: Upcoming (Timeline style) */}
           <section>
-            <div className="flex items-center gap-4 mb-8">
-              <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider whitespace-nowrap">
-                {showAllUpcoming ? 'Все предстоящие записи' : 'Записи на эту неделю'}
+            <div className="flex items-center justify-between mb-12">
+              <h2 className="text-[12px] font-bold text-t3 uppercase tracking-widest">
+                {showAllUpcoming ? 'ПРЕДСТОЯЩИЕ (ВСЕ)' : 'НА ЭТУ НЕДЕЛЮ'}
               </h2>
-              <div className="h-px bg-border flex-1"></div>
               {!showAllUpcoming && sessions.length > filteredUpcomingSessions.length && (
                 <button
                     onClick={() => setShowAllUpcoming(true)}
-                    className="text-[11px] font-bold text-accent hover:underline uppercase tracking-widest"
+                    className="text-[10px] font-bold text-accent hover:underline uppercase tracking-widest"
                 >
-                    Развернуть все
+                    РАЗВЕРНУТЬ ВСЕ
                 </button>
               )}
             </div>
 
             {filteredUpcomingSessions.length === 0 ? (
-              <div className="text-center py-20 bg-bg-custom rounded-3xl border border-dashed border-border">
-                <div className="text-[13px] text-t3 font-medium">Предстоящих записей на эту неделю нет</div>
-                <button
-                  onClick={() => setShowAllUpcoming(true)}
-                  className="mt-4 text-[12px] font-bold text-accent hover:underline"
-                >
-                  Показать все записи
-                </button>
+              <div className="text-center py-24 bg-surface rounded-[40px] border-none">
+                <div className="text-[13px] text-t3 font-bold opacity-40 italic">На эту неделю записей нет</div>
               </div>
             ) : (
-              <div className="relative pl-6 border-l border-border space-y-10">
+              <div className="relative pl-8 border-l-2 border-border-light space-y-16 ml-2">
                 {groupedUpcomingSessions.map(([date, items]) => (
                   <div key={date} className="relative">
                     {/* Day Marker */}
-                    <div className="absolute -left-[31px] top-0 w-2.5 h-2.5 rounded-full bg-accent border-[2.5px] border-bg-custom shadow-[0_0_0_4px_var(--surface)]"></div>
-                    <div className="text-[12px] font-bold text-accent uppercase tracking-widest mb-4">
+                    <div className="absolute -left-[41px] top-0 w-4 h-4 rounded-full bg-surface border-4 border-accent"></div>
+                    <div className="text-[11px] font-bold text-accent uppercase tracking-[0.2em] mb-8">
                       {new Date(date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' })}
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       {items.map((session, i) => (
-                        <div key={i} className="group relative bg-surface p-4 rounded-2xl border border-border hover:shadow-sh-md hover:-translate-y-0.5 transition-all">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center text-[11px] font-bold text-t2 shrink-0">
+                        <div key={i} className="group relative bg-surface p-6 rounded-[32px] transition-all hover:bg-bg-custom/50">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-bg-custom text-t2 flex items-center justify-center text-[12px] font-bold shrink-0">
                                 {session.initials}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <div className="text-[14px] font-bold text-t1">{session.name}</div>
-                                <div className="text-[12px] text-t3 font-medium flex items-center gap-1">
-                                    <IconClock size={12} stroke={2} /> {session.time}
+                                <div className="text-[15px] font-bold text-t1 tracking-tight">{session.name}</div>
+                                <div className="text-[12px] text-t3 font-bold flex items-center gap-2 mt-0.5">
+                                    <IconClock size={13} stroke={2} className="opacity-40" /> {session.time}
                                 </div>
                             </div>
-                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex gap-2 mgmt-icon">
                                 <button
                                     onClick={() => completeSession(session.id)}
-                                    className="w-8 h-8 flex items-center justify-center rounded-lg text-green-custom hover:bg-green-50 transition-all"
-                                    title="Завершить"
+                                    className="w-9 h-9 flex items-center justify-center rounded-full text-green-custom hover:bg-green-50 transition-all"
                                 >
-                                    <IconCheck size={18} stroke={2} />
+                                    <IconCheck size={20} stroke={2} />
                                 </button>
                                 <button
                                     onClick={() => setCancellingId(session.id)}
-                                    className="w-8 h-8 flex items-center justify-center rounded-lg text-t3 hover:text-red-custom hover:bg-red-50 transition-all"
-                                    title="Отменить"
+                                    className="w-9 h-9 flex items-center justify-center rounded-full text-t3 hover:text-red-custom hover:bg-red-50 transition-all"
                                 >
-                                    <IconX size={18} stroke={2} />
+                                    <IconX size={20} stroke={2} />
                                 </button>
                             </div>
                           </div>
@@ -295,28 +285,28 @@ export default function RequestsPage() {
         </section>
       )}
 
-      {/* Reject/Cancel Modal */}
+      {/* Reject/Cancel Modal - Full Viewport */}
       {(rejectingId || cancellingId) && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-fade-up border border-slate-100">
-                <div className="text-[16px] font-bold text-t1 mb-2 tracking-tight">{rejectingId ? 'Отклонить заявку?' : 'Отменить тренировку?'}</div>
-                <p className="text-[13px] text-t3 mb-6 leading-relaxed">Вы можете просто {rejectingId ? 'отклонить запись' : 'отменить тренировку'} или предложить клиенту выбрать другое время в боте.</p>
-                <div className="flex flex-col gap-2">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4">
+            <div className="bg-surface rounded-[40px] p-10 max-w-sm w-full animate-fade-up border-none">
+                <div className="text-[18px] font-bold text-t1 mb-3 tracking-tight">{rejectingId ? 'Отклонить заявку?' : 'Отменить тренировку?'}</div>
+                <p className="text-[14px] text-t3 mb-10 leading-relaxed font-medium">Вы можете просто {rejectingId ? 'отклонить запись' : 'отменить тренировку'} или предложить клиенту выбрать другое время в боте.</p>
+                <div className="flex flex-col gap-3">
                     <button
                         onClick={() => rejectingId ? handleReject(rejectingId, true) : handleCancel(cancellingId!, true)}
-                        className="w-full bg-accent text-white py-2.5 rounded-xl text-[13px] font-bold hover:bg-accent-hover transition-all"
+                        className="w-full bg-accent text-white py-4 rounded-2xl text-[14px] font-bold hover:bg-accent-hover transition-all"
                     >
                         Предложить перенос
                     </button>
                     <button
                         onClick={() => rejectingId ? handleReject(rejectingId, false) : handleCancel(cancellingId!, false)}
-                        className="w-full bg-slate-50 text-red-custom py-2.5 rounded-xl text-[13px] font-bold hover:bg-red-50 transition-all"
+                        className="w-full bg-bg-custom text-red-custom py-4 rounded-2xl text-[14px] font-bold hover:bg-red-50 transition-all"
                     >
                         {rejectingId ? 'Отклонить без переноса' : 'Отменить без переноса'}
                     </button>
                     <button
                         onClick={() => { setRejectingId(null); setCancellingId(null); }}
-                        className="w-full py-2.5 text-t3 text-[13px] font-bold hover:text-t1 transition-all"
+                        className="w-full py-4 text-t3 text-[14px] font-bold hover:text-t1 transition-all"
                     >
                         Отмена
                     </button>

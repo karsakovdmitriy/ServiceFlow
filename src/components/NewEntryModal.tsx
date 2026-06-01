@@ -54,82 +54,79 @@ export default function NewEntryModal({ isOpen, onClose }: { isOpen: boolean, on
   };
 
   const modalContent = (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div
-        className="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200 overflow-hidden"
+        className="bg-surface rounded-[40px] w-full max-w-md animate-fade-up overflow-hidden p-10"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-gray-50/50">
-          <h2 className="text-[17px] font-bold text-gray-900 tracking-tight">Новая запись</h2>
+        <div className="flex items-center justify-between mb-10">
+          <h2 className="text-[18px] font-bold text-t1 tracking-tight">Новая запись</h2>
           <button
             onClick={onClose}
-            className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+            className="text-t3 hover:text-t1 transition-colors"
           >
-            <IconX size={20} />
+            <IconX size={24} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          <div className="space-y-1.5">
-            <label className="block text-[13px] font-semibold text-gray-700">Имя клиента</label>
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <div>
+            <label className="block text-[10px] font-bold text-t3 uppercase tracking-widest mb-1 opacity-60">Имя клиента</label>
             <input
               type="text"
               required
-              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all text-[14px]"
-              placeholder="Введите имя и фамилию"
+              className="w-full input-modern"
+              placeholder="Введите имя"
               value={formData.name}
               onChange={e => setFormData({...formData, name: e.target.value})}
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="block text-[13px] font-semibold text-gray-700">Услуга</label>
+          <div>
+            <label className="block text-[10px] font-bold text-t3 uppercase tracking-widest mb-1 opacity-60">Услуга</label>
             <div className="relative">
               <select
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all appearance-none text-[14px]"
+                className="w-full input-modern appearance-none"
                 value={formData.serviceId}
                 onChange={e => setFormData({...formData, serviceId: e.target.value})}
               >
                 {services.map(s => (
                   <option key={s.id} value={s.id}>
-                    {s.name} ({s.price} ₽) {s.venue ? `— ${s.venue.name}` : ''}
+                    {s.name} ({s.price.toLocaleString()} ₽)
                   </option>
                 ))}
               </select>
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                <IconChevronDown size={16} />
-              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="block text-[13px] font-semibold text-gray-700">Дата</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+            <div>
+              <label className="block text-[10px] font-bold text-t3 uppercase tracking-widest mb-1 opacity-60">Дата</label>
               <input
                 type="date"
                 required
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all text-[14px]"
+                className="w-full input-modern"
                 value={formData.date}
                 onChange={e => setFormData({...formData, date: e.target.value})}
               />
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1.5">
-                <label className="block text-[13px] font-semibold text-gray-700">От</label>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] font-bold text-t3 uppercase tracking-widest mb-1 opacity-60">От</label>
                 <input
                   type="time"
                   required
-                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all text-[14px]"
+                  className="w-full input-modern"
                   value={formData.startTime}
                   onChange={e => setFormData({...formData, startTime: e.target.value})}
                 />
               </div>
-              <div className="space-y-1.5">
-                <label className="block text-[13px] font-semibold text-gray-700">До</label>
+              <div>
+                <label className="block text-[10px] font-bold text-t3 uppercase tracking-widest mb-1 opacity-60">До</label>
                 <input
                   type="time"
                   required
-                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all text-[14px]"
+                  className="w-full input-modern"
                   value={formData.endTime}
                   onChange={e => setFormData({...formData, endTime: e.target.value})}
                 />
@@ -137,17 +134,10 @@ export default function NewEntryModal({ isOpen, onClose }: { isOpen: boolean, on
             </div>
           </div>
 
-          <div className="pt-4 flex gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 font-bold text-[14px] rounded-xl hover:bg-gray-50 transition-colors"
-            >
-              Отмена
-            </button>
+          <div className="pt-6">
             <button
               type="submit"
-              className="flex-1 px-4 py-2.5 bg-accent text-white font-bold text-[14px] rounded-xl hover:bg-accent-hover transition-all shadow-lg shadow-accent/25 active:scale-[0.98]"
+              className="w-full py-4 bg-accent text-white font-bold text-[14px] rounded-2xl hover:bg-accent-hover transition-all shadow-xl shadow-accent/20 active:scale-[0.98]"
             >
               Создать запись
             </button>
