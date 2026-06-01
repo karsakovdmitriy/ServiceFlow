@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { IconPlus, IconTrash, IconEdit, IconCheck, IconX } from '@tabler/icons-react';
+import { IconPlus, IconTrash, IconEdit, IconCheck, IconX, IconMapPin, IconClock, IconCurrencyRubel, IconUsers, IconBarbell } from '@tabler/icons-react';
 import { useStore, Service } from '@/lib/store';
 
 export default function ServicesPage() {
@@ -34,55 +34,121 @@ export default function ServicesPage() {
   };
 
   return (
-    <div className="animate-fade-up max-w-4xl">
-      <div className="flex items-center justify-between mb-6">
-        <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em]">Ваши услуги</div>
+    <div className="animate-fade-up">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-[20px] font-bold text-t1">Услуги и площадки</h1>
         <button
           onClick={() => setIsAdding(true)}
-          className="bg-accent text-white text-[13px] font-semibold px-4 py-2 rounded-r-sm hover:bg-accent-hover transition-all flex items-center gap-2"
+          className="bg-accent text-white text-[13px] font-semibold px-5 py-2.5 rounded-xl hover:bg-accent-hover transition-all flex items-center gap-2 shadow-lg shadow-accent/20"
         >
-          <IconPlus size={16} /> Добавить услугу
+          <IconPlus size={18} /> Новая услуга
         </button>
       </div>
 
-      <div className="grid gap-4">
-        {isAdding && (
-          <div className="card border-2 border-accent/20 bg-accent/5">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-              <div className="sm:col-span-1">
-                <label className="text-[11px] text-t3 block mb-1">Название</label>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {services.map(service => (
+          <div key={service.id} className="card group hover:shadow-sh-md transition-all">
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-10 h-10 rounded-xl bg-accent-light text-accent flex items-center justify-center">
+                {service.is_group ? <IconUsers size={20} /> : <IconBarbell size={20} />}
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => startEdit(service)}
+                  className="p-2 text-t3 hover:text-accent hover:bg-accent-light rounded-lg transition-all"
+                >
+                  <IconEdit size={16} />
+                </button>
+                <button
+                  onClick={() => removeService(service.id)}
+                  className="p-2 text-t3 hover:text-red-custom hover:bg-red-light rounded-lg transition-all"
+                >
+                  <IconTrash size={16} />
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-[16px] font-bold text-t1">{service.name}</h3>
+                {service.is_group && (
+                  <span className="inline-block mt-1 text-[10px] font-bold text-blue-custom bg-blue-light px-1.5 py-0.5 rounded-full uppercase tracking-wider">Групповая</span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 border-t border-border-light pt-4">
+                <div className="flex items-center gap-2">
+                  <IconClock size={16} className="text-t3" />
+                  <span className="text-[13px] font-medium text-t2">{service.duration} мин</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <IconCurrencyRubel size={16} className="text-t3" />
+                  <span className="text-[13px] font-bold text-t1">{service.price} ₽</span>
+                </div>
+              </div>
+
+              {service.venue && (
+                <div className="flex items-center gap-2 bg-bg-custom p-2 rounded-lg">
+                  <IconMapPin size={16} className="text-accent" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[12px] font-bold text-t1 truncate">{service.venue.name}</div>
+                    <div className="text-[10px] text-t3 truncate">{service.venue.address}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Add/Edit Modal */}
+      {(isAdding || editingId) && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-fade-up overflow-hidden">
+            <div className="p-5 border-b border-border-light flex items-center justify-between bg-bg-custom">
+              <h2 className="font-bold text-t1">{editingId ? 'Редактировать услугу' : 'Новая услуга'}</h2>
+              <button onClick={() => { setIsAdding(false); setEditingId(null); }} className="text-t3 hover:text-t1 transition-colors"><IconX size={20} /></button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="text-[12px] font-medium text-t2 block mb-1">Название услуги</label>
                 <input
                   type="text"
-                  value={newData.name}
-                  onChange={e => setNewData({...newData, name: e.target.value})}
                   placeholder="Напр. Персональная тренировка"
-                  className="w-full text-[13px] border border-border-custom rounded-r-sm p-2 bg-surface outline-none focus:border-accent"
+                  value={editingId ? editData.name : newData.name}
+                  onChange={e => editingId ? setEditData({...editData, name: e.target.value}) : setNewData({...newData, name: e.target.value})}
+                  className="w-full text-[13px] border border-border-custom rounded-xl p-3 bg-surface outline-none focus:border-accent transition-all"
                 />
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[12px] font-medium text-t2 block mb-1">Длительность (мин)</label>
+                  <input
+                    type="number"
+                    value={editingId ? editData.duration : newData.duration}
+                    onChange={e => editingId ? setEditData({...editData, duration: parseInt(e.target.value)}) : setNewData({...newData, duration: parseInt(e.target.value)})}
+                    className="w-full text-[13px] border border-border-custom rounded-xl p-3 bg-surface outline-none focus:border-accent transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="text-[12px] font-medium text-t2 block mb-1">Стоимость (₽)</label>
+                  <input
+                    type="number"
+                    value={editingId ? editData.price : newData.price}
+                    onChange={e => editingId ? setEditData({...editData, price: parseInt(e.target.value)}) : setNewData({...newData, price: parseInt(e.target.value)})}
+                    className="w-full text-[13px] border border-border-custom rounded-xl p-3 bg-surface outline-none focus:border-accent transition-all"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label className="text-[11px] text-t3 block mb-1">Длительность (мин)</label>
-                <input
-                  type="number"
-                  value={newData.duration}
-                  onChange={e => setNewData({...newData, duration: parseInt(e.target.value)})}
-                  className="w-full text-[13px] border border-border-custom rounded-r-sm p-2 bg-surface outline-none focus:border-accent"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] text-t3 block mb-1">Стоимость (₽)</label>
-                <input
-                  type="number"
-                  value={newData.price}
-                  onChange={e => setNewData({...newData, price: parseInt(e.target.value)})}
-                  className="w-full text-[13px] border border-border-custom rounded-r-sm p-2 bg-surface outline-none focus:border-accent"
-                />
-              </div>
-              <div className="sm:col-span-1">
-                <label className="text-[11px] text-t3 block mb-1">Площадка</label>
+                <label className="text-[12px] font-medium text-t2 block mb-1">Площадка</label>
                 <select
-                  value={newData.venue_id}
-                  onChange={e => setNewData({...newData, venue_id: e.target.value})}
-                  className="w-full text-[13px] border border-border-custom rounded-r-sm p-2 bg-surface outline-none focus:border-accent"
+                  value={editingId ? (editData.venue_id || '') : newData.venue_id}
+                  onChange={e => editingId ? setEditData({...editData, venue_id: e.target.value || null}) : setNewData({...newData, venue_id: e.target.value})}
+                  className="w-full text-[13px] border border-border-custom rounded-xl p-3 bg-surface outline-none focus:border-accent transition-all appearance-none"
                 >
                   <option value="">Без площадки</option>
                   {venues.map(v => (
@@ -90,116 +156,33 @@ export default function ServicesPage() {
                   ))}
                 </select>
               </div>
-              <div className="sm:col-span-2 flex items-center gap-2">
+
+              <label className="flex items-center gap-3 p-3 bg-bg-custom rounded-xl cursor-pointer hover:bg-border-light transition-all">
                 <input
                   type="checkbox"
-                  id="newIsGroup"
-                  checked={newData.is_group}
-                  onChange={e => setNewData({...newData, is_group: e.target.checked})}
-                  className="rounded border-border-custom text-accent focus:ring-accent"
+                  checked={editingId ? editData.is_group : newData.is_group}
+                  onChange={e => editingId ? setEditData({...editData, is_group: e.target.checked}) : setNewData({...newData, is_group: e.target.checked})}
+                  className="w-4 h-4 rounded border-border-custom text-accent focus:ring-accent"
                 />
-                <label htmlFor="newIsGroup" className="text-[13px] text-t2">Групповая услуга</label>
-              </div>
+                <div>
+                    <div className="text-[13px] font-bold text-t1">Групповая тренировка</div>
+                    <div className="text-[11px] text-t3">Позволяет нескольким клиентам записаться на один слот</div>
+                </div>
+              </label>
             </div>
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setIsAdding(false)} className="text-[13px] px-4 py-2 text-t3 hover:text-t1 transition-colors">Отмена</button>
-              <button onClick={handleAdd} className="bg-accent text-white text-[13px] font-semibold px-6 py-2 rounded-r-sm">Сохранить</button>
-            </div>
-          </div>
-        )}
 
-        {services.map(service => (
-          <div key={service.id} className="card group">
-            {editingId === service.id ? (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <input
-                    type="text"
-                    value={editData.name}
-                    onChange={e => setEditData({...editData, name: e.target.value})}
-                    className="w-full text-[13px] border border-border-custom rounded-r-sm p-2 bg-surface outline-none focus:border-accent"
-                  />
-                </div>
-                <div>
-                  <input
-                    type="number"
-                    value={editData.duration}
-                    onChange={e => setEditData({...editData, duration: parseInt(e.target.value)})}
-                    className="w-full text-[13px] border border-border-custom rounded-r-sm p-2 bg-surface outline-none focus:border-accent"
-                  />
-                </div>
-                <div className="flex flex-col gap-2 sm:col-span-1">
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="number"
-                      value={editData.price}
-                      onChange={e => setEditData({...editData, price: parseInt(e.target.value)})}
-                      className="w-full text-[13px] border border-border-custom rounded-r-sm p-2 bg-surface outline-none focus:border-accent"
-                    />
-                    <select
-                      value={editData.venue_id || ''}
-                      onChange={e => setEditData({...editData, venue_id: e.target.value || null})}
-                      className="w-full text-[13px] border border-border-custom rounded-r-sm p-2 bg-surface outline-none focus:border-accent"
-                    >
-                      <option value="">Без площадки</option>
-                      {venues.map(v => (
-                        <option key={v.id} value={v.id}>{v.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <button onClick={() => setEditingId(null)} className="p-2 text-t3 hover:bg-bg-custom rounded-r-sm flex items-center gap-1 text-[13px]">
-                       <IconX size={18} /> <span className="sm:hidden">Отмена</span>
-                    </button>
-                    <button onClick={handleUpdate} className="p-2 text-green-custom hover:bg-green-custom/10 rounded-r-sm flex items-center gap-1 text-[13px]">
-                       <IconCheck size={18} /> <span className="sm:hidden">Сохранить</span>
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="editIsGroup"
-                      checked={editData.is_group}
-                      onChange={e => setEditData({...editData, is_group: e.target.checked})}
-                      className="rounded border-border-custom text-accent focus:ring-accent"
-                    />
-                    <label htmlFor="editIsGroup" className="text-[13px] text-t2">Групповая услуга</label>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <div className="text-[15px] font-semibold text-t1">{service.name}</div>
-                    {service.is_group && (
-                      <span className="text-[10px] font-bold bg-blue-light text-blue-custom px-1.5 py-0.5 rounded-full uppercase tracking-wider">Групповая</span>
-                    )}
-                  </div>
-                  <div className="text-[12px] text-t3 mt-0.5">
-                    {service.duration} минут · {service.price} ₽
-                    {service.venue && <span className="ml-2 text-accent">· {service.venue.name}</span>}
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => startEdit(service)}
-                    className="p-2 text-t3 hover:text-accent hover:bg-accent/5 rounded-r-sm transition-all"
-                  >
-                    <IconEdit size={18} />
-                  </button>
-                  <button
-                    onClick={() => removeService(service.id)}
-                    className="p-2 text-t3 hover:text-red-custom hover:bg-red-custom/5 rounded-r-sm transition-all"
-                  >
-                    <IconTrash size={18} />
-                  </button>
-                </div>
-              </div>
-            )}
+            <div className="p-5 bg-bg-custom border-t border-border-light flex gap-3">
+              <button onClick={() => { setIsAdding(false); setEditingId(null); }} className="flex-1 py-2.5 text-[13px] font-bold text-t2 hover:bg-white rounded-xl transition-all">Отмена</button>
+              <button
+                onClick={editingId ? handleUpdate : handleAdd}
+                className="flex-1 py-2.5 text-[13px] font-bold text-white bg-accent hover:bg-accent-hover rounded-xl transition-all shadow-lg shadow-accent/20"
+              >
+                Сохранить
+              </button>
+            </div>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

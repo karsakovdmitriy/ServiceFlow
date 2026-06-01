@@ -2,10 +2,11 @@
 
 import React from 'react';
 import { useStore } from '@/lib/store';
-import { IconBrandTelegram, IconCopy, IconChartBar, IconDeviceMobile, IconId, IconStarFilled, IconMessage2 } from '@tabler/icons-react';
+import { IconBrandTelegram, IconCopy, IconChartBar, IconDeviceMobile, IconId, IconStarFilled, IconMessage2, IconShare, IconChevronDown, IconChevronUp } from '@tabler/icons-react';
 
 export default function BotPage() {
   const { profile, trainerId, isDemoMode, reviews } = useStore();
+  const [showPreview, setShowPreview] = React.useState(false);
 
   const avgRating = reviews.length > 0
     ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)
@@ -113,15 +114,17 @@ export default function BotPage() {
                     </div>
 
                     <div className="mt-8 relative z-10">
-                        <div className="text-[11px] text-white/40 uppercase tracking-[0.2em] mb-2">Записаться онлайн</div>
-                        <div className="flex items-center justify-between gap-4">
-                             <div className="bg-white p-1.5 rounded-lg shrink-0">
+                        <div className="text-[11px] text-white/40 uppercase tracking-[0.2em] mb-3 text-center">Записаться онлайн</div>
+                        <div className="flex flex-col items-center gap-4">
+                             <div className="bg-white p-3 rounded-2xl shrink-0 shadow-lg">
                                  {/* Placeholder for QR Code */}
-                                 <div className="w-16 h-16 bg-slate-100 flex items-center justify-center text-slate-800">QR</div>
+                                 <div className="w-32 h-32 bg-slate-50 flex items-center justify-center text-slate-400 border border-dashed border-slate-200 rounded-xl">
+                                    <IconBrandTelegram size={48} className="opacity-20" />
+                                 </div>
                              </div>
-                             <div className="text-right flex-1">
-                                 <div className="text-[10px] text-white/60 leading-relaxed max-w-[140px] ml-auto italic">
-                                     Отсканируйте код или перейдите по ссылке выше для записи
+                             <div className="text-center">
+                                 <div className="text-[11px] text-white/60 leading-relaxed max-w-[180px] italic">
+                                     Отсканируйте код для быстрого перехода в бот записи
                                  </div>
                              </div>
                         </div>
@@ -129,9 +132,19 @@ export default function BotPage() {
 
                     <div className="absolute top-[-20px] right-[-20px] w-32 h-32 bg-accent/10 rounded-full blur-3xl pointer-events-none"></div>
                 </div>
-                <button className="mt-4 w-full bg-bg-custom border border-border-light text-t2 text-[12px] font-bold py-2 rounded-lg hover:border-accent hover:text-accent transition-all flex items-center justify-center gap-2">
-                    <IconCopy size={16} /> Скачать визитку для печати
-                </button>
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                    <button className="bg-bg-custom border border-border-light text-t2 text-[12px] font-bold py-2.5 rounded-xl hover:border-accent hover:text-accent transition-all flex items-center justify-center gap-2">
+                        <IconCopy size={16} /> Печать
+                    </button>
+                    <button
+                        onClick={() => {
+                            navigator.share ? navigator.share({ url: botLink }) : alert('Ссылка скопирована!');
+                        }}
+                        className="bg-accent/10 text-accent text-[12px] font-bold py-2.5 rounded-xl hover:bg-accent/20 transition-all flex items-center justify-center gap-2"
+                    >
+                        <IconShare size={16} /> Поделиться
+                    </button>
+                </div>
             </div>
 
             <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Последние отзывы</div>
@@ -180,8 +193,17 @@ export default function BotPage() {
         </div>
 
         <div>
-          <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Предпросмотр (как видит клиент)</div>
-          <div className="bg-[#54a9eb] rounded-r-xl p-6 shadow-xl relative overflow-hidden h-[500px]">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em]">Предпросмотр бота</div>
+            <button
+                onClick={() => setShowPreview(!showPreview)}
+                className="text-[11px] font-bold text-accent bg-accent/5 px-2 py-1 rounded-lg flex items-center gap-1"
+            >
+                {showPreview ? 'Свернуть' : 'Развернуть'} {showPreview ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />}
+            </button>
+          </div>
+
+          <div className={`bg-[#54a9eb] rounded-r-xl p-6 shadow-xl relative overflow-hidden transition-all duration-500 ease-in-out ${showPreview ? 'h-[500px] opacity-100' : 'h-24 opacity-80'}`}>
              {/* Telegram Header */}
              <div className="flex items-center gap-3 mb-6 relative z-10">
               <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-xl backdrop-blur-md">🤖</div>

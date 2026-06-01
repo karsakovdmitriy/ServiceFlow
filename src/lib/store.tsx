@@ -219,7 +219,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           status: s.status,
           date: s.start_time.split('T')[0],
           time: `${s.start_time.split('T')[1].slice(0,5)} – ${s.end_time.split('T')[1].slice(0,5)}`,
-          initials: (s.client?.full_name || 'К').split(' ').map((n: string) => n[0]).join('').toUpperCase()
+          initials: (() => {
+            const name = (s.client?.full_name || 'К').split('(')[0].trim();
+            const parts = name.split(/\s+/);
+            if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+            return parts[0].slice(0, 2).toUpperCase();
+          })()
         }));
         setRequests(formatted.filter(s => s.status === 'pending'));
         setSessions(formatted.filter(s => s.status === 'confirmed'));
@@ -351,7 +356,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         ...session,
         id: Math.random().toString(),
         status: 'confirmed',
-        initials: session.name.split(' ').map((n: string) => n[0]).join('').toUpperCase(),
+        initials: (() => {
+            const name = session.name.split('(')[0].trim();
+            const parts = name.split(/\s+/);
+            if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+            return parts[0].slice(0, 2).toUpperCase();
+        })(),
         time: `${session.startTime} – ${session.endTime}`
       };
       const newSess = [...sessions, newSession];
