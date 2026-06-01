@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { useStore } from '@/lib/store';
-import { IconChartBar, IconTrendingUp, IconUsers, IconCalendarEvent, IconCurrencyRubel } from '@tabler/icons-react';
+import { IconChartBar, IconTrendingUp, IconUsers, IconCalendarEvent, IconCurrencyRubel, IconFileExport } from '@tabler/icons-react';
 
 export default function AnalyticsPage() {
   const { sessions, completedSessions, requests, clients, services } = useStore();
@@ -37,133 +37,148 @@ export default function AnalyticsPage() {
   const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн'];
 
   return (
-    <div className="animate-fade-up">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div className="animate-fade-up max-w-[1100px] mx-auto">
+      {/* Metrics Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-12">
         {[
-          { icon: <IconCurrencyRubel />, label: 'Общий доход (завершенные)', value: stats.totalIncome.toLocaleString() + ' ₽', color: 'text-green-custom', bg: 'bg-green-light' },
-          { icon: <IconTrendingUp />, label: 'Прогноз дохода (активные)', value: stats.projectedIncome.toLocaleString() + ' ₽', color: 'text-blue-custom', bg: 'bg-blue-light' },
-          { icon: <IconChartBar />, label: 'Средний чек сессии', value: Math.round(stats.avgPrice).toLocaleString() + ' ₽', color: 'text-accent', bg: 'bg-accent-light' },
+          { label: 'Общий доход', val: stats.totalIncome.toLocaleString() + ' ₽', sub: 'Завершенные записи', highlight: 'text-t1' },
+          { label: 'Прогноз', val: stats.projectedIncome.toLocaleString() + ' ₽', sub: 'На основе активных', highlight: 'text-accent' },
+          { label: 'Средний чек', val: Math.round(stats.avgPrice).toLocaleString() + ' ₽', sub: 'За одну сессию', highlight: 'text-t1' },
         ].map((item, i) => (
-          <div key={i} className="card flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${item.bg} ${item.color}`}>
-              {item.icon}
-            </div>
-            <div>
-              <div className="text-[11px] text-t3 font-medium">{item.label}</div>
-              <div className={`text-[20px] font-bold ${item.color}`}>{item.value}</div>
-            </div>
+          <div key={i} className="flex flex-col">
+            <div className="text-[11px] text-t3 font-bold uppercase tracking-wider mb-1">{item.label}</div>
+            <div className={`text-[28px] font-bold tracking-tight leading-none ${item.highlight}`}>{item.val}</div>
+            <div className="text-[11px] text-t3 mt-1.5 font-medium">{item.sub}</div>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Income Chart */}
-        <div className="card">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-[15px] font-bold text-t1">Динамика дохода</h3>
-            <span className="text-[11px] text-green-custom font-bold bg-green-light px-2 py-0.5 rounded-full">+14% за мес.</span>
-          </div>
-          <div className="h-[200px] w-full relative flex items-end justify-between gap-1 pt-4 px-2">
-            {incomeData.map((val, i) => {
-              const height = (val / 60000) * 100;
-              return (
-                <div key={i} className="flex-1 flex flex-col items-center group">
-                  <div
-                    className="w-full bg-accent/10 group-hover:bg-accent/20 rounded-t-lg transition-all relative"
-                    style={{ height: `${height}%` }}
-                  >
-                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                      {val.toLocaleString()} ₽
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+
+        {/* Charts Column */}
+        <div className="lg:col-span-8 space-y-12">
+
+          {/* Income Dynamics */}
+          <section>
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-[14px] font-bold text-t1 uppercase tracking-wider">Динамика дохода</h3>
+              <div className="flex items-center gap-1.5 text-green-custom text-[11px] font-bold bg-green-50 px-2.5 py-1 rounded-full">
+                <IconTrendingUp size={14} /> +14%
+              </div>
+            </div>
+            <div className="h-[240px] w-full flex items-end justify-between gap-1 px-2 relative">
+                {/* Horizontal grid lines */}
+                <div className="absolute inset-x-0 top-0 h-px bg-slate-50"></div>
+                <div className="absolute inset-x-0 top-1/2 h-px bg-slate-50"></div>
+                <div className="absolute inset-x-0 bottom-8 h-px bg-slate-100"></div>
+
+                {incomeData.map((val, i) => {
+                const height = (val / 60000) * 100;
+                return (
+                    <div key={i} className="flex-1 flex flex-col items-center group relative z-10 h-full justify-end">
+                        <div
+                            className="w-full bg-accent/5 group-hover:bg-accent/10 rounded-t-xl transition-all relative flex items-end justify-center"
+                            style={{ height: `${height}%` }}
+                        >
+                            {/* Line at the top of the bar */}
+                            <div className="absolute top-0 left-0 right-0 h-0.5 bg-accent rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
+
+                            {/* Hover label */}
+                            <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100 whitespace-nowrap">
+                                {val.toLocaleString()} ₽
+                            </div>
+                        </div>
+                        <span className="text-[10px] text-t3 mt-4 font-bold uppercase tracking-widest">{months[i]}</span>
                     </div>
-                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-accent rounded-full"></div>
-                  </div>
-                  <span className="text-[10px] text-t3 mt-3 font-medium">{months[i]}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+                );
+                })}
+            </div>
+          </section>
 
-        {/* Sessions Chart */}
-        <div className="card">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-[15px] font-bold text-t1">Количество сессий</h3>
-            <span className="text-[11px] text-blue-custom font-bold bg-blue-light px-2 py-0.5 rounded-full">Всего {stats.completedCount + stats.activeCount}</span>
-          </div>
-          <div className="h-[200px] w-full relative flex items-end justify-between gap-3 pt-4 px-4">
-            {sessionData.map((val, i) => {
-              const height = (val / 30) * 100;
-              return (
-                <div key={i} className="flex-1 flex flex-col items-center group">
-                  <div
-                    className="w-6 bg-blue-custom/80 group-hover:bg-blue-custom rounded-t-sm transition-all relative"
-                    style={{ height: `${height}%` }}
-                  >
-                     <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                      {val}
+          {/* Session Count */}
+          <section>
+             <div className="flex items-center justify-between mb-8">
+                <h3 className="text-[14px] font-bold text-t1 uppercase tracking-wider">Количество сессий</h3>
+                <span className="text-[11px] text-t3 font-bold bg-slate-100 px-2.5 py-1 rounded-full">Всего {stats.completedCount + stats.activeCount}</span>
+            </div>
+            <div className="h-[180px] w-full flex items-end justify-between gap-4 px-4">
+                {sessionData.map((val, i) => {
+                const height = (val / 30) * 100;
+                return (
+                    <div key={i} className="flex-1 flex flex-col items-center group justify-end h-full">
+                        <div
+                            className="w-full max-w-[12px] bg-slate-100 group-hover:bg-accent/20 rounded-full transition-all relative"
+                            style={{ height: `${height}%` }}
+                        >
+                            <div className="absolute top-0 left-0 right-0 h-[12px] bg-accent/40 rounded-full scale-0 group-hover:scale-100 transition-transform"></div>
+                        </div>
+                        <span className="text-[10px] text-t3 mt-4 font-bold uppercase tracking-widest">{months[i]}</span>
                     </div>
-                  </div>
-                  <span className="text-[10px] text-t3 mt-3 font-medium">{months[i]}</span>
-                </div>
-              );
-            })}
-          </div>
+                );
+                })}
+            </div>
+          </section>
         </div>
 
-        <div className="card">
-          <div className="text-[14px] font-bold text-t1 mb-4">Статистика по клиентам</div>
-          <div className="space-y-4">
-             <div className="flex items-center justify-between">
-                <span className="text-[13px] text-t2">Всего зарегистрировано</span>
-                <span className="text-[14px] font-bold text-t1">{stats.clientCount}</span>
-             </div>
-             <div className="flex items-center justify-between">
-                <span className="text-[13px] text-t2">Активных сессий</span>
-                <span className="text-[14px] font-bold text-t1">{stats.activeCount}</span>
-             </div>
-             <div className="flex items-center justify-between">
-                <span className="text-[13px] text-t2">Завершенных тренировок</span>
-                <span className="text-[14px] font-bold text-t1">{stats.completedCount}</span>
-             </div>
-          </div>
+        {/* Breakdown Column */}
+        <div className="lg:col-span-4 space-y-12">
 
-          <div className="mt-6 pt-4 border-t border-border-light">
-             <div className="text-[12px] text-t3 italic">Аналитика помогает вам отслеживать рост базы и планировать нагрузку.</div>
-          </div>
-        </div>
-
-        <div className="card">
-            <div className="text-[14px] font-bold text-t1 mb-4">Популярные услуги</div>
-            <div className="space-y-3">
+          {/* Services Popularity */}
+          <section>
+            <h3 className="text-[14px] font-bold text-t1 uppercase tracking-wider mb-6">Популярные услуги</h3>
+            <div className="space-y-6">
                 {services.map(s => {
                     const count = [...sessions, ...completedSessions].filter(sess => sess.serviceId === s.id).length;
+                    const percent = Math.min(100, (count / (stats.completedCount + stats.activeCount || 1)) * 100);
                     return (
-                        <div key={s.id} className="flex flex-col gap-1">
-                            <div className="flex justify-between text-[12px]">
-                                <span className="font-medium text-t2">{s.name}</span>
-                                <span className="text-t3">{count} зап.</span>
+                        <div key={s.id} className="space-y-2">
+                            <div className="flex justify-between items-end">
+                                <span className="text-[13px] font-semibold text-t1">{s.name}</span>
+                                <span className="text-[11px] font-bold text-t3">{count} зап.</span>
                             </div>
-                            <div className="w-full h-1.5 bg-bg-custom rounded-full overflow-hidden">
+                            <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full bg-accent rounded-full transition-all duration-500"
-                                    style={{ width: `${Math.min(100, (count / (stats.completedCount + stats.activeCount || 1)) * 100)}%` }}
+                                    className="h-full bg-accent rounded-full transition-all duration-1000 ease-out"
+                                    style={{ width: `${percent}%` }}
                                 ></div>
                             </div>
                         </div>
                     );
                 })}
             </div>
+          </section>
+
+          {/* Client Stats */}
+          <section className="p-6 bg-white rounded-2xl border border-slate-100 space-y-4">
+             <div className="flex items-center justify-between">
+                <span className="text-[13px] font-medium text-t2">Всего клиентов</span>
+                <span className="text-[14px] font-bold text-t1">{stats.clientCount}</span>
+             </div>
+             <div className="flex items-center justify-between">
+                <span className="text-[13px] font-medium text-t2">Активные записи</span>
+                <span className="text-[14px] font-bold text-t1">{stats.activeCount}</span>
+             </div>
+             <div className="flex items-center justify-between">
+                <span className="text-[13px] font-medium text-t2">Завершенные</span>
+                <span className="text-[14px] font-bold text-t1">{stats.completedCount}</span>
+             </div>
+          </section>
         </div>
       </div>
 
-      <div className="card mt-6 bg-slate-900 text-white border-none">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+      {/* Bottom Export Banner */}
+      <div className="mt-16 p-8 rounded-3xl bg-[#1e293b] text-white relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-accent/10 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2 transition-transform group-hover:scale-110"></div>
+        <div className="flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
             <div>
-                <div className="text-[18px] font-bold mb-1">Готовы к налоговому периоду?</div>
-                <p className="text-[13px] text-slate-400">Вся информация о ваших доходах доступна для выгрузки в формате для самозанятых.</p>
+                <div className="text-[20px] font-bold tracking-tight mb-2">Готовы к отчетности?</div>
+                <p className="text-[14px] text-slate-400 max-w-md leading-relaxed">
+                    Выгрузите все данные о доходах в формате XLSX для налоговой декларации или личного учета.
+                </p>
             </div>
-            <button className="bg-accent text-white px-6 py-2.5 rounded-xl text-[13px] font-bold hover:bg-accent-hover transition-all whitespace-nowrap shadow-lg shadow-accent/20">
-                Скачать отчет (XLSX)
+            <button className="flex items-center gap-2 bg-white text-slate-900 px-6 py-3 rounded-xl text-[13px] font-bold hover:bg-slate-100 transition-all shadow-xl shadow-black/20">
+                <IconFileExport size={18} stroke={2} />
+                Скачать отчет
             </button>
         </div>
       </div>

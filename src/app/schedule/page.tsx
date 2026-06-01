@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { IconBan, IconX, IconPlus } from '@tabler/icons-react';
+import { IconBan, IconX, IconPlus, IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import { useStore, Session, BlockedSlot, ScheduleDay } from '@/lib/store';
 
 const DAYS_RU_SHORT = ['ВС', 'ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
@@ -46,7 +46,6 @@ export default function SchedulePage() {
     monday.setHours(0, 0, 0, 0);
 
     const grid = [];
-    const slotDuration = profile?.slot_duration || 60;
 
     for (let i = 0; i < 7; i++) {
       const date = new Date(monday);
@@ -105,226 +104,241 @@ export default function SchedulePage() {
 
     const lastDate = new Date(monday);
     lastDate.setDate(monday.getDate() + 6);
-    const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long' };
-    const rangeLabel = `${monday.toLocaleDateString('ru-RU', { day: 'numeric' })}–${lastDate.toLocaleDateString('ru-RU', options)}`;
+    const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
+    const rangeLabel = `${monday.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })} – ${lastDate.toLocaleDateString('ru-RU', options)}`;
 
     return { weekGrid: grid, weekRangeLabel: rangeLabel };
-  }, [schedule, sessions, blocks, profile]);
+  }, [schedule, sessions, blocks]);
 
   return (
-    <div className="animate-fade-up">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        <div>
-          <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Рабочие дни и часы</div>
-          <div className="card">
+    <div className="animate-fade-up max-w-[1200px] mx-auto space-y-10">
+
+      {/* Settings Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+
+        {/* Working Hours */}
+        <section>
+          <div className="flex items-center gap-4 mb-5">
+            <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider whitespace-nowrap">Рабочие часы</h2>
+            <div className="h-px bg-slate-100 flex-1"></div>
+          </div>
+          <div className="space-y-1">
             {schedule.map((day, i) => (
-              <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-border-light last:border-none gap-3 sm:gap-0">
-                <div className="flex-1 flex items-center justify-between sm:block">
-                  <div className="text-[13.5px] font-medium text-t1">{day.name}</div>
-                  <div
-                    onClick={() => toggleDay(i)}
-                    className={`sm:hidden w-10 h-[22px] rounded-full cursor-pointer transition-all relative shrink-0 ${day.on ? 'bg-green-custom' : 'bg-border-custom'}`}
-                  >
-                    <div className={`absolute w-4 h-4 bg-white rounded-full top-[3px] transition-all shadow-[0_1px_4px_rgba(0,0,0,0.15)] ${day.on ? 'left-[21px]' : 'left-[3px]'}`}></div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
+              <div key={i} className="flex items-center justify-between p-3 rounded-xl hover:bg-white transition-all group">
+                <div className="text-[13.5px] font-medium text-t1 w-24">{day.name}</div>
+                <div className="flex-1 flex items-center gap-2">
                   {day.on ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       <input
                         type="time"
                         value={day.startTime}
                         onChange={(e) => updateScheduleTime(i, e.target.value, day.endTime)}
-                        className="text-[12px] text-t2 bg-bg-custom border border-border-light rounded px-1.5 py-0.5 outline-none focus:border-accent"
+                        className="text-[12px] font-semibold text-t2 bg-slate-50 border-none rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-accent/10"
                       />
-                      <span className="text-t3">–</span>
+                      <span className="text-t3 opacity-50">—</span>
                       <input
                         type="time"
                         value={day.endTime}
                         onChange={(e) => updateScheduleTime(i, day.startTime, e.target.value)}
-                        className="text-[12px] text-t2 bg-bg-custom border border-border-light rounded px-1.5 py-0.5 outline-none focus:border-accent"
+                        className="text-[12px] font-semibold text-t2 bg-slate-50 border-none rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-accent/10"
                       />
                     </div>
                   ) : (
-                    <div className="text-[12px] text-t3 mt-[1px]">Выходной</div>
+                    <div className="text-[12px] text-t3 italic">Выходной</div>
                   )}
                 </div>
-                <div
+                <button
                   onClick={() => toggleDay(i)}
-                  className={`hidden sm:block w-10 h-[22px] rounded-full cursor-pointer transition-all relative shrink-0 ${day.on ? 'bg-green-custom' : 'bg-border-custom'}`}
+                  className={`w-9 h-5 rounded-full transition-all relative ${day.on ? 'bg-accent' : 'bg-slate-200'}`}
                 >
-                  <div className={`absolute w-4 h-4 bg-white rounded-full top-[3px] transition-all shadow-[0_1px_4px_rgba(0,0,0,0.15)] ${day.on ? 'left-[21px]' : 'left-[3px]'}`}></div>
-                </div>
+                  <div className={`absolute w-3 h-3 bg-white rounded-full top-1 transition-all ${day.on ? 'left-5' : 'left-1'}`}></div>
+                </button>
               </div>
             ))}
           </div>
-        </div>
+        </section>
 
-        <div className="flex flex-col gap-4">
+        {/* Blocking & Slots */}
+        <section className="space-y-10">
           <div>
-            <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Заблокировать время</div>
-            <div className="card">
-              <div className="flex flex-col sm:grid sm:grid-cols-2 gap-3 mb-3">
-                <div className="sm:col-span-2">
-                  <label className="text-[11px] text-t3 block mb-1">Дата</label>
+            <div className="flex items-center gap-4 mb-5">
+                <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider whitespace-nowrap">Блокировка</h2>
+                <div className="h-px bg-slate-100 flex-1"></div>
+            </div>
+            <div className="bg-white rounded-2xl p-6 border border-slate-100">
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="col-span-2">
+                  <label className="text-[11px] font-bold text-t3 uppercase mb-1.5 block">Дата</label>
                   <input
                     type="date"
                     value={newBlock.date}
                     onChange={e => setNewBlock({...newBlock, date: e.target.value})}
-                    className="w-full text-[13px] border border-border-custom rounded-r-sm p-[8px_12px] bg-surface text-t1 outline-none focus:border-accent"
+                    className="w-full input-modern"
                   />
                 </div>
                 {!newBlock.allDay && (
                   <>
-                    <div className="flex-1">
-                      <label className="text-[11px] text-t3 block mb-1">Начало</label>
+                    <div>
+                      <label className="text-[11px] font-bold text-t3 uppercase mb-1.5 block">Начало</label>
                       <input
                         type="time"
                         value={newBlock.startTime}
                         onChange={e => setNewBlock({...newBlock, startTime: e.target.value})}
-                        className="w-full text-[13px] border border-border-custom rounded-r-sm p-[8px_12px] bg-surface text-t1 outline-none focus:border-accent"
+                        className="w-full input-modern"
                       />
                     </div>
-                    <div className="flex-1">
-                      <label className="text-[11px] text-t3 block mb-1">Конец</label>
+                    <div>
+                      <label className="text-[11px] font-bold text-t3 uppercase mb-1.5 block">Конец</label>
                       <input
                         type="time"
                         value={newBlock.endTime}
                         onChange={e => setNewBlock({...newBlock, endTime: e.target.value})}
-                        className="w-full text-[13px] border border-border-custom rounded-r-sm p-[8px_12px] bg-surface text-t1 outline-none focus:border-accent"
+                        className="w-full input-modern"
                       />
                     </div>
                   </>
                 )}
               </div>
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-6">
                 <input
                   type="checkbox"
                   id="allDay"
                   checked={newBlock.allDay}
                   onChange={e => setNewBlock({...newBlock, allDay: e.target.checked})}
-                  className="rounded border-border-custom text-accent focus:ring-accent"
+                  className="w-4 h-4 rounded border-slate-200 text-accent focus:ring-accent/20"
                 />
-                <label htmlFor="allDay" className="text-[13px] text-t2">Весь день</label>
+                <label htmlFor="allDay" className="text-[13px] text-t2 font-medium">Весь день</label>
               </div>
               <button
                 onClick={handleAddBlock}
-                className="w-full bg-accent text-white text-[13px] font-semibold py-2.5 rounded-r-sm transition-all hover:bg-accent-hover flex items-center justify-center gap-2"
+                className="w-full py-2.5 text-accent text-[13px] font-bold border-2 border-accent/10 rounded-xl hover:bg-accent/5 transition-all flex items-center justify-center gap-2"
               >
-                <IconPlus size={16} /> Добавить блокировку
+                <IconPlus size={16} stroke={2.5} /> Добавить блокировку
               </button>
             </div>
           </div>
 
-          <div>
-            <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Заблокированные слоты</div>
-            <div className="card">
-              <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto">
-                {blocks.length === 0 && (
-                  <div className="text-center py-4 text-t3 text-[13px]">Нет заблокированных слотов</div>
-                )}
+          {/* List of blocked slots */}
+          {blocks.length > 0 && (
+            <div>
+               <div className="text-[11px] font-bold text-t3 uppercase tracking-wider mb-3">Заблокировано ({blocks.length})</div>
+               <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
                 {blocks.map((block) => (
-                  <div key={block.id} className="flex items-center gap-[9px] p-[10px_12px] bg-bg-custom rounded-r-sm border border-border-light">
-                    <IconBan size={14} className="text-t3" />
-                    <div className="flex-1 text-[13px] text-t2">{formatBlock(block)}</div>
-                    <IconX
-                      size={15}
-                      className="text-t3 cursor-pointer hover:text-red-custom transition-all"
-                      onClick={() => removeBlock(block.id)}
-                    />
+                  <div key={block.id} className="group flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-transparent hover:border-slate-100 transition-all">
+                    <IconBan size={14} className="text-t3" stroke={1.5} />
+                    <div className="flex-1 text-[13px] font-medium text-t2">{formatBlock(block)}</div>
+                    <button
+                        onClick={() => removeBlock(block.id)}
+                        className="opacity-0 group-hover:opacity-100 p-1 text-t3 hover:text-red-custom transition-all"
+                    >
+                        <IconX size={14} stroke={2} />
+                    </button>
                   </div>
                 ))}
               </div>
             </div>
-          </div>
+          )}
+        </section>
+      </div>
+
+      {/* Weekly Grid */}
+      <section>
+        <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4 flex-1">
+                <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider whitespace-nowrap">Сетка недели</h2>
+                <div className="h-px bg-slate-100 flex-1"></div>
+            </div>
+            <div className="text-[12px] font-bold text-t2 ml-6 bg-white px-3 py-1 rounded-full border border-slate-100">{weekRangeLabel}</div>
         </div>
-      </div>
 
-      <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Обзор недели · {weekRangeLabel}</div>
-
-      {/* Mobile Weekly Overview Selector */}
-      <div className="flex sm:hidden items-center justify-between bg-white border border-border-light rounded-xl p-1 mb-3">
-        {weekGrid.map((day, i) => (
-          <button
-            key={i}
-            onClick={() => setActiveDayIndex(i)}
-            className={`flex-1 py-2 rounded-lg flex flex-col items-center transition-all ${
-              activeDayIndex === i ? 'bg-accent text-white shadow-md' : 'text-t3'
-            }`}
-          >
-            <span className="text-[9px] font-bold uppercase">{day.day}</span>
-            <span className="text-[13px] font-extrabold">{day.dateLabel}</span>
-          </button>
-        ))}
-      </div>
-
-      <div className="card overflow-x-auto">
-        {/* Desktop Grid */}
-        <div className="hidden sm:grid grid-cols-7 gap-1.5 min-w-[600px]">
-          {weekGrid.map((day, i) => (
-            <div key={i} className="text-center">
-              <div className={`text-[10px] font-semibold mb-[2px] uppercase tracking-[0.05em] ${day.today ? 'text-accent' : 'text-t3'}`}>
-                {day.day}
-              </div>
-              <div className={`text-[14px] font-bold mb-[7px] ${day.today ? 'text-accent' : 'text-t1'}`}>
-                {day.dateLabel}
-              </div>
-              {day.slots.map((slot, si) => (
+        {/* Mobile View */}
+        <div className="lg:hidden space-y-4">
+             <div className="flex items-center justify-between bg-white p-1 rounded-xl border border-slate-100">
+                {weekGrid.map((day, i) => (
+                    <button
+                        key={i}
+                        onClick={() => setActiveDayIndex(i)}
+                        className={`flex-1 py-2 rounded-lg flex flex-col items-center transition-all ${
+                        activeDayIndex === i ? 'bg-accent text-white' : 'text-t3'
+                        }`}
+                    >
+                        <span className="text-[9px] font-bold uppercase">{day.day}</span>
+                        <span className="text-[13px] font-extrabold">{day.dateLabel}</span>
+                    </button>
+                ))}
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+                {weekGrid[activeDayIndex].slots.map((slot, si) => (
                 <div
-                  key={si}
-                  title={slot.t}
-                  className={`h-6 rounded-[4px] mb-[4px] cursor-pointer transition-all hover:scale-[1.03] active:scale-95 select-none relative group/slot ${
-                    slot.s === 'booked' ? 'bg-blue-custom border border-blue-custom/20' :
-                    slot.s === 'free' ? 'bg-green-custom/90 border border-green-custom/20' :
-                    'bg-gray-200 border border-border-light'
-                  }`}
+                    key={si}
+                    className={`text-[11px] p-3 rounded-xl text-center font-bold border transition-all ${
+                    slot.s === 'booked' ? 'bg-blue-50 text-blue-custom border-blue-100' :
+                    slot.s === 'free' ? 'bg-green-50 text-green-custom border-green-100' :
+                    'bg-slate-50 text-t3 border-slate-100'
+                    }`}
                 >
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/slot:opacity-100 transition-opacity pointer-events-none">
-                    <span className="text-[9px] font-bold text-white bg-slate-900/80 px-1 rounded shadow-sm">{slot.t}</span>
-                  </div>
+                    {slot.t}
                 </div>
-              ))}
+                ))}
+            </div>
+        </div>
+
+        {/* Desktop Grid */}
+        <div className="hidden lg:grid grid-cols-7 gap-4">
+          {weekGrid.map((day, i) => (
+            <div key={i} className="flex flex-col">
+              <div className={`text-center py-3 mb-4 rounded-xl transition-all ${day.today ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'text-t2 bg-white/50'}`}>
+                <div className="text-[10px] font-bold uppercase opacity-70 tracking-widest">{day.day}</div>
+                <div className="text-[18px] font-extrabold">{day.dateLabel}</div>
+              </div>
+              <div className="space-y-1.5">
+                {day.slots.map((slot, si) => (
+                  <div
+                    key={si}
+                    title={slot.t}
+                    className={`h-7 rounded-lg cursor-pointer transition-all hover:scale-[1.02] active:scale-95 select-none relative group/slot flex items-center overflow-hidden border ${
+                      slot.s === 'booked' ? 'bg-blue-50/50 border-blue-100' :
+                      slot.s === 'free' ? 'bg-green-50/50 border-green-100' :
+                      'bg-slate-50 border-slate-100'
+                    }`}
+                  >
+                    {/* Status Indicator Bar */}
+                    <div className={`w-1 h-full shrink-0 ${
+                         slot.s === 'booked' ? 'bg-blue-custom' :
+                         slot.s === 'free' ? 'bg-green-custom' :
+                         'bg-slate-200'
+                    }`}></div>
+
+                    <div className="px-2 text-[10px] font-bold text-t2 opacity-0 group-hover/slot:opacity-100 transition-opacity">
+                        {slot.t}
+                    </div>
+
+                    {slot.s === 'booked' && (
+                        <div className="absolute right-2 text-blue-custom opacity-40 group-hover/slot:opacity-100">
+                             <div className="w-1.5 h-1.5 rounded-full bg-current"></div>
+                        </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
         </div>
 
-        {/* Mobile Single Day View */}
-        <div className="sm:hidden">
-          <div className="text-center mb-4">
-            <div className="text-[12px] font-bold text-accent uppercase tracking-wider mb-1">
-              {weekGrid[activeDayIndex].dayName}
-            </div>
-            <div className="text-[20px] font-extrabold text-t1">
-              {weekGrid[activeDayIndex].dateLabel}
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {weekGrid[activeDayIndex].slots.map((slot, si) => (
-              <div
-                key={si}
-                className={`text-[11px] p-3 rounded-xl text-center font-bold border transition-all ${
-                  slot.s === 'booked' ? 'bg-blue-light text-blue-custom border-blue-custom/20' :
-                  slot.s === 'free' ? 'bg-green-light text-green-custom border-green-custom/20' :
-                  'bg-bg-custom text-t3 border-border-light'
-                }`}
-              >
-                {slot.t}
-              </div>
+        {/* Legend */}
+        <div className="flex items-center gap-6 mt-8 pt-6 border-t border-slate-100">
+            {[
+                { label: 'Занято', color: 'bg-blue-custom' },
+                { label: 'Свободно', color: 'bg-green-custom' },
+                { label: 'Заблокировано', color: 'bg-slate-200' },
+            ].map(item => (
+                <div key={item.label} className="flex items-center gap-2 text-[11px] font-bold text-t3 uppercase tracking-wider">
+                    <span className={`w-2 h-2 rounded-full ${item.color}`}></span>
+                    {item.label}
+                </div>
             ))}
-          </div>
         </div>
-        <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 pt-2 border-t border-border-light">
-          <div className="flex items-center gap-[6px] text-[11px] text-t3 font-medium">
-            <div className="w-[12px] h-[12px] rounded-[4px] bg-blue-custom"></div>Занято
-          </div>
-          <div className="flex items-center gap-[6px] text-[11px] text-t3 font-medium">
-            <div className="w-[12px] h-[12px] rounded-[4px] bg-green-custom"></div>Свободно
-          </div>
-          <div className="flex items-center gap-[6px] text-[11px] text-t3 font-medium">
-            <div className="w-[12px] h-[12px] rounded-[4px] bg-gray-200"></div>Заблокировано
-          </div>
-        </div>
-      </div>
+      </section>
     </div>
   );
 }

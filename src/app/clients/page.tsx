@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { IconSearch, IconUserPlus, IconDotsVertical, IconCheck, IconClock, IconMail, IconPhone, IconSend, IconMessage, IconX, IconChevronRight } from '@tabler/icons-react';
+import { IconSearch, IconUserPlus, IconDotsVertical, IconCheck, IconClock, IconMail, IconPhone, IconSend, IconMessage, IconX, IconChevronRight, IconUsers } from '@tabler/icons-react';
 import { useStore, Message } from '@/lib/store';
 
 export default function ClientsPage() {
@@ -38,86 +38,88 @@ export default function ClientsPage() {
   }, [filter, storeClients, sessions, requests, completedSessions, search]);
 
   return (
-    <div className="animate-fade-up">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div className="flex bg-white p-1 rounded-xl border border-border-light shadow-sm self-start">
+    <div className="animate-fade-up max-w-[1000px] mx-auto">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+        <div className="flex bg-slate-100 p-1 rounded-xl self-start">
           <button
             onClick={() => setFilter('active')}
-            className={`px-4 py-1.5 text-[13px] font-bold rounded-lg transition-all ${filter === 'active' ? 'bg-accent text-white shadow-md shadow-accent/20' : 'text-t3 hover:text-t2'}`}
+            className={`px-6 py-2 text-[13px] font-bold rounded-lg transition-all ${filter === 'active' ? 'bg-white text-t1 shadow-sm' : 'text-t3 hover:text-t2'}`}
           >
             Активные
           </button>
           <button
             onClick={() => setFilter('all')}
-            className={`px-4 py-1.5 text-[13px] font-bold rounded-lg transition-all ${filter === 'all' ? 'bg-accent text-white shadow-md shadow-accent/20' : 'text-t3 hover:text-t2'}`}
+            className={`px-6 py-2 text-[13px] font-bold rounded-lg transition-all ${filter === 'all' ? 'bg-white text-t1 shadow-sm' : 'text-t3 hover:text-t2'}`}
           >
             Все
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
+        <div className="flex items-center gap-3">
+          <div className="relative w-full md:w-64">
+            <IconSearch size={16} stroke={2} className="absolute left-3 top-1/2 -translate-y-1/2 text-t3" />
             <input
               type="text"
               placeholder="Поиск клиента..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="pl-9 pr-4 py-2 bg-white border border-border-light rounded-xl text-[13px] outline-none focus:border-accent w-[200px] sm:w-[240px] transition-all"
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-100 rounded-xl text-[13px] font-medium outline-none focus:border-accent transition-all shadow-sm"
             />
           </div>
-          <button className="bg-white border border-border-light text-t2 p-2 rounded-xl hover:bg-bg-custom transition-all">
-            <IconUserPlus size={18} />
-          </button>
         </div>
       </div>
 
-      <div className="space-y-3 sm:space-y-0 sm:card sm:overflow-hidden">
+      <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm">
         {/* Desktop View */}
-        <div className="hidden sm:block overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-border-light">
-                <th className="p-4 text-[11px] font-bold text-t3 uppercase tracking-wider">Клиент</th>
-                <th className="p-4 text-[11px] font-bold text-t3 uppercase tracking-wider">Статус</th>
-                <th className="p-4 text-[11px] font-bold text-t3 uppercase tracking-wider">Последняя сессия</th>
-                <th className="p-4 text-[11px] font-bold text-t3 uppercase tracking-wider">Контакты</th>
-                <th className="p-4"></th>
+              <tr className="bg-slate-50/50 border-b border-slate-100">
+                <th className="px-6 py-4 text-[11px] font-bold text-t3 uppercase tracking-widest">Клиент</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-t3 uppercase tracking-widest">Статус</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-t3 uppercase tracking-widest">Последняя сессия</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-t3 uppercase tracking-widest text-right">Действия</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-50">
               {clientsList.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-t3 text-[14px]">Клиенты не найдены</td>
+                  <td colSpan={4} className="py-20 text-center text-t3 text-[13px] font-medium italic">Клиенты не найдены</td>
                 </tr>
               )}
               {clientsList.map((client, i) => (
-                <tr key={i} className="border-b border-border-light last:border-none hover:bg-bg-custom/80 transition-all group cursor-pointer">
-                  <td className="p-4">
+                <tr key={i} className="group hover:bg-slate-50/50 transition-colors cursor-pointer" onClick={() => {
+                    setChatClientId(client.id);
+                    getMessages(client.id).then(setChatMessages);
+                }}>
+                  <td className="px-6 py-5">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-accent-light text-accent flex items-center justify-center text-[12px] font-bold shrink-0">
+                      <div className="w-9 h-9 rounded-full bg-slate-100 text-t2 flex items-center justify-center text-[11px] font-bold shrink-0">
                         {client.initials}
                       </div>
-                      <div className="text-[14px] font-semibold text-t1">{client.name}</div>
+                      <div className="text-[14px] font-bold text-t1">{client.name}</div>
                     </div>
                   </td>
-                  <td className="p-4">
-                    <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
-                      client.status === 'Активен' ? 'bg-green-light text-green-custom' :
-                      client.status === 'Ожидает' ? 'bg-yellow-light text-yellow-custom' :
-                      'bg-gray-100 text-gray-500'
-                    }`}>
-                      {client.status}
-                    </span>
+                  <td className="px-6 py-5">
+                    <div className="flex items-center text-[11px] font-bold">
+                        <span className={`status-dot ${
+                            client.status === 'Активен' ? 'bg-green-custom' :
+                            client.status === 'Ожидает' ? 'bg-yellow-custom' : 'bg-slate-300'
+                        }`}></span>
+                        <span className={
+                             client.status === 'Активен' ? 'text-green-custom' :
+                             client.status === 'Ожидает' ? 'text-yellow-custom' : 'text-t3'
+                        }>{client.status}</span>
+                    </div>
                   </td>
-                  <td className="p-4">
-                    <div className="flex items-center gap-2 text-[13px] text-t2">
-                      <IconClock size={14} className="text-t3" />
+                  <td className="px-6 py-5">
+                    <div className="flex items-center gap-2 text-[13px] font-medium text-t2">
+                      <IconClock size={14} stroke={2} className="opacity-40" />
                       {client.lastDate}
                     </div>
                   </td>
-                  <td className="p-4">
-                    <div className="flex items-center gap-1.5">
+                  <td className="px-6 py-5">
+                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={async (e) => {
                             e.stopPropagation();
@@ -125,21 +127,13 @@ export default function ClientsPage() {
                             const msgs = await getMessages(client.id);
                             setChatMessages(msgs);
                         }}
-                        className="w-8 h-8 flex items-center justify-center text-t3 hover:text-accent hover:bg-accent-light rounded-lg transition-all group/btn"
+                        className="p-2 text-t3 hover:text-accent hover:bg-accent/5 rounded-lg transition-all"
                         title="Написать в бот"
                       >
-                        <IconMessage size={16} />
+                        <IconMessage size={18} stroke={1.5} />
                       </button>
-                      <button onClick={e => e.stopPropagation()} title={client.email} className="w-8 h-8 flex items-center justify-center text-t3 hover:text-accent hover:bg-accent-light rounded-lg transition-all"><IconMail size={16} /></button>
-                      <button onClick={e => e.stopPropagation()} className="w-8 h-8 flex items-center justify-center text-t3 hover:text-accent hover:bg-accent-light rounded-lg transition-all"><IconPhone size={16} /></button>
-                    </div>
-                  </td>
-                  <td className="p-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                        <button onClick={e => e.stopPropagation()} className="p-1.5 text-t3 hover:text-t1 opacity-0 group-hover:opacity-100 transition-all">
-                        <IconDotsVertical size={18} />
-                        </button>
-                        <IconChevronRight size={18} className="text-t3 opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0" />
+                      <button onClick={e => e.stopPropagation()} className="p-2 text-t3 hover:text-accent hover:bg-accent/5 rounded-lg transition-all"><IconMail size={18} stroke={1.5} /></button>
+                      <button onClick={e => e.stopPropagation()} className="p-2 text-t3 hover:text-accent hover:bg-accent/5 rounded-lg transition-all"><IconPhone size={18} stroke={1.5} /></button>
                     </div>
                   </td>
                 </tr>
@@ -149,35 +143,35 @@ export default function ClientsPage() {
         </div>
 
         {/* Mobile View */}
-        <div className="sm:hidden space-y-3">
+        <div className="md:hidden divide-y divide-slate-50">
           {clientsList.length === 0 && (
-            <div className="card p-8 text-center text-t3 text-[14px]">Клиенты не найдены</div>
+            <div className="py-20 text-center text-t3 text-[13px] font-medium italic">Клиенты не найдены</div>
           )}
           {clientsList.map((client, i) => (
-            <div key={i} className="card p-4 flex items-center justify-between">
+            <div key={i} className="p-5 flex items-center justify-between" onClick={() => {
+                setChatClientId(client.id);
+                getMessages(client.id).then(setChatMessages);
+            }}>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-accent-light text-accent flex items-center justify-center text-[13px] font-bold shrink-0">
+                <div className="w-10 h-10 rounded-full bg-slate-100 text-t2 flex items-center justify-center text-[12px] font-bold shrink-0">
                   {client.initials}
                 </div>
                 <div>
-                  <div className="text-[14px] font-semibold text-t1">{client.name}</div>
+                  <div className="text-[14px] font-bold text-t1">{client.name}</div>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      client.status === 'Активен' ? 'bg-green-light text-green-custom' :
-                      client.status === 'Ожидает' ? 'bg-yellow-light text-yellow-custom' :
-                      'bg-gray-100 text-gray-500'
-                    }`}>
-                      {client.status}
-                    </span>
-                    <span className="text-[11px] text-t3 flex items-center gap-1">
-                      <IconClock size={12} /> {client.lastDate}
-                    </span>
+                     <div className="flex items-center text-[10px] font-bold uppercase tracking-wider">
+                        <span className={`status-dot w-1 h-1 ${
+                            client.status === 'Активен' ? 'bg-green-custom' :
+                            client.status === 'Ожидает' ? 'bg-yellow-custom' : 'bg-slate-300'
+                        }`}></span>
+                        {client.status}
+                    </div>
+                    <span className="text-slate-300 mx-1">·</span>
+                    <span className="text-[11px] text-t3 font-medium">{client.lastDate}</span>
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col gap-2">
-                <button className="p-2 text-t3 hover:text-accent transition-colors bg-bg-custom rounded-lg"><IconDotsVertical size={18} /></button>
-              </div>
+              <IconChevronRight size={18} className="text-slate-200" />
             </div>
           ))}
         </div>
@@ -185,26 +179,29 @@ export default function ClientsPage() {
 
       {/* Chat Modal */}
       {chatClientId && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-fade-up overflow-hidden flex flex-col h-[500px]">
-                <div className="p-4 border-b border-border-light flex items-center justify-between bg-bg-custom">
-                    <div className="font-bold text-t1">Чат с {storeClients.find(c => c.id === chatClientId)?.full_name}</div>
-                    <button onClick={() => setChatClientId(null)} className="text-t3 hover:text-t1"><IconX size={20} /></button>
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl animate-fade-up overflow-hidden flex flex-col h-[550px] border border-slate-100">
+                <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                    <div>
+                        <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-0.5">Чат с клиентом</div>
+                        <div className="text-[15px] font-bold text-t1 tracking-tight">{storeClients.find(c => c.id === chatClientId)?.full_name}</div>
+                    </div>
+                    <button onClick={() => setChatClientId(null)} className="text-t3 hover:text-t1 transition-colors"><IconX size={20} stroke={2.5} /></button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50">
+                <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-white">
                     {chatMessages.length === 0 && (
-                        <div className="text-center text-t3 text-[12px] py-10 italic">История сообщений пуста. Напишите что-нибудь первым!</div>
+                        <div className="text-center text-t3 text-[12px] py-20 font-medium italic">История сообщений пуста.</div>
                     )}
                     {chatMessages.map((m, i) => (
                         <div key={i} className={`flex ${m.sender_type === 'trainer' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[80%] p-3 rounded-2xl text-[13px] shadow-sm ${
+                            <div className={`max-w-[85%] p-3 px-4 rounded-2xl text-[13.5px] leading-relaxed shadow-sm ${
                                 m.sender_type === 'trainer'
-                                ? 'bg-accent text-white rounded-br-none'
-                                : 'bg-white text-t1 border border-border-light rounded-bl-none'
+                                ? 'bg-accent text-white rounded-tr-none'
+                                : 'bg-slate-50 text-t1 border border-slate-100 rounded-tl-none'
                             }`}>
                                 {m.text}
-                                <div className={`text-[9px] mt-1 opacity-60 ${m.sender_type === 'trainer' ? 'text-right' : 'text-left'}`}>
+                                <div className={`text-[9px] mt-1.5 font-bold uppercase tracking-wider ${m.sender_type === 'trainer' ? 'text-white/60 text-right' : 'text-t3'}`}>
                                     {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </div>
                             </div>
@@ -212,7 +209,7 @@ export default function ClientsPage() {
                     ))}
                 </div>
 
-                <div className="p-4 border-t border-border-light bg-white">
+                <div className="p-5 border-t border-slate-100 bg-slate-50/30">
                     <div className="flex gap-2">
                         <input
                             type="text"
@@ -224,8 +221,8 @@ export default function ClientsPage() {
                                 const msgs = await getMessages(chatClientId);
                                 setChatMessages(msgs);
                             })()}
-                            placeholder="Введите сообщение..."
-                            className="flex-1 bg-bg-custom border border-border-light rounded-xl px-4 py-2 text-[13px] outline-none focus:border-accent"
+                            placeholder="Напишите клиенту в бот..."
+                            className="flex-1 input-modern bg-white"
                         />
                         <button
                             disabled={!newMessage.trim()}
@@ -235,9 +232,9 @@ export default function ClientsPage() {
                                 const msgs = await getMessages(chatClientId);
                                 setChatMessages(msgs);
                             }}
-                            className="bg-accent text-white p-2 rounded-xl hover:bg-accent-hover transition-all disabled:opacity-50"
+                            className="bg-accent text-white w-11 h-11 flex items-center justify-center rounded-xl hover:bg-accent-hover transition-all disabled:opacity-50 active:scale-95"
                         >
-                            <IconSend size={20} />
+                            <IconSend size={20} stroke={2.5} />
                         </button>
                     </div>
                 </div>

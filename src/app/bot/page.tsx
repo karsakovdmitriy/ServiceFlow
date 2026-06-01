@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useStore } from '@/lib/store';
-import { IconBrandTelegram, IconCopy, IconChartBar, IconDeviceMobile, IconId, IconStarFilled, IconMessage2, IconShare, IconChevronDown, IconChevronUp } from '@tabler/icons-react';
+import { IconBrandTelegram, IconCopy, IconChartBar, IconDeviceMobile, IconStarFilled, IconMessage2, IconShare, IconChevronDown, IconChevronUp, IconExternalLink, IconPrinter } from '@tabler/icons-react';
 
 export default function BotPage() {
   const { profile, trainerId, isDemoMode, reviews } = useStore();
@@ -16,241 +16,204 @@ export default function BotPage() {
   const linkTgLink = `https://t.me/${botUsername}?start=link_${trainerId || 'id'}`;
 
   return (
-    <div className="animate-fade-up">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="space-y-6">
+    <div className="animate-fade-up max-w-[1000px] mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="space-y-12">
           {!isDemoMode && (
-            <div>
-                <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Оповещения тренера</div>
-                <div className={`card border-l-4 ${profile?.telegram_id ? 'border-green-500' : 'border-accent'}`}>
-                    <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${profile?.telegram_id ? 'bg-green-light text-green-custom' : 'bg-accent-light text-accent'}`}>
-                                <IconBrandTelegram size={22} />
+            <section>
+                <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-4">Оповещения тренера</div>
+                <div className="p-5 rounded-2xl bg-white border border-slate-100 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${profile?.telegram_id ? 'bg-green-50 text-green-custom' : 'bg-accent/5 text-accent'}`}>
+                            <IconBrandTelegram size={22} stroke={1.5} />
+                        </div>
+                        <div>
+                            <div className="text-[14px] font-bold text-t1 tracking-tight">
+                                {profile?.telegram_id ? 'Telegram подключен' : 'Привязать Telegram'}
                             </div>
-                            <div>
-                                <div className="text-[14px] font-bold text-t1">
-                                    {profile?.telegram_id ? 'Telegram подключен' : 'Привязать Telegram'}
-                                </div>
-                                <div className="text-[12px] text-t3 mt-[2px]">
-                                    {profile?.telegram_id
-                                        ? 'Вы получаете уведомления о новых записях в Telegram'
-                                        : 'Получайте уведомления о новых записях прямо в мессенджер'}
-                                </div>
+                            <div className="text-[11px] text-t3 font-medium mt-0.5">
+                                {profile?.telegram_id ? 'Уведомления активны' : 'Получайте уведомления о записях'}
                             </div>
                         </div>
-                        <a
-                            href={linkTgLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`text-[12px] font-bold px-4 py-2 rounded-r-sm transition-all ${
-                                profile?.telegram_id
-                                ? 'bg-bg-custom text-t2 border border-border-custom hover:bg-border-light'
-                                : 'bg-accent text-white shadow-lg shadow-accent/20 hover:bg-accent-hover'
-                            }`}
-                        >
-                            {profile?.telegram_id ? 'Перепривязать' : 'Подключить'}
-                        </a>
                     </div>
+                    <a
+                        href={linkTgLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[12px] font-bold px-4 py-2 bg-slate-50 text-t2 rounded-lg hover:bg-slate-100 transition-all border border-slate-100"
+                    >
+                        {profile?.telegram_id ? 'Изменить' : 'Настроить'}
+                    </a>
                 </div>
-            </div>
+            </section>
           )}
 
-          <div>
-            <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Ваша ссылка на бот</div>
-            <div className="card">
-              <p className="text-[13.5px] text-t2 leading-relaxed mb-4">
-                Отправьте эту ссылку вашим клиентам. Они смогут самостоятельно смотреть ваше расписание и записываться на тренировки.
+          <section>
+            <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-4">Ссылка на запись</div>
+            <div className="space-y-4">
+              <p className="text-[13px] text-t2 leading-relaxed">
+                Отправьте эту ссылку вашим клиентам для записи онлайн через Telegram.
               </p>
-              <div className="bg-bg-custom border border-border-light rounded-r-md p-3 flex items-center justify-between gap-3 group">
-                <div className="flex items-center gap-2 text-[12px] font-mono text-accent truncate">
-                  <IconBrandTelegram size={18} className="shrink-0" />
-                  <span>{botLink}</span>
+              <div className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center justify-between gap-3 group shadow-sm">
+                <div className="flex items-center gap-2 text-[12px] font-bold text-accent truncate">
+                  <IconBrandTelegram size={18} stroke={2} className="shrink-0" />
+                  <span className="truncate">{botLink}</span>
                 </div>
                 <button
-                  className="bg-white border border-border-custom text-t2 text-[11px] font-bold p-[6px_12px] rounded-lg cursor-pointer whitespace-nowrap transition-all hover:border-accent hover:text-accent flex items-center gap-1.5"
+                  className="bg-accent text-white text-[11px] font-bold px-3 py-1.5 rounded-lg hover:bg-accent-hover transition-all flex items-center gap-1.5 active:scale-95"
                   onClick={() => {
                     navigator.clipboard.writeText(botLink);
                     alert('Ссылка скопирована!');
                   }}
                 >
-                  <IconCopy size={14} /> Скопировать
+                  <IconCopy size={14} stroke={2} /> Копировать
                 </button>
               </div>
             </div>
-          </div>
+          </section>
 
-          <div>
-            <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Визитка тренера</div>
-            <div className="card mb-6">
-                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 text-white relative overflow-hidden shadow-xl border border-white/10">
-                    <div className="flex items-center gap-4 relative z-10">
+          <section>
+            <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-4">Визитка</div>
+            <div className="relative group">
+                {/* Simplified Light Business Card */}
+                <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-xl relative overflow-hidden flex flex-col items-center text-center">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-accent"></div>
+
+                    <div className="mb-6 relative">
                         {profile?.avatar_url ? (
-                            <img src={profile.avatar_url} alt="Avatar" className="w-16 h-16 rounded-full object-cover border-2 border-accent" />
+                            <img src={profile.avatar_url} alt="Avatar" className="w-20 h-20 rounded-full object-cover border-4 border-slate-50 shadow-md" />
                         ) : (
-                            <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center text-2xl border-2 border-accent/40">🏋️</div>
+                            <div className="w-20 h-20 rounded-full bg-slate-50 border-4 border-white shadow-md flex items-center justify-center text-3xl">🏋️</div>
                         )}
-                        <div>
-                            <div className="text-[18px] font-bold tracking-tight">{profile?.full_name || 'Ваше Имя'}</div>
-                            <div className="text-[12px] text-accent font-medium uppercase tracking-wider">{profile?.specialization || 'Специализация'}</div>
-                            <div className="flex items-center gap-2 mt-1">
-                                <div className="flex items-center gap-1 text-yellow-400">
-                                    <IconStarFilled size={12} />
-                                    <span className="text-[12px] font-bold text-white">{avgRating}</span>
-                                </div>
-                                <div className="flex items-center gap-1 text-white/50 text-[11px]">
-                                    <IconMessage2 size={12} />
-                                    <span>{reviews.length} отзывов</span>
-                                </div>
-                            </div>
-                        </div>
+                        <div className="absolute -bottom-1 -right-1 bg-green-custom w-5 h-5 rounded-full border-4 border-white"></div>
                     </div>
 
-                    <div className="mt-6 flex flex-col gap-2 relative z-10">
-                        <div className="flex items-center gap-2 text-[13px] opacity-80">
-                            <IconBrandTelegram size={14} className="text-accent" />
-                            <span>{botUsername}</span>
-                        </div>
-                    </div>
-
-                    <div className="mt-8 relative z-10">
-                        <div className="text-[11px] text-white/40 uppercase tracking-[0.2em] mb-3 text-center">Записаться онлайн</div>
-                        <div className="flex flex-col items-center gap-4">
-                             <div className="bg-white p-3 rounded-2xl shrink-0 shadow-lg">
-                                 {/* Placeholder for QR Code */}
-                                 <div className="w-32 h-32 bg-slate-50 flex items-center justify-center text-slate-400 border border-dashed border-slate-200 rounded-xl">
-                                    <IconBrandTelegram size={48} className="opacity-20" />
-                                 </div>
+                    <div className="space-y-1 mb-8">
+                        <h3 className="text-[20px] font-extrabold text-t1 tracking-tight">{profile?.full_name || 'Ваше Имя'}</h3>
+                        <p className="text-[12px] font-bold text-accent uppercase tracking-widest">{profile?.specialization || 'Специализация'}</p>
+                        <div className="flex items-center justify-center gap-3 pt-2">
+                             <div className="flex items-center gap-1 text-yellow-500 font-bold text-[12px]">
+                                <IconStarFilled size={12} /> {avgRating}
                              </div>
-                             <div className="text-center">
-                                 <div className="text-[11px] text-white/60 leading-relaxed max-w-[180px] italic">
-                                     Отсканируйте код для быстрого перехода в бот записи
-                                 </div>
+                             <div className="w-1 h-1 bg-slate-200 rounded-full"></div>
+                             <div className="text-[12px] font-bold text-t3 uppercase tracking-tighter">{reviews.length} отзывов</div>
+                        </div>
+                    </div>
+
+                    <div className="w-full space-y-4">
+                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col items-center gap-4">
+                             {/* Light Placeholder for QR Code */}
+                             <div className="w-28 h-28 bg-white p-2 rounded-xl border border-slate-100 flex items-center justify-center relative overflow-hidden">
+                                <IconBrandTelegram size={48} className="text-accent opacity-10" />
+                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,white_100%)] pointer-events-none"></div>
+                                <div className="text-[8px] font-bold text-t3 uppercase absolute bottom-2 opacity-50">QR-код</div>
+                             </div>
+                             <div className="text-[11px] font-bold text-t2 uppercase tracking-widest leading-relaxed">
+                                Записаться онлайн
                              </div>
                         </div>
                     </div>
-
-                    <div className="absolute top-[-20px] right-[-20px] w-32 h-32 bg-accent/10 rounded-full blur-3xl pointer-events-none"></div>
                 </div>
-                <div className="grid grid-cols-2 gap-3 mt-4">
-                    <button className="bg-bg-custom border border-border-light text-t2 text-[12px] font-bold py-2.5 rounded-xl hover:border-accent hover:text-accent transition-all flex items-center justify-center gap-2">
-                        <IconCopy size={16} /> Печать
+
+                <div className="grid grid-cols-2 gap-3 mt-6">
+                    <button className="bg-white border border-slate-100 text-t2 text-[12px] font-bold py-3 rounded-xl hover:bg-slate-50 transition-all flex items-center justify-center gap-2 shadow-sm">
+                        <IconPrinter size={18} stroke={1.5} /> Печать
                     </button>
                     <button
                         onClick={() => {
                             navigator.share ? navigator.share({ url: botLink }) : alert('Ссылка скопирована!');
                         }}
-                        className="bg-accent/10 text-accent text-[12px] font-bold py-2.5 rounded-xl hover:bg-accent/20 transition-all flex items-center justify-center gap-2"
+                        className="bg-accent/5 text-accent text-[12px] font-bold py-3 rounded-xl hover:bg-accent/10 transition-all flex items-center justify-center gap-2"
                     >
-                        <IconShare size={16} /> Поделиться
+                        <IconShare size={18} stroke={2} /> Поделиться
                     </button>
                 </div>
             </div>
-
-            <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Последние отзывы</div>
-            <div className="card mb-6">
-                <div className="space-y-4">
-                    {reviews.length > 0 ? reviews.slice(0, 3).map((review) => (
-                        <div key={review.id} className="pb-3 border-b border-border-light last:border-0 last:pb-0">
-                            <div className="flex items-center justify-between mb-1">
-                                <span className="text-[13px] font-bold text-t1">{review.client_name || 'Клиент'}</span>
-                                <div className="flex items-center gap-0.5 text-yellow-500">
-                                    {[...Array(5)].map((_, i) => (
-                                        <IconStarFilled key={i} size={10} className={i < review.rating ? 'opacity-100' : 'opacity-20'} />
-                                    ))}
-                                </div>
-                            </div>
-                            <p className="text-[12px] text-t2 italic line-clamp-2">
-                                {review.comment || 'Оценка без комментария'}
-                            </p>
-                            <div className="text-[10px] text-t3 mt-1">
-                                {new Date(review.created_at).toLocaleDateString('ru-RU')}
-                            </div>
-                        </div>
-                    )) : (
-                        <div className="text-center py-4 text-t3 text-[13px]">Отзывов пока нет</div>
-                    )}
-                </div>
-            </div>
-
-            <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Статистика бота</div>
-            <div className="card">
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { icon: <IconChartBar size={18} />, val: '12', lbl: 'Активных пользователей' },
-                  { icon: <IconDeviceMobile size={18} />, val: '47', lbl: 'Записей через бот' },
-                  { val: '94%', lbl: 'Конверсия', color: 'text-green-custom' },
-                  { val: '2', lbl: 'Новых за неделю' },
-                ].map((stat, i) => (
-                  <div key={i} className="bg-bg-custom rounded-r-xl p-4 border border-border-light flex flex-col items-center text-center">
-                    <div className={`text-[24px] font-bold text-t1 tracking-tight leading-none ${stat.color || ''}`}>{stat.val}</div>
-                    <div className="text-[11px] text-t3 mt-1.5 font-medium leading-tight">{stat.lbl}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          </section>
         </div>
 
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em]">Предпросмотр бота</div>
-            <button
-                onClick={() => setShowPreview(!showPreview)}
-                className="text-[11px] font-bold text-accent bg-accent/5 px-2 py-1 rounded-lg flex items-center gap-1"
-            >
-                {showPreview ? 'Свернуть' : 'Развернуть'} {showPreview ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />}
-            </button>
-          </div>
-
-          <div className={`bg-[#54a9eb] rounded-r-xl p-6 shadow-xl relative overflow-hidden transition-all duration-500 ease-in-out ${showPreview ? 'h-[500px] opacity-100' : 'h-24 opacity-80'}`}>
-             {/* Telegram Header */}
-             <div className="flex items-center gap-3 mb-6 relative z-10">
-              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-xl backdrop-blur-md">🤖</div>
-              <div>
-                <div className="text-[15px] font-bold text-white">TrainerSpace Bot</div>
-                <div className="text-[11px] text-white/70">bot</div>
-              </div>
-            </div>
-
-            {/* Chat Bubble 1 */}
-            <div className="bg-white rounded-2xl rounded-bl-none p-4 mb-3 max-w-[85%] shadow-sm relative z-10 animate-fade-up">
-              <div className="text-[13px] text-gray-800 leading-relaxed">
-                👋 Привет! Я помогу вам записаться на тренировку к тренеру <strong>{profile?.full_name || 'Алексей Смирнов'}</strong>.
-                <br/><br/>
-                У него сейчас доступно <strong>12 свободных слотов</strong> на этой неделе.
-              </div>
-              <div className="mt-3 flex flex-col gap-2">
-                <button className="w-full bg-[#0088cc] text-white text-[12px] font-bold py-2.5 rounded-xl hover:bg-[#0077b5] transition-colors">
-                   📅 Записаться
+        <div className="space-y-12">
+          {/* Bot Preview Section */}
+          <section>
+            <div className="flex items-center justify-between mb-4">
+                <div className="text-[11px] font-bold text-t3 uppercase tracking-widest">Предпросмотр (в Telegram)</div>
+                <button
+                    onClick={() => setShowPreview(!showPreview)}
+                    className="text-[11px] font-bold text-accent px-2 py-1 hover:bg-accent/5 rounded-lg flex items-center gap-1 transition-colors"
+                >
+                    {showPreview ? 'Свернуть' : 'Развернуть'} {showPreview ? <IconChevronUp size={14} stroke={2} /> : <IconChevronDown size={14} stroke={2} />}
                 </button>
-                <button className="w-full bg-gray-100 text-gray-700 text-[12px] font-bold py-2.5 rounded-xl hover:bg-gray-200 transition-colors">
-                   👤 Мои записи
-                </button>
-              </div>
             </div>
 
-            {/* User Reply */}
-            <div className="bg-[#effdde] rounded-2xl rounded-br-none p-3 mb-3 max-w-[50%] ml-auto shadow-sm relative z-10 animate-fade-up delay-150">
-              <div className="text-[13px] text-gray-800">📅 Записаться</div>
-            </div>
+            <div className={`bg-slate-100/50 rounded-3xl p-6 relative overflow-hidden transition-all duration-500 ease-in-out border border-slate-100 ${showPreview ? 'max-h-[600px] opacity-100' : 'max-h-32 opacity-80'}`}>
+                {/* Header */}
+                <div className="flex items-center gap-3 mb-8">
+                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-xl shadow-sm">🤖</div>
+                    <div>
+                        <div className="text-[14px] font-bold text-slate-800 leading-none">Окошко Бот</div>
+                        <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">online</div>
+                    </div>
+                </div>
 
-            {/* Chat Bubble 2 */}
-            <div className="bg-white rounded-2xl rounded-bl-none p-4 max-w-[85%] shadow-sm relative z-10 animate-fade-up delay-300">
-              <div className="text-[13px] text-gray-800 leading-relaxed">Отлично! Выберите удобный день:</div>
-              <div className="grid grid-cols-2 gap-2 mt-3">
-                {['ПН 19.05', 'ВТ 20.05', 'СР 21.05', 'ЧТ 22.05'].map(day => (
-                  <button key={day} className="bg-gray-50 border border-gray-100 text-gray-700 text-[12px] font-semibold py-2 rounded-lg hover:bg-gray-100 transition-colors">
-                    {day}
-                  </button>
+                {/* Bubble 1 */}
+                <div className="bg-white rounded-2xl rounded-bl-none p-4 mb-4 max-w-[90%] shadow-sm animate-fade-up border border-slate-50">
+                    <div className="text-[13px] text-slate-700 leading-relaxed">
+                        👋 Привет! Я помогу вам записаться к тренеру <strong>{profile?.full_name || 'Алексей'}</strong>.
+                        <br/><br/>
+                        На этой неделе есть <strong>12 свободных слотов</strong>.
+                    </div>
+                </div>
+
+                {/* Keyboard Placeholder */}
+                <div className="space-y-2 mt-8">
+                    <button className="w-full bg-accent text-white py-3 rounded-xl text-[13px] font-bold shadow-lg shadow-accent/20">📅 Записаться</button>
+                    <button className="w-full bg-white text-slate-700 py-3 rounded-xl text-[13px] font-bold border border-slate-100">👤 Мои записи</button>
+                </div>
+            </div>
+          </section>
+
+          {/* Last Reviews */}
+          <section>
+            <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-4">Последние отзывы</div>
+            <div className="space-y-4">
+                {reviews.length > 0 ? reviews.slice(0, 3).map((review) => (
+                    <div key={review.id} className="p-5 bg-white rounded-2xl border border-slate-50 hover:border-slate-100 transition-all group">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-[13.5px] font-bold text-t1">{review.client_name || 'Клиент'}</span>
+                            <div className="flex items-center gap-0.5 text-yellow-500">
+                                {[...Array(5)].map((_, i) => (
+                                    <IconStarFilled key={i} size={10} className={i < review.rating ? 'opacity-100' : 'opacity-20'} />
+                                ))}
+                            </div>
+                        </div>
+                        <p className="text-[12.5px] text-t2 italic leading-relaxed line-clamp-2">
+                            «{review.comment || 'Оценка без комментария'}»
+                        </p>
+                        <div className="text-[10px] text-t3 font-bold uppercase tracking-widest mt-3 opacity-60">
+                            {new Date(review.created_at).toLocaleDateString('ru-RU')}
+                        </div>
+                    </div>
+                )) : (
+                    <div className="text-center py-10 bg-slate-50 rounded-2xl text-t3 text-[12px] font-medium italic">Отзывов пока нет</div>
+                )}
+            </div>
+          </section>
+
+          {/* Bot Stats */}
+          <section>
+            <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-4">Аналитика бота</div>
+            <div className="grid grid-cols-2 gap-4">
+                {[
+                    { label: 'Активных сессий', val: '12' },
+                    { label: 'Всего записей', val: '47' },
+                ].map((stat, i) => (
+                    <div key={i} className="p-5 bg-white border border-slate-50 rounded-2xl flex flex-col items-center text-center">
+                        <div className="text-[24px] font-extrabold text-t1 tracking-tight">{stat.val}</div>
+                        <div className="text-[10px] text-t3 font-bold uppercase tracking-widest mt-1">{stat.label}</div>
+                    </div>
                 ))}
-              </div>
             </div>
-
-            {/* Decor Circles */}
-            <div className="absolute top-[-50px] right-[-50px] w-48 h-48 bg-white/5 rounded-full pointer-events-none"></div>
-            <div className="absolute bottom-[20px] left-[-20px] w-32 h-32 bg-white/5 rounded-full pointer-events-none"></div>
-          </div>
+          </section>
         </div>
       </div>
     </div>
