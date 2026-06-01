@@ -70,7 +70,30 @@ export async function POST(request: Request) {
         let trainerId = parts[1];
 
         if (!trainerId) {
-          await sendTelegramMessage(chat.id, '👋 Привет! Чтобы записаться к тренеру, используйте специальную ссылку от вашего тренера.');
+          const { data: previousClients } = await supabase.from('clients')
+            .select('trainer_id, trainers:trainers!trainer_id(full_name)')
+            .eq('telegram_id', from.id.toString());
+
+          if (previousClients && previousClients.length > 0) {
+            // Filter unique trainers
+            const seen = new Set();
+            const uniqueTrainers = previousClients.filter(pc => {
+              if (seen.has(pc.trainer_id)) return false;
+              seen.add(pc.trainer_id);
+              return true;
+            });
+
+            const trainerButtons = uniqueTrainers.map(pc => ([{
+              text: `🏃 Записаться к ${escapeHtml((pc.trainers as any).full_name)}`,
+              callback_data: `svc_list:${pc.trainer_id}`
+            }]));
+
+            await sendTelegramMessage(chat.id, '👋 <b>С возвращением!</b>\n\nВыберите тренера из вашей истории для новой записи:', {
+              inline_keyboard: trainerButtons
+            });
+          } else {
+            await sendTelegramMessage(chat.id, '👋 Привет! Чтобы записаться к тренеру, используйте специальную ссылку от вашего тренера.');
+          }
           return NextResponse.json({ ok: true });
         }
 
@@ -173,7 +196,51 @@ export async function POST(request: Request) {
           }
         }
 
-        if (action === 'my_bookings') {
+        if (action === 'svc_list') {
+          const [trainerId] = params;
+          const { data: trainer } = await supabase.from('trainers').select('full_name, specialization').eq('id', trainerId).single();
+          if (trainer) {
+             const servicesKeyboard = await getServicesKeyboard(trainerId);
+             await sendTelegramMessage(chatId, `🏃 Запись к тренеру <b>${escapeHtml(trainer.full_name)}</b>\n\nВыберите услугу:`, {
+                inline_keyboard: [
+                    ...servicesKeyboard,
+                    [{ text: '👤 Мои записи / Перенос', callback_data: `my_bookings:${trainerId}` }]
+                ]
+             });
+          }
+        } else if (action === 'tr_appr') {
+           const [sessionId] = params;
+           await supabase.from('sessions').update({ status: 'confirmed' }).eq('id', sessionId);
+           await sendTelegramMessage(chatId, '✅ Запись подтверждена. Клиент получит уведомление.');
+
+           // Trigger client notification
+           const notifyUrl = `${url.origin}/api/notify`;
+           fetch(notifyUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ sessionId, status: 'confirmed' })
+           }).catch(e => console.error('Notify error from bot:', e));
+
+        } else if (action === 'tr_rejt') {
+           const [sessionId] = params;
+           await supabase.from('sessions').update({ status: 'rejected' }).eq('id', sessionId);
+           await sendTelegramMessage(chatId, '❌ Запись отклонена.');
+
+           const { data: sessionData } = await supabase.from('sessions').select('client:clients!client_id(telegram_id), trainer:trainers!trainer_id(full_name)').eq('id', sessionId).single();
+           if (sessionData && (sessionData.client as any)?.telegram_id) {
+              await sendTelegramMessage((sessionData.client as any).telegram_id, `❌ <b>Ваша заявка отклонена тренером ${(sessionData.trainer as any)?.full_name}.</b>`);
+           }
+        } else if (action === 'tr_rsch') {
+           const [sessionId] = params;
+           await supabase.from('sessions').update({ status: 'rejected' }).eq('id', sessionId);
+           await sendTelegramMessage(chatId, '📅 Предложение о переносе отправлено клиенту.');
+
+           const { data: sessionData } = await supabase.from('sessions').select('client:clients!client_id(telegram_id), trainer:trainers!trainer_id(full_name)').eq('id', sessionId).single();
+           if (sessionData && (sessionData.client as any)?.telegram_id) {
+              const message = `❌ <b>Тренер ${(sessionData.trainer as any)?.full_name} отклонил вашу заявку.</b>\n\nНо он предлагает вам выбрать другое время! Пожалуйста, воспользуйтесь меню бота для повторной записи.`;
+              await sendTelegramMessage((sessionData.client as any).telegram_id, message);
+           }
+        } else if (action === 'my_bookings') {
           const [trainerId] = params;
           const { data: client } = await supabase.from('clients').select('id').eq('trainer_id', trainerId).eq('telegram_id', from.id.toString()).single();
 
@@ -285,9 +352,17 @@ export async function POST(request: Request) {
                    `Услуга: <b>${escapeHtml(svcData?.name || 'Услуга')}</b>\n` +
                    `Дата: <b>${date}</b>\n` +
                    `Время: <b>${time}</b>\n\n` +
-                   `Подтвердите заявку в панели управления.`;
+                   `Выберите действие:`;
 
-                 await sendTelegramMessage(trainer.telegram_id, trainerMsg);
+                 await sendTelegramMessage(trainer.telegram_id, trainerMsg, {
+                    inline_keyboard: [
+                        [
+                            { text: '✅ Подтвердить', callback_data: `tr_appr:${session.id}` },
+                            { text: '❌ Отклонить', callback_data: `tr_rejt:${session.id}` }
+                        ],
+                        [{ text: '📅 Предложить перенос', callback_data: `tr_rsch:${session.id}` }]
+                    ]
+                 });
               }
 
               const namePart = `${from.first_name || ''} ${from.last_name || ''}`.trim() || 'Клиент';

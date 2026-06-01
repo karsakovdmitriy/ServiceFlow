@@ -321,11 +321,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
        }
     }
 
-    if (!error && status === 'confirmed') {
+    if (!error && (status === 'confirmed' || status === 'completed')) {
       fetch('/api/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: id })
+        body: JSON.stringify({ sessionId: id, status })
       }).catch(err => console.error('Notification trigger error:', err));
     }
     fetchData();
