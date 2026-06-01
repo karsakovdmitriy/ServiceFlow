@@ -23,20 +23,49 @@ export default function AnalyticsPage() {
 
     const avgSessionPrice = allDone.length > 0 ? totalIncome / allDone.length : 0;
 
+    // Chart Data Calculation
+    interface MonthData { month: string; monthIdx: number; year: number; income: number; sessions: number; }
+    const last6Months: MonthData[] = [];
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(1);
+        d.setMonth(d.getMonth() - i);
+        last6Months.push({
+            month: d.toLocaleString('ru-RU', { month: 'short' }).replace('.', ''),
+            monthIdx: d.getMonth(),
+            year: d.getFullYear(),
+            income: 0,
+            sessions: 0
+        });
+    }
+
+    [...allDone, ...allActive].forEach(s => {
+        const sDate = new Date(s.date);
+        const monthIdx = sDate.getMonth();
+        const year = sDate.getFullYear();
+
+        const bucket = last6Months.find(m => m.monthIdx === monthIdx && m.year === year);
+        if (bucket) {
+            const svc = services.find(sv => sv.id === s.serviceId);
+            bucket.income += (svc?.price || 0);
+            bucket.sessions += 1;
+        }
+    });
+
     return {
         totalIncome,
         projectedIncome,
         completedCount: allDone.length,
         activeCount: allActive.length,
         clientCount: clients.length,
-        avgPrice: avgSessionPrice
+        avgPrice: avgSessionPrice,
+        chartData: last6Months
     };
   }, [sessions, completedSessions, clients, services]);
 
-  // Mock data for charts
-  const incomeData = [24000, 32000, 28000, 45000, 38000, 52000];
-  const sessionData = [12, 18, 15, 22, 20, 26];
-  const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн'];
+  const incomeData = stats.chartData.map(d => d.income);
+  const sessionData = stats.chartData.map(d => d.sessions);
+  const months = stats.chartData.map(d => d.month);
 
   return (
     <div className="animate-fade-up max-w-[1100px] mx-auto">
@@ -70,12 +99,13 @@ export default function AnalyticsPage() {
             </div>
             <div className="h-[240px] w-full flex items-end justify-between gap-1 px-2 relative">
                 {/* Horizontal grid lines */}
-                <div className="absolute inset-x-0 top-0 h-px bg-slate-50"></div>
-                <div className="absolute inset-x-0 top-1/2 h-px bg-slate-50"></div>
-                <div className="absolute inset-x-0 bottom-8 h-px bg-slate-100"></div>
+                <div className="absolute inset-x-0 top-0 h-px bg-border/20"></div>
+                <div className="absolute inset-x-0 top-1/2 h-px bg-border/20"></div>
+                <div className="absolute inset-x-0 bottom-8 h-px bg-border/40"></div>
 
                 {incomeData.map((val, i) => {
-                const height = (val / 60000) * 100;
+                const maxIncome = Math.max(...incomeData, 10000);
+                const height = (val / maxIncome) * 100;
                 return (
                     <div key={i} className="flex-1 flex flex-col items-center group relative z-10 h-full justify-end">
                         <div
@@ -86,7 +116,7 @@ export default function AnalyticsPage() {
                             <div className="absolute top-0 left-0 right-0 h-0.5 bg-accent rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
 
                             {/* Hover label */}
-                            <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100 whitespace-nowrap">
+                            <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100 whitespace-nowrap z-[100]">
                                 {val.toLocaleString()} ₽
                             </div>
                         </div>
@@ -101,15 +131,16 @@ export default function AnalyticsPage() {
           <section>
              <div className="flex items-center justify-between mb-8">
                 <h3 className="text-[14px] font-bold text-t1 uppercase tracking-wider">Количество сессий</h3>
-                <span className="text-[11px] text-t3 font-bold bg-slate-100 px-2.5 py-1 rounded-full">Всего {stats.completedCount + stats.activeCount}</span>
+                <span className="text-[11px] text-t3 font-bold bg-bg-custom border border-border px-2.5 py-1 rounded-full">Всего {stats.completedCount + stats.activeCount}</span>
             </div>
             <div className="h-[180px] w-full flex items-end justify-between gap-4 px-4">
                 {sessionData.map((val, i) => {
-                const height = (val / 30) * 100;
+                const maxSessions = Math.max(...sessionData, 10);
+                const height = (val / maxSessions) * 100;
                 return (
                     <div key={i} className="flex-1 flex flex-col items-center group justify-end h-full">
                         <div
-                            className="w-full max-w-[12px] bg-slate-100 group-hover:bg-accent/20 rounded-full transition-all relative"
+                            className="w-full max-w-[12px] bg-bg-custom border border-border group-hover:bg-accent/20 rounded-full transition-all relative"
                             style={{ height: `${height}%` }}
                         >
                             <div className="absolute top-0 left-0 right-0 h-[12px] bg-accent/40 rounded-full scale-0 group-hover:scale-100 transition-transform"></div>
@@ -138,7 +169,7 @@ export default function AnalyticsPage() {
                                 <span className="text-[13px] font-semibold text-t1">{s.name}</span>
                                 <span className="text-[11px] font-bold text-t3">{count} зап.</span>
                             </div>
-                            <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="w-full h-1 bg-bg-custom border border-border rounded-full overflow-hidden">
                                 <div
                                     className="h-full bg-accent rounded-full transition-all duration-1000 ease-out"
                                     style={{ width: `${percent}%` }}
@@ -151,7 +182,7 @@ export default function AnalyticsPage() {
           </section>
 
           {/* Client Stats */}
-          <section className="p-6 bg-white rounded-2xl border border-slate-100 space-y-4">
+          <section className="p-6 bg-surface rounded-2xl border border-border space-y-4">
              <div className="flex items-center justify-between">
                 <span className="text-[13px] font-medium text-t2">Всего клиентов</span>
                 <span className="text-[14px] font-bold text-t1">{stats.clientCount}</span>
@@ -178,7 +209,7 @@ export default function AnalyticsPage() {
                     Выгрузите все данные о доходах в формате XLSX для налоговой декларации или личного учета.
                 </p>
             </div>
-            <button className="flex items-center gap-2 bg-white text-slate-900 px-6 py-3 rounded-xl text-[13px] font-bold hover:bg-slate-100 transition-all shadow-xl shadow-black/20">
+            <button className="flex items-center gap-2 bg-white text-slate-900 px-6 py-3 rounded-xl text-[13px] font-bold hover:bg-slate-50 transition-all shadow-xl shadow-black/20">
                 <IconFileExport size={18} stroke={2} />
                 Скачать отчет
             </button>

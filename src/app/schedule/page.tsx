@@ -134,14 +134,14 @@ export default function SchedulePage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
 
         {/* Working Hours */}
-        <section>
-          <div className="flex items-center gap-4 mb-5">
+        <section className="bg-surface p-6 rounded-r-xl border border-border shadow-sh-sm">
+          <div className="flex items-center gap-4 mb-6">
             <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider whitespace-nowrap">Рабочие часы</h2>
-            <div className="h-px bg-slate-100 flex-1"></div>
+            <div className="h-px bg-border flex-1"></div>
           </div>
           <div className="space-y-1">
             {schedule.map((day, i) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-xl hover:bg-white transition-all group">
+              <div key={i} className="flex items-center justify-between p-3 rounded-xl hover:bg-bg-custom transition-all group">
                 <div className="text-[13.5px] font-medium text-t1 w-24">{day.name}</div>
                 <div className="flex-1 flex items-center gap-2">
                   {day.on ? (
@@ -150,14 +150,14 @@ export default function SchedulePage() {
                         type="time"
                         value={day.startTime}
                         onChange={(e) => updateScheduleTime(i, e.target.value, day.endTime)}
-                        className="text-[12px] font-semibold text-t2 bg-slate-50 border-none rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-accent/10"
+                        className="text-[12px] font-semibold text-t1 bg-bg-custom border-none rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-accent/10"
                       />
                       <span className="text-t3 opacity-50">—</span>
                       <input
                         type="time"
                         value={day.endTime}
                         onChange={(e) => updateScheduleTime(i, day.startTime, e.target.value)}
-                        className="text-[12px] font-semibold text-t2 bg-slate-50 border-none rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-accent/10"
+                        className="text-[12px] font-semibold text-t1 bg-bg-custom border-none rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-accent/10"
                       />
                     </div>
                   ) : (
@@ -166,7 +166,7 @@ export default function SchedulePage() {
                 </div>
                 <button
                   onClick={() => toggleDay(i)}
-                  className={`w-9 h-5 rounded-full transition-all relative ${day.on ? 'bg-accent' : 'bg-slate-200'}`}
+                  className={`w-9 h-5 rounded-full transition-all relative ${day.on ? 'bg-accent' : 'bg-border'}`}
                 >
                   <div className={`absolute w-3 h-3 bg-white rounded-full top-1 transition-all ${day.on ? 'left-5' : 'left-1'}`}></div>
                 </button>
@@ -177,12 +177,12 @@ export default function SchedulePage() {
 
         {/* Blocking & Slots */}
         <section className="space-y-10">
-          <div>
-            <div className="flex items-center gap-4 mb-5">
+          <div className="bg-surface p-6 rounded-r-xl border border-border shadow-sh-sm">
+            <div className="flex items-center gap-4 mb-6">
                 <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider whitespace-nowrap">Блокировка</h2>
-                <div className="h-px bg-slate-100 flex-1"></div>
+                <div className="h-px bg-border flex-1"></div>
             </div>
-            <div className="bg-white rounded-2xl p-6 border border-slate-100">
+            <div>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="col-span-2">
                   <label className="text-[11px] font-bold text-t3 uppercase mb-1.5 block">Дата</label>
@@ -190,7 +190,7 @@ export default function SchedulePage() {
                     type="date"
                     value={newBlock.date}
                     onChange={e => setNewBlock({...newBlock, date: e.target.value})}
-                    className="w-full input-modern"
+                    className="w-full input-modern bg-bg-custom/50"
                   />
                 </div>
                 {!newBlock.allDay && (
@@ -201,7 +201,7 @@ export default function SchedulePage() {
                         type="time"
                         value={newBlock.startTime}
                         onChange={e => setNewBlock({...newBlock, startTime: e.target.value})}
-                        className="w-full input-modern"
+                        className="w-full input-modern bg-bg-custom/50"
                       />
                     </div>
                     <div>
@@ -210,7 +210,7 @@ export default function SchedulePage() {
                         type="time"
                         value={newBlock.endTime}
                         onChange={e => setNewBlock({...newBlock, endTime: e.target.value})}
-                        className="w-full input-modern"
+                        className="w-full input-modern bg-bg-custom/50"
                       />
                     </div>
                   </>
@@ -222,7 +222,7 @@ export default function SchedulePage() {
                   id="allDay"
                   checked={newBlock.allDay}
                   onChange={e => setNewBlock({...newBlock, allDay: e.target.checked})}
-                  className="w-4 h-4 rounded border-slate-200 text-accent focus:ring-accent/20"
+                  className="w-4 h-4 rounded border-border text-accent focus:ring-accent/20"
                 />
                 <label htmlFor="allDay" className="text-[13px] text-t2 font-medium">Весь день</label>
               </div>
@@ -237,13 +237,14 @@ export default function SchedulePage() {
 
           {/* List of blocked slots */}
           {filteredBlocks.length > 0 && (
-            <div>
-               <div className="text-[11px] font-bold text-t3 uppercase tracking-wider mb-3">Заблокировано на эту неделю ({filteredBlocks.length})</div>
-               <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
+            <div className="bg-surface p-6 rounded-r-xl border border-border shadow-sh-sm">
+               <div className="text-[11px] font-bold text-t3 uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <IconBan size={14} /> Заблокировано на эту неделю ({filteredBlocks.length})
+               </div>
+               <div className="space-y-2 max-h-[240px] overflow-y-auto pr-2">
                 {filteredBlocks.map((block) => (
-                  <div key={block.id} className="group flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-transparent hover:border-slate-100 transition-all">
-                    <IconBan size={14} className="text-t3" stroke={1.5} />
-                    <div className="flex-1 text-[13px] font-medium text-t2">{formatBlock(block)}</div>
+                  <div key={block.id} className="group flex items-center gap-3 p-3 bg-bg-custom rounded-xl border border-border/50 hover:border-border transition-all">
+                    <div className="flex-1 text-[13px] font-medium text-t1">{formatBlock(block)}</div>
                     <button
                         onClick={() => removeBlock(block.id)}
                         className="opacity-0 group-hover:opacity-100 p-1 text-t3 hover:text-red-custom transition-all"
@@ -292,7 +293,7 @@ export default function SchedulePage() {
 
         {/* Mobile View */}
         <div className="lg:hidden space-y-4">
-             <div className="flex items-center justify-between bg-white p-1 rounded-xl border border-slate-100">
+             <div className="flex items-center justify-between bg-surface p-1 rounded-xl border border-border shadow-sh-sm">
                 {weekGrid.map((day, i) => (
                     <button
                         key={i}
@@ -311,9 +312,9 @@ export default function SchedulePage() {
                 <div
                     key={si}
                     className={`text-[11px] p-3 rounded-xl text-center font-bold border transition-all ${
-                    slot.s === 'booked' ? 'bg-blue-50 text-blue-custom border-blue-100' :
-                    slot.s === 'free' ? 'bg-green-50 text-green-custom border-green-100' :
-                    'bg-slate-50 text-t3 border-slate-100'
+                    slot.s === 'booked' ? 'bg-blue-custom/10 text-blue-custom border-blue-custom/20' :
+                    slot.s === 'free' ? 'bg-green-custom/10 text-green-custom border-green-custom/20' :
+                    'bg-bg-custom text-t3 border-border'
                     }`}
                 >
                     {slot.t}
@@ -326,7 +327,7 @@ export default function SchedulePage() {
         <div className="hidden lg:grid grid-cols-7 gap-4">
           {weekGrid.map((day, i) => (
             <div key={i} className="flex flex-col">
-              <div className={`text-center py-3 mb-4 rounded-xl transition-all ${day.today ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'text-t2 bg-white/50'}`}>
+              <div className={`text-center py-3 mb-4 rounded-xl transition-all ${day.today ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'text-t1 bg-surface border border-border shadow-sh-sm'}`}>
                 <div className="text-[10px] font-bold uppercase opacity-70 tracking-widest">{day.day}</div>
                 <div className="text-[18px] font-extrabold">{day.dateLabel}</div>
               </div>
@@ -365,7 +366,7 @@ export default function SchedulePage() {
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-6 mt-8 pt-6 border-t border-slate-100">
+        <div className="flex items-center gap-6 mt-8 pt-6 border-t border-border">
             {[
                 { label: 'Занято', color: 'bg-blue-custom' },
                 { label: 'Свободно', color: 'bg-green-custom' },

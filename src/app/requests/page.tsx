@@ -72,16 +72,16 @@ export default function RequestsPage() {
     <div className="animate-fade-up max-w-[1000px] mx-auto">
       {/* Header & Tabs */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-10">
-        <div className="flex bg-slate-100 p-1 rounded-xl">
+        <div className="flex bg-bg-custom p-1 rounded-xl border border-border">
            <button
              onClick={() => setActiveTab('active')}
-             className={`px-6 py-2 rounded-lg text-[13px] font-bold transition-all flex items-center gap-2 ${activeTab === 'active' ? 'bg-white text-t1 shadow-sm' : 'text-t3 hover:text-t2'}`}
+             className={`px-6 py-2 rounded-lg text-[13px] font-bold transition-all flex items-center gap-2 ${activeTab === 'active' ? 'bg-surface text-t1 shadow-sm' : 'text-t3 hover:text-t2'}`}
            >
              <IconCalendarTime size={16} /> Активные
            </button>
            <button
              onClick={() => setActiveTab('completed')}
-             className={`px-6 py-2 rounded-lg text-[13px] font-bold transition-all flex items-center gap-2 ${activeTab === 'completed' ? 'bg-white text-t1 shadow-sm' : 'text-t3 hover:text-t2'}`}
+             className={`px-6 py-2 rounded-lg text-[13px] font-bold transition-all flex items-center gap-2 ${activeTab === 'completed' ? 'bg-surface text-t1 shadow-sm' : 'text-t3 hover:text-t2'}`}
            >
              <IconHistory size={16} /> История
            </button>
@@ -93,7 +93,7 @@ export default function RequestsPage() {
               placeholder="Поиск по клиенту..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-100 rounded-xl text-[13px] font-medium outline-none focus:border-accent transition-all shadow-sm"
+              className="w-full pl-10 pr-4 py-2.5 bg-surface border border-border rounded-xl text-[13px] font-medium outline-none focus:border-accent transition-all shadow-sm text-t1"
            />
         </div>
       </div>
@@ -102,19 +102,19 @@ export default function RequestsPage() {
         <div className="space-y-16">
           {/* Section: Overdue Sessions */}
           {overdueSessions.length > 0 && (
-            <section className="bg-red-50/30 p-6 rounded-r-xl border border-red-100/50">
+            <section className="bg-red-custom/5 p-6 rounded-r-xl border border-red-custom/10">
               <div className="flex items-center gap-4 mb-6">
                 <h2 className="text-[14px] font-bold text-red-custom uppercase tracking-wider whitespace-nowrap flex items-center gap-2">
                   <IconCalendarTime size={18} /> Просроченые записи
                 </h2>
-                <div className="h-px bg-red-100 flex-1"></div>
+                <div className="h-px bg-red-custom/10 flex-1"></div>
                 <span className="text-[11px] font-bold text-red-custom/60 uppercase">{overdueSessions.length} записей</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {overdueSessions.map((session, i) => (
-                  <div key={i} className="group relative bg-surface p-4 rounded-2xl border border-red-100/50 hover:shadow-sh-md transition-all">
+                  <div key={i} className="group relative bg-surface p-4 rounded-2xl border border-red-custom/10 hover:shadow-sh-md transition-all">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-red-50 flex items-center justify-center text-[11px] font-bold text-red-custom shrink-0">
+                      <div className="w-9 h-9 rounded-full bg-red-custom/10 flex items-center justify-center text-[11px] font-bold text-red-custom shrink-0">
                           {session.initials}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -151,12 +151,12 @@ export default function RequestsPage() {
             <section>
               <div className="flex items-center gap-4 mb-6">
                 <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider whitespace-nowrap">Ожидают подтверждения</h2>
-                <div className="h-px bg-slate-100 flex-1"></div>
+                <div className="h-px bg-border flex-1"></div>
               </div>
               <div className="space-y-1">
                 {filteredRequests.map((req, i) => (
-                  <div key={i} className="group flex items-center gap-4 p-4 rounded-2xl hover:bg-white transition-all">
-                    <div className="w-11 h-11 rounded-full bg-accent/5 flex items-center justify-center text-[12px] font-bold text-accent shrink-0 border border-white">
+                  <div key={i} className="group flex items-center gap-4 p-4 rounded-2xl hover:bg-surface transition-all">
+                    <div className="w-11 h-11 rounded-full bg-accent/5 flex items-center justify-center text-[12px] font-bold text-accent shrink-0 border border-border">
                       {req.initials}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -226,7 +226,7 @@ export default function RequestsPage() {
                       {items.map((session, i) => (
                         <div key={i} className="group relative bg-surface p-4 rounded-2xl border border-border hover:shadow-sh-md hover:-translate-y-0.5 transition-all">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center text-[11px] font-bold text-t2 shrink-0">
+                            <div className="w-9 h-9 rounded-full bg-bg-custom flex items-center justify-center text-[11px] font-bold text-t2 shrink-0">
                                 {session.initials}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -266,17 +266,17 @@ export default function RequestsPage() {
         <section>
           <div className="flex items-center gap-4 mb-6">
             <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider whitespace-nowrap">Завершенные записи</h2>
-            <div className="h-px bg-slate-100 flex-1"></div>
+            <div className="h-px bg-border flex-1"></div>
           </div>
           <div className="space-y-1">
             {completedSessions.length === 0 ? (
-              <div className="text-center py-20 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200 text-[13px] text-t3 font-medium">
+              <div className="text-center py-20 bg-bg-custom/50 rounded-3xl border border-dashed border-border text-[13px] text-t3 font-medium">
                 Нет завершенных записей
               </div>
             ) : (
               completedSessions.map((session, i) => (
-                <div key={i} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white transition-all opacity-70">
-                  <div className="w-10 h-10 rounded-full bg-slate-100 text-t3 flex items-center justify-center text-[11px] font-bold shrink-0">
+                <div key={i} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-surface transition-all opacity-70">
+                  <div className="w-10 h-10 rounded-full bg-bg-custom text-t3 flex items-center justify-center text-[11px] font-bold shrink-0">
                     {session.initials}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -285,7 +285,7 @@ export default function RequestsPage() {
                       {session.date} · {session.time}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-t3 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded-full">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-t3 uppercase tracking-widest bg-bg-custom px-2 py-1 rounded-full border border-border">
                      <IconCheck size={12} stroke={3} /> Завершено
                   </div>
                 </div>
@@ -297,8 +297,8 @@ export default function RequestsPage() {
 
       {/* Reject/Cancel Modal */}
       {(rejectingId || cancellingId) && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-fade-up border border-slate-100">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
+            <div className="bg-surface rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-fade-up border border-border">
                 <div className="text-[16px] font-bold text-t1 mb-2 tracking-tight">{rejectingId ? 'Отклонить заявку?' : 'Отменить тренировку?'}</div>
                 <p className="text-[13px] text-t3 mb-6 leading-relaxed">Вы можете просто {rejectingId ? 'отклонить запись' : 'отменить тренировку'} или предложить клиенту выбрать другое время в боте.</p>
                 <div className="flex flex-col gap-2">
@@ -310,7 +310,7 @@ export default function RequestsPage() {
                     </button>
                     <button
                         onClick={() => rejectingId ? handleReject(rejectingId, false) : handleCancel(cancellingId!, false)}
-                        className="w-full bg-slate-50 text-red-custom py-2.5 rounded-xl text-[13px] font-bold hover:bg-red-50 transition-all"
+                        className="w-full bg-bg-custom text-red-custom py-2.5 rounded-xl text-[13px] font-bold hover:bg-red-custom/10 transition-all"
                     >
                         {rejectingId ? 'Отклонить без переноса' : 'Отменить без переноса'}
                     </button>

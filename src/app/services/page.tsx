@@ -85,7 +85,7 @@ export default function ServicesPage() {
                     <th className="px-6 py-4 text-[11px] font-bold text-t3 uppercase tracking-widest"></th>
                 </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-border-light">
                 {services.map(service => (
                     <tr key={service.id} className="group hover:bg-bg-custom transition-colors">
                         <td className="px-6 py-5">
@@ -99,7 +99,7 @@ export default function ServicesPage() {
                             </div>
                         </td>
                         <td className="px-6 py-5 hidden md:table-cell">
-                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${service.is_group ? 'bg-blue-light text-blue-custom' : 'bg-bg-custom text-t3 border border-border-light'}`}>
+                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${service.is_group ? 'bg-blue-custom/10 text-blue-custom' : 'bg-bg-custom text-t3 border border-border'}`}>
                                 {service.is_group ? 'Групповая' : 'Индивид.'}
                             </span>
                         </td>
@@ -113,13 +113,13 @@ export default function ServicesPage() {
                             <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
                                     onClick={() => startEdit(service)}
-                                    className="p-2 text-t3 hover:text-accent hover:bg-accent-light rounded-lg transition-all"
+                                    className="p-2 text-t3 hover:text-accent hover:bg-accent/10 rounded-lg transition-all"
                                 >
                                     <IconEdit size={16} stroke={1.5} />
                                 </button>
                                 <button
                                     onClick={() => removeService(service.id)}
-                                    className="p-2 text-t3 hover:text-red-custom hover:bg-red-light rounded-lg transition-all"
+                                    className="p-2 text-t3 hover:text-red-custom hover:bg-red-custom/10 rounded-lg transition-all"
                                 >
                                     <IconTrash size={16} stroke={1.5} />
                                 </button>
@@ -168,13 +168,13 @@ export default function ServicesPage() {
                             <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
                                     onClick={() => { setEditingVenueId(venue.id); setEditVenueData(venue); }}
-                                    className="p-2 text-t3 hover:text-accent hover:bg-accent-light rounded-lg transition-all"
+                                    className="p-2 text-t3 hover:text-accent hover:bg-accent/10 rounded-lg transition-all"
                                 >
                                     <IconEdit size={16} stroke={1.5} />
                                 </button>
                                 <button
                                     onClick={() => removeVenue(venue.id)}
-                                    className="p-2 text-t3 hover:text-red-custom hover:bg-red-light rounded-lg transition-all"
+                                    className="p-2 text-t3 hover:text-red-custom hover:bg-red-custom/10 rounded-lg transition-all"
                                 >
                                     <IconTrash size={16} stroke={1.5} />
                                 </button>
@@ -193,9 +193,9 @@ export default function ServicesPage() {
 
       {/* Add/Edit Service Modal */}
       {(isAdding || editingId) && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl animate-fade-up overflow-hidden border border-slate-100">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
+          <div className="bg-surface rounded-3xl w-full max-w-md shadow-2xl animate-fade-up overflow-hidden border border-border">
+            <div className="p-6 border-b border-border flex items-center justify-between">
               <h2 className="text-[16px] font-bold text-t1 tracking-tight">{editingId ? 'Редактировать услугу' : 'Новая услуга'}</h2>
               <button onClick={() => { setIsAdding(false); setEditingId(null); }} className="text-t3 hover:text-t1 transition-colors"><IconX size={20} stroke={2} /></button>
             </div>
@@ -247,13 +247,13 @@ export default function ServicesPage() {
                 </select>
               </div>
 
-              <label className="flex items-start gap-3 p-4 bg-slate-50 rounded-2xl cursor-pointer hover:bg-slate-100 transition-all group">
+              <label className="flex items-start gap-3 p-4 bg-bg-custom/50 rounded-2xl cursor-pointer hover:bg-bg-custom transition-all group">
                 <div className="mt-1">
                     <input
                         type="checkbox"
                         checked={editingId ? editData.is_group : newData.is_group}
                         onChange={e => editingId ? setEditData({...editData, is_group: e.target.checked}) : setNewData({...newData, is_group: e.target.checked})}
-                        className="w-4 h-4 rounded border-slate-200 text-accent focus:ring-accent/20 transition-all"
+                        className="w-4 h-4 rounded border-border text-accent focus:ring-accent/20 transition-all"
                     />
                 </div>
                 <div>
@@ -278,7 +278,7 @@ export default function ServicesPage() {
 
       {/* Add/Edit Venue Modal */}
       {(isAddingVenue || editingVenueId) && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
           <div className="bg-surface rounded-3xl w-full max-w-md shadow-2xl animate-fade-up overflow-hidden border border-border">
             <div className="p-6 border-b border-border flex items-center justify-between">
               <h2 className="text-[16px] font-bold text-t1 tracking-tight">{editingVenueId ? 'Редактировать площадку' : 'Новая площадка'}</h2>

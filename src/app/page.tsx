@@ -228,8 +228,8 @@ export default function Dashboard() {
 
       {/* Reject Modal */}
       {rejectingId && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-fade-up border border-slate-100">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
+            <div className="bg-surface rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-fade-up border border-border">
                 <div className="text-[16px] font-bold text-t1 mb-2 tracking-tight">Отклонить заявку?</div>
                 <p className="text-[13px] text-t3 mb-6 leading-relaxed">Вы можете просто отклонить запись или предложить клиенту выбрать другое время в боте.</p>
                 <div className="flex flex-col gap-2">
@@ -241,7 +241,7 @@ export default function Dashboard() {
                     </button>
                     <button
                         onClick={() => handleReject(rejectingId, false)}
-                        className="w-full bg-slate-50 text-red-custom py-2.5 rounded-xl text-[13px] font-bold hover:bg-red-50 transition-all"
+                        className="w-full bg-bg-custom text-red-custom py-2.5 rounded-xl text-[13px] font-bold hover:bg-red-custom/10 transition-all"
                     >
                         Отклонить без переноса
                     </button>

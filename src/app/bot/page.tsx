@@ -25,7 +25,7 @@ export default function BotPage() {
               <p className="text-[13px] text-t2 leading-relaxed">
                 Отправьте эту ссылку вашим клиентам для записи онлайн через Telegram.
               </p>
-              <div className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center justify-between gap-3 group shadow-sm">
+              <div className="bg-surface border border-border rounded-2xl p-4 flex items-center justify-between gap-3 group shadow-sm">
                 <div className="flex items-center gap-2 text-[12px] font-bold text-accent truncate">
                   <IconBrandTelegram size={18} stroke={2} className="shrink-0" />
                   <span className="truncate">{botLink}</span>
@@ -47,16 +47,16 @@ export default function BotPage() {
             <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-4">Визитка</div>
             <div className="relative group">
                 {/* Simplified Light Business Card */}
-                <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-xl relative overflow-hidden flex flex-col items-center text-center">
+                <div className="bg-surface rounded-3xl p-8 border border-border shadow-xl relative overflow-hidden flex flex-col items-center text-center">
                     <div className="absolute top-0 left-0 w-full h-1 bg-accent"></div>
 
                     <div className="mb-6 relative">
                         {profile?.avatar_url ? (
-                            <img src={profile.avatar_url} alt="Avatar" className="w-20 h-20 rounded-full object-cover border-4 border-slate-50 shadow-md" />
+                            <img src={profile.avatar_url} alt="Avatar" className="w-20 h-20 rounded-full object-cover border-4 border-bg-custom shadow-md" />
                         ) : (
-                            <div className="w-20 h-20 rounded-full bg-slate-50 border-4 border-white shadow-md flex items-center justify-center text-3xl">🏋️</div>
+                            <div className="w-20 h-20 rounded-full bg-bg-custom border-4 border-surface shadow-md flex items-center justify-center text-3xl">🏋️</div>
                         )}
-                        <div className="absolute -bottom-1 -right-1 bg-green-custom w-5 h-5 rounded-full border-4 border-white"></div>
+                        <div className="absolute -bottom-1 -right-1 bg-green-custom w-5 h-5 rounded-full border-4 border-surface"></div>
                     </div>
 
                     <div className="space-y-1 mb-8">
@@ -66,14 +66,14 @@ export default function BotPage() {
                              <div className="flex items-center gap-1 text-yellow-500 font-bold text-[12px]">
                                 <IconStarFilled size={12} /> {avgRating}
                              </div>
-                             <div className="w-1 h-1 bg-slate-200 rounded-full"></div>
+                             <div className="w-1 h-1 bg-border rounded-full"></div>
                              <div className="text-[12px] font-bold text-t3 uppercase tracking-tighter">{reviews.length} отзывов</div>
                         </div>
                     </div>
 
                     <div className="w-full space-y-4">
-                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col items-center gap-4">
-                             <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sh-sm">
+                        <div className="p-4 bg-bg-custom rounded-2xl border border-border flex flex-col items-center gap-4">
+                             <div className="bg-white p-3 rounded-xl border border-border shadow-sh-sm">
                                 <QRCodeSVG
                                     value={botLink}
                                     size={120}
@@ -97,7 +97,7 @@ export default function BotPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 mt-6">
-                    <button className="bg-white border border-slate-100 text-t2 text-[12px] font-bold py-3 rounded-xl hover:bg-slate-50 transition-all flex items-center justify-center gap-2 shadow-sm">
+                    <button className="bg-surface border border-border text-t1 text-[12px] font-bold py-3 rounded-xl hover:bg-bg-custom transition-all flex items-center justify-center gap-2 shadow-sm">
                         <IconPrinter size={18} stroke={1.5} /> Печать
                     </button>
                     <button
@@ -120,19 +120,19 @@ export default function BotPage() {
                 <div className="text-[11px] font-bold text-t3 uppercase tracking-widest">Предпросмотр (в Telegram)</div>
             </div>
 
-            <div className="bg-slate-100/50 rounded-3xl p-6 relative overflow-hidden transition-all border border-slate-100">
+            <div className="bg-bg-custom/50 rounded-3xl p-6 relative overflow-hidden transition-all border border-border">
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-8">
-                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-xl shadow-sm">🤖</div>
+                    <div className="w-10 h-10 bg-surface rounded-full flex items-center justify-center text-xl shadow-sm">🤖</div>
                     <div>
-                        <div className="text-[14px] font-bold text-slate-800 leading-none">Окошко Бот</div>
-                        <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">online</div>
+                        <div className="text-[14px] font-bold text-t1 leading-none">Окошко Бот</div>
+                        <div className="text-[10px] text-t3 font-bold uppercase tracking-widest mt-1">online</div>
                     </div>
                 </div>
 
                 {/* Bubble 1 */}
-                <div className="bg-white rounded-2xl rounded-bl-none p-4 mb-4 max-w-[90%] shadow-sm animate-fade-up border border-slate-50">
-                    <div className="text-[13px] text-slate-700 leading-relaxed">
+                <div className="bg-surface rounded-2xl rounded-bl-none p-4 mb-4 max-w-[90%] shadow-sm animate-fade-up border border-border/50">
+                    <div className="text-[13px] text-t1 leading-relaxed">
                         👋 Привет! Я помогу вам записаться к тренеру <strong>{profile?.full_name || 'Алексей'}</strong>.
                         <br/><br/>
                         На этой неделе есть <strong>12 свободных слотов</strong>.
@@ -142,7 +142,7 @@ export default function BotPage() {
                 {/* Keyboard Placeholder */}
                 <div className="space-y-2 mt-8">
                     <button className="w-full bg-accent text-white py-3 rounded-xl text-[13px] font-bold shadow-lg shadow-accent/20">📅 Записаться</button>
-                    <button className="w-full bg-white text-slate-700 py-3 rounded-xl text-[13px] font-bold border border-slate-100">👤 Мои записи</button>
+                    <button className="w-full bg-surface text-t1 py-3 rounded-xl text-[13px] font-bold border border-border">👤 Мои записи</button>
                 </div>
             </div>
           </section>
@@ -152,7 +152,7 @@ export default function BotPage() {
             <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-4">Последние отзывы</div>
             <div className="space-y-4">
                 {reviews.length > 0 ? reviews.slice(0, 3).map((review) => (
-                    <div key={review.id} className="p-5 bg-white rounded-2xl border border-slate-50 hover:border-slate-100 transition-all group">
+                    <div key={review.id} className="p-5 bg-surface rounded-2xl border border-border/50 hover:border-border transition-all group">
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-[13.5px] font-bold text-t1">{review.client_name || 'Клиент'}</span>
                             <div className="flex items-center gap-0.5 text-yellow-500">
@@ -169,7 +169,7 @@ export default function BotPage() {
                         </div>
                     </div>
                 )) : (
-                    <div className="text-center py-10 bg-slate-50 rounded-2xl text-t3 text-[12px] font-medium italic">Отзывов пока нет</div>
+                    <div className="text-center py-10 bg-bg-custom rounded-2xl text-t3 text-[12px] font-medium italic">Отзывов пока нет</div>
                 )}
             </div>
           </section>
@@ -182,7 +182,7 @@ export default function BotPage() {
                     { label: 'Активных сессий', val: sessions.length },
                     { label: 'Всего записей', val: sessions.length + completedSessions.length },
                 ].map((stat, i) => (
-                    <div key={i} className="p-5 bg-white border border-slate-50 rounded-2xl flex flex-col items-center text-center shadow-sh-sm">
+                    <div key={i} className="p-5 bg-surface border border-border/50 rounded-2xl flex flex-col items-center text-center shadow-sh-sm">
                         <div className="text-[24px] font-extrabold text-t1 tracking-tight">{stat.val}</div>
                         <div className="text-[10px] text-t3 font-bold uppercase tracking-widest mt-1">{stat.label}</div>
                     </div>
