@@ -44,43 +44,53 @@ export default function BotPage() {
           </section>
 
           <section>
-            <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-6">Визитка</div>
+            <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-4">Визитка</div>
             <div className="relative group">
-                {/* Ultra Minimalist Business Card */}
-                <div className="bg-surface rounded-[40px] p-12 relative overflow-hidden flex flex-col items-center text-center">
-                    <div className="mb-8 relative">
+                {/* Simplified Light Business Card */}
+                <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-xl relative overflow-hidden flex flex-col items-center text-center">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-accent"></div>
+
+                    <div className="mb-6 relative">
                         {profile?.avatar_url ? (
-                            <img src={profile.avatar_url} alt="Avatar" className="w-24 h-24 rounded-full object-cover shadow-2xl" />
+                            <img src={profile.avatar_url} alt="Avatar" className="w-20 h-20 rounded-full object-cover border-4 border-slate-50 shadow-md" />
                         ) : (
-                            <div className="w-24 h-24 rounded-full bg-bg-custom flex items-center justify-center text-4xl">🏋️</div>
+                            <div className="w-20 h-20 rounded-full bg-slate-50 border-4 border-white shadow-md flex items-center justify-center text-3xl">🏋️</div>
                         )}
-                        <div className="absolute bottom-1 right-1 bg-green-custom w-5 h-5 rounded-full border-4 border-surface"></div>
+                        <div className="absolute -bottom-1 -right-1 bg-green-custom w-5 h-5 rounded-full border-4 border-white"></div>
                     </div>
 
-                    <div className="space-y-2 mb-10">
-                        <h3 className="text-[24px] font-extrabold text-t1 tracking-tighter leading-none">{profile?.full_name || 'Ваше Имя'}</h3>
-                        <p className="text-[11px] font-bold text-accent uppercase tracking-[0.2em]">{profile?.specialization || 'Специализация'}</p>
-                        <div className="flex items-center justify-center gap-4 pt-3 opacity-60">
+                    <div className="space-y-1 mb-8">
+                        <h3 className="text-[20px] font-extrabold text-t1 tracking-tight">{profile?.full_name || 'Ваше Имя'}</h3>
+                        <p className="text-[12px] font-bold text-accent uppercase tracking-widest">{profile?.specialization || 'Специализация'}</p>
+                        <div className="flex items-center justify-center gap-3 pt-2">
                              <div className="flex items-center gap-1 text-yellow-500 font-bold text-[12px]">
                                 <IconStarFilled size={12} /> {avgRating}
                              </div>
-                             <div className="w-1 h-1 bg-border rounded-full"></div>
-                             <div className="text-[10px] font-bold text-t3 uppercase tracking-widest">{reviews.length} отзывов</div>
+                             <div className="w-1 h-1 bg-slate-200 rounded-full"></div>
+                             <div className="text-[12px] font-bold text-t3 uppercase tracking-tighter">{reviews.length} отзывов</div>
                         </div>
                     </div>
 
-                    <div className="w-full">
-                        <div className="p-8 bg-bg-custom/50 rounded-[32px] flex flex-col items-center gap-6">
-                             <div className="bg-surface p-4 rounded-3xl">
+                    <div className="w-full space-y-4">
+                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col items-center gap-4">
+                             <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sh-sm">
                                 <QRCodeSVG
                                     value={botLink}
-                                    size={140}
+                                    size={120}
                                     level="H"
                                     includeMargin={false}
+                                    imageSettings={{
+                                        src: "/favicon.ico",
+                                        x: undefined,
+                                        y: undefined,
+                                        height: 24,
+                                        width: 24,
+                                        excavate: true,
+                                    }}
                                 />
                              </div>
-                             <div className="text-[11px] font-bold text-t3 uppercase tracking-[0.3em] opacity-40">
-                                СКАНИРУЙТЕ ДЛЯ ЗАПИСИ
+                             <div className="text-[11px] font-bold text-t2 uppercase tracking-widest leading-relaxed">
+                                Записаться онлайн
                              </div>
                         </div>
                     </div>
