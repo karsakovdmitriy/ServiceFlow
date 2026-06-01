@@ -63,9 +63,9 @@
 .dark {
   --bg: #0F172A;
   --surface: #1E293B;
-  --t1: #F8FAFC;
-  --t2: #E2E8F0;
-  --t3: #94A3B8;
+  --t1: #FFFFFF;
+  --t2: #F1F5F9;
+  --t3: #CBD5E1;
   --border: #334155;
   --border-light: #1E293B;
 }

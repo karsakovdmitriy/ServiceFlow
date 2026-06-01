@@ -40,16 +40,16 @@ export default function ClientsPage() {
   return (
     <div className="animate-fade-up max-w-[1000px] mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
-        <div className="flex bg-slate-100 p-1 rounded-xl self-start">
+        <div className="flex bg-bg-custom p-1 rounded-xl self-start border border-border">
           <button
             onClick={() => setFilter('active')}
-            className={`px-6 py-2 text-[13px] font-bold rounded-lg transition-all ${filter === 'active' ? 'bg-white text-t1 shadow-sm' : 'text-t3 hover:text-t2'}`}
+            className={`px-6 py-2 text-[13px] font-bold rounded-lg transition-all ${filter === 'active' ? 'bg-surface text-t1 shadow-sm' : 'text-t3 hover:text-t2'}`}
           >
             Активные
           </button>
           <button
             onClick={() => setFilter('all')}
-            className={`px-6 py-2 text-[13px] font-bold rounded-lg transition-all ${filter === 'all' ? 'bg-white text-t1 shadow-sm' : 'text-t3 hover:text-t2'}`}
+            className={`px-6 py-2 text-[13px] font-bold rounded-lg transition-all ${filter === 'all' ? 'bg-surface text-t1 shadow-sm' : 'text-t3 hover:text-t2'}`}
           >
             Все
           </button>
@@ -63,38 +63,38 @@ export default function ClientsPage() {
               placeholder="Поиск клиента..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-100 rounded-xl text-[13px] font-medium outline-none focus:border-accent transition-all shadow-sm"
+              className="w-full pl-10 pr-4 py-2.5 bg-surface border border-border rounded-xl text-[13px] font-medium outline-none focus:border-accent transition-all shadow-sm text-t1"
             />
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm">
+      <div className="bg-surface rounded-3xl border border-border overflow-hidden shadow-sm">
         {/* Desktop View */}
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50/50 border-b border-slate-100">
+              <tr className="bg-bg-custom border-b border-border">
                 <th className="px-6 py-4 text-[11px] font-bold text-t3 uppercase tracking-widest">Клиент</th>
                 <th className="px-6 py-4 text-[11px] font-bold text-t3 uppercase tracking-widest">Статус</th>
                 <th className="px-6 py-4 text-[11px] font-bold text-t3 uppercase tracking-widest">Последняя сессия</th>
                 <th className="px-6 py-4 text-[11px] font-bold text-t3 uppercase tracking-widest text-right">Действия</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-border-light">
               {clientsList.length === 0 && (
                 <tr>
                   <td colSpan={4} className="py-20 text-center text-t3 text-[13px] font-medium italic">Клиенты не найдены</td>
                 </tr>
               )}
               {clientsList.map((client, i) => (
-                <tr key={i} className="group hover:bg-slate-50/50 transition-colors cursor-pointer" onClick={() => {
+                <tr key={i} className="group hover:bg-bg-custom/50 transition-colors cursor-pointer" onClick={() => {
                     setChatClientId(client.id);
                     getMessages(client.id).then(setChatMessages);
                 }}>
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-slate-100 text-t2 flex items-center justify-center text-[11px] font-bold shrink-0">
+                      <div className="w-9 h-9 rounded-full bg-bg-custom text-t2 flex items-center justify-center text-[11px] font-bold shrink-0">
                         {client.initials}
                       </div>
                       <div className="text-[14px] font-bold text-t1">{client.name}</div>
@@ -143,7 +143,7 @@ export default function ClientsPage() {
         </div>
 
         {/* Mobile View */}
-        <div className="md:hidden divide-y divide-slate-50">
+        <div className="md:hidden divide-y divide-border-light">
           {clientsList.length === 0 && (
             <div className="py-20 text-center text-t3 text-[13px] font-medium italic">Клиенты не найдены</div>
           )}
@@ -153,7 +153,7 @@ export default function ClientsPage() {
                 getMessages(client.id).then(setChatMessages);
             }}>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-slate-100 text-t2 flex items-center justify-center text-[12px] font-bold shrink-0">
+                <div className="w-10 h-10 rounded-full bg-bg-custom text-t2 flex items-center justify-center text-[12px] font-bold shrink-0">
                   {client.initials}
                 </div>
                 <div>
@@ -179,9 +179,9 @@ export default function ClientsPage() {
 
       {/* Chat Modal */}
       {chatClientId && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl animate-fade-up overflow-hidden flex flex-col h-[550px] border border-slate-100">
-                <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
+            <div className="bg-surface rounded-3xl w-full max-w-lg shadow-2xl animate-fade-up overflow-hidden flex flex-col h-[550px] border border-border">
+                <div className="p-5 border-b border-border flex items-center justify-between bg-bg-custom/50">
                     <div>
                         <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-0.5">Чат с клиентом</div>
                         <div className="text-[15px] font-bold text-t1 tracking-tight">{storeClients.find(c => c.id === chatClientId)?.full_name}</div>
@@ -189,7 +189,7 @@ export default function ClientsPage() {
                     <button onClick={() => setChatClientId(null)} className="text-t3 hover:text-t1 transition-colors"><IconX size={20} stroke={2.5} /></button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-white">
+                <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-surface">
                     {chatMessages.length === 0 && (
                         <div className="text-center text-t3 text-[12px] py-20 font-medium italic">История сообщений пуста.</div>
                     )}
@@ -198,7 +198,7 @@ export default function ClientsPage() {
                             <div className={`max-w-[85%] p-3 px-4 rounded-2xl text-[13.5px] leading-relaxed shadow-sm ${
                                 m.sender_type === 'trainer'
                                 ? 'bg-accent text-white rounded-tr-none'
-                                : 'bg-slate-50 text-t1 border border-slate-100 rounded-tl-none'
+                                : 'bg-bg-custom text-t1 border border-border rounded-tl-none'
                             }`}>
                                 {m.text}
                                 <div className={`text-[9px] mt-1.5 font-bold uppercase tracking-wider ${m.sender_type === 'trainer' ? 'text-white/60 text-right' : 'text-t3'}`}>
@@ -209,7 +209,7 @@ export default function ClientsPage() {
                     ))}
                 </div>
 
-                <div className="p-5 border-t border-slate-100 bg-slate-50/30">
+                <div className="p-5 border-t border-border bg-bg-custom/30">
                     <div className="flex gap-2">
                         <input
                             type="text"
@@ -222,7 +222,7 @@ export default function ClientsPage() {
                                 setChatMessages(msgs);
                             })()}
                             placeholder="Напишите клиенту в бот..."
-                            className="flex-1 input-modern bg-white"
+                            className="flex-1 input-modern bg-surface"
                         />
                         <button
                             disabled={!newMessage.trim()}

@@ -54,8 +54,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[#F9FAFB]">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-bg-custom">
+      <div className="w-full max-w-md bg-surface rounded-2xl shadow-xl border border-border p-8">
         <div className="flex flex-col items-center mb-8">
           <div className="w-12 h-12 bg-accent rounded-xl flex items-center justify-center text-white mb-4 shadow-lg shadow-accent/20">
             <IconWindow size={28} />
@@ -64,16 +64,16 @@ export default function LoginPage() {
           <p className="text-t3 text-sm mt-1">Сервис управления записями</p>
         </div>
 
-        <div className="flex bg-gray-100 p-1 rounded-xl mb-8">
+        <div className="flex bg-bg-custom p-1 rounded-xl mb-8 border border-border">
           <button
             onClick={() => setIsSignUp(false)}
-            className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${!isSignUp ? 'bg-white shadow-sm text-t1' : 'text-t3'}`}
+            className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${!isSignUp ? 'bg-surface shadow-sm text-t1' : 'text-t3'}`}
           >
             Вход
           </button>
           <button
             onClick={() => setIsSignUp(true)}
-            className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${isSignUp ? 'bg-white shadow-sm text-t1' : 'text-t3'}`}
+            className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${isSignUp ? 'bg-surface shadow-sm text-t1' : 'text-t3'}`}
           >
             Регистрация
           </button>
@@ -91,7 +91,7 @@ export default function LoginPage() {
                   placeholder="Алексей Смирнов"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all text-sm"
+                  className="w-full pl-10 pr-4 py-2.5 bg-bg-custom border border-border rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all text-sm text-t1"
                 />
               </div>
             </div>
@@ -107,7 +107,7 @@ export default function LoginPage() {
                 placeholder="email@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all text-sm"
+                className="w-full pl-10 pr-4 py-2.5 bg-bg-custom border border-border rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all text-sm text-t1"
               />
             </div>
           </div>
@@ -122,7 +122,7 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all text-sm"
+                className="w-full pl-10 pr-4 py-2.5 bg-bg-custom border border-border rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all text-sm text-t1"
               />
             </div>
           </div>

@@ -67,18 +67,18 @@ export default function SettingsPage() {
 
         {/* Main Settings */}
         <div className="lg:col-span-8 space-y-10">
-          <section>
+          <section className="bg-surface p-6 lg:p-8 rounded-r-xl border border-border shadow-sh-sm">
             <div className="flex items-center gap-4 mb-8">
               <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider whitespace-nowrap">Личные данные</h2>
-              <div className="h-px bg-slate-100 flex-1"></div>
+              <div className="h-px bg-border flex-1"></div>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Полное имя</label>
                     <input
-                      className="w-full input-modern"
+                      className="w-full input-modern bg-bg-custom/50"
                       type="text"
                       placeholder="Алексей Смирнов"
                       value={formData.full_name}
@@ -88,7 +88,7 @@ export default function SettingsPage() {
                   <div>
                     <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Специализация</label>
                     <input
-                      className="w-full input-modern"
+                      className="w-full input-modern bg-bg-custom/50"
                       type="text"
                       placeholder="Фитнес-тренер"
                       value={formData.specialization}
@@ -109,7 +109,7 @@ export default function SettingsPage() {
                     )}
                     <div className="flex-1 space-y-2">
                         <input
-                            className="w-full input-modern"
+                            className="w-full input-modern bg-bg-custom/50"
                             type="text"
                             placeholder="URL Аватара (напр. https://images.com/photo.jpg)"
                             value={formData.avatar_url}
@@ -143,19 +143,19 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-50">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-border">
                   <div>
                     <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2 flex items-center gap-1.5">
                         <IconLock size={12} /> Email (аккаунт)
                     </label>
                     <input
-                      className="w-full input-modern bg-slate-50/50 cursor-not-allowed opacity-60"
+                      className="w-full input-modern bg-bg-custom/30 cursor-not-allowed opacity-60"
                       type="email"
                       readOnly
                       value={formData.email}
                     />
                   </div>
-                  <div>
+                  <div className="hidden">
                     <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Длительность слота</label>
                     <select
                       className="w-full input-modern appearance-none"
@@ -240,7 +240,7 @@ export default function SettingsPage() {
             </div>
           </section>
 
-          <section className="p-6 rounded-3xl bg-white border border-slate-100">
+          <section className="p-6 rounded-3xl bg-surface border border-border shadow-sh-sm">
              <div className="flex items-center gap-3 text-accent mb-4">
                 <IconInfoCircle size={20} stroke={1.5} />
                 <h4 className="text-[13px] font-bold uppercase tracking-wider">Безопасность</h4>

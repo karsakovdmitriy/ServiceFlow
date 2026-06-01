@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { IconBell, IconSearch, IconPlus, IconSun, IconMoon } from '@tabler/icons-react';
+import { IconBell, IconSearch, IconPlus, IconSun, IconMoon, IconCircleFilled } from '@tabler/icons-react';
 import NewEntryModal from './NewEntryModal';
 import { useStore } from '@/lib/store';
 import Link from 'next/link';
@@ -11,12 +11,24 @@ import { useTheme } from 'next-themes';
 const Topbar = () => {
   const pathname = usePathname();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { requests } = useStore();
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const { requests, events } = useStore();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const notificationRef = useRef<HTMLDivElement>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setIsNotificationsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const todayLabel = useMemo(() => {
@@ -51,21 +63,61 @@ const Topbar = () => {
         {mounted && (
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="w-8 h-8 lg:w-9 lg:h-9 rounded-lg bg-bg-custom flex items-center justify-center cursor-pointer text-t3 transition-all hover:bg-surface hover:text-t1 border border-border-light"
+            className="w-8 h-8 lg:w-9 lg:h-9 rounded-lg bg-surface flex items-center justify-center cursor-pointer text-t3 transition-all hover:text-t1 border border-border"
           >
             {theme === 'dark' ? <IconSun size={18} stroke={1.5} /> : <IconMoon size={18} stroke={1.5} />}
           </button>
         )}
-        <Link
-          href="/requests"
-          className="w-8 h-8 lg:w-9 lg:h-9 rounded-lg bg-bg-custom flex items-center justify-center cursor-pointer text-t3 transition-all hover:bg-surface hover:text-t1 border border-border-light relative"
-        >
-          <IconBell size={18} stroke={1.5} />
-          {requests.length > 0 && (
-            <span className="w-2 h-2 bg-accent rounded-full absolute top-2 right-2 border-2 border-surface"></span>
+        <div className="relative" ref={notificationRef}>
+          <button
+            onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+            aria-label="Уведомления"
+            className={`w-8 h-8 lg:w-9 lg:h-9 rounded-lg flex items-center justify-center cursor-pointer transition-all border relative ${
+                isNotificationsOpen ? 'bg-surface text-t1 border-accent/20 ring-4 ring-accent/5' : 'bg-surface text-t3 hover:text-t1 border-border'
+            }`}
+          >
+            <IconBell size={18} stroke={1.5} />
+            {events.length > 0 && (
+                <span className="w-2 h-2 bg-accent rounded-full absolute top-2 right-2 border-2 border-surface"></span>
+            )}
+          </button>
+
+          {isNotificationsOpen && (
+            <div className="absolute right-0 mt-2 w-[320px] bg-surface border border-border rounded-2xl shadow-sh-md overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 z-[100]">
+                <div className="p-4 border-b border-border bg-bg-custom/50 flex items-center justify-between">
+                    <span className="text-[12px] font-bold text-t1 uppercase tracking-wider">Уведомления</span>
+                    <Link href="/requests" onClick={() => setIsNotificationsOpen(false)} className="text-[10px] font-bold text-accent hover:underline uppercase tracking-widest">
+                        Все заявки
+                    </Link>
+                </div>
+                <div className="max-h-[380px] overflow-y-auto">
+                    {events.length > 0 ? (
+                        events.map((event, i) => (
+                            <div key={event.id} className={`p-4 flex gap-3 hover:bg-bg-custom/50 transition-colors ${i !== events.length - 1 ? 'border-b border-border/50' : ''}`}>
+                                <div className={`mt-1 shrink-0`}>
+                                    <IconCircleFilled size={8} className={
+                                        event.type === 'booking' ? 'text-accent' :
+                                        event.type === 'system' ? 'text-blue-custom' : 'text-t3'
+                                    } />
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[13px] text-t1 leading-relaxed font-medium">{event.message}</p>
+                                    <p className="text-[10px] text-t3 font-bold uppercase tracking-widest">
+                                        {new Date(event.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })} · {new Date(event.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                                    </p>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="p-8 text-center">
+                            <p className="text-[13px] text-t3 font-medium">Нет новых уведомлений</p>
+                        </div>
+                    )}
+                </div>
+            </div>
           )}
-        </Link>
-        <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-lg bg-bg-custom flex items-center justify-center cursor-pointer text-t3 transition-all hover:bg-surface hover:text-t1 border border-border-light">
+        </div>
+        <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-lg bg-surface flex items-center justify-center cursor-pointer text-t3 transition-all hover:text-t1 border border-border">
           <IconSearch size={18} stroke={1.5} />
         </div>
         {(pathname === '/' || pathname === '/requests' || pathname === '/schedule') && (
