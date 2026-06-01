@@ -58,6 +58,7 @@ const Sidebar = () => {
         { label: 'Отзывы', icon: <IconStar size={18} stroke={1.5} />, href: '/reviews', id: 'venue-reviews' },
 
         { label: 'Настройка', type: 'group' },
+        { label: 'Telegram-бот', icon: <IconBrandTelegram size={18} stroke={1.5} />, href: '/venue/bot', id: 'venue-bot' },
         { label: 'Профиль площадки', icon: <IconSettings size={18} stroke={1.5} />, href: '/venue/profile', id: 'venue-profile' },
       ];
     }
@@ -94,14 +95,14 @@ const Sidebar = () => {
 
   const SidebarContent = () => (
     <>
-      <div className="p-8 pb-4 relative">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-white shrink-0">
-            <IconWindow size={18} stroke={1.5} />
+      <div className="p-8 pb-6 relative">
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-11 h-11 bg-accent rounded-xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-accent/20">
+            <IconWindow size={24} stroke={2} />
           </div>
           <div>
-            <div className="text-[15px] font-bold text-t1 tracking-tight leading-none">Окошко</div>
-            <div className="text-[11px] text-t3 mt-1 font-medium">Сервис записи</div>
+            <div className="text-[20px] font-black text-t1 tracking-tight leading-none">Окошко</div>
+            <div className="text-[12px] text-t3 mt-1 font-bold uppercase tracking-wider">Сервис записи</div>
           </div>
         </div>
 

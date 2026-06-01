@@ -5,9 +5,15 @@ import { useStore } from '@/lib/store';
 import { IconUserPlus, IconTrash, IconMail } from '@tabler/icons-react';
 
 export default function VenueMasters() {
-  const { venueStaff, addVenueStaff, removeVenueStaff, venues } = useStore();
+  const { venueStaff, addVenueStaff, removeVenueStaff, venues, clients } = useStore();
   const [email, setEmail] = useState('');
   const currentVenue = venues[0];
+
+  // Helper to find email for staff
+  const getStaffEmail = (trainerName: string) => {
+    const client = clients.find(c => c.full_name === trainerName);
+    return client?.email || 'master@example.com';
+  };
 
   const handleAddStaff = (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +78,7 @@ export default function VenueMasters() {
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2 text-t2 text-[13px]">
                     <IconMail size={14} className="text-t3" />
-                    <span>master@example.com</span>
+                    <span>{getStaffEmail(staff.trainer_name || '')}</span>
                   </div>
                 </td>
                 <td className="px-6 py-4 text-right">

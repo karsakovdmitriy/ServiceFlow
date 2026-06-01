@@ -104,6 +104,7 @@ interface StoreContextType {
   removePartnership: (partnershipId: string) => Promise<void>;
   addVenueStaff: (venueId: string, trainerEmail: string) => Promise<void>;
   removeVenueStaff: (staffId: string) => Promise<void>;
+  getAllMasters: () => Promise<TrainerProfile[]>;
   toggleDay: (idx: number) => Promise<void>;
   updateScheduleTime: (idx: number, startTime: string, endTime: string) => Promise<void>;
   removeService: (id: string) => Promise<void>;
@@ -372,6 +373,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             }));
             setSessions(formatted.filter(s => s.status === 'confirmed'));
             setRequests(formatted.filter(s => s.status === 'pending'));
+            setCompletedSessions(formatted.filter(s => s.status === 'completed'));
+          }
+
+          // Fetch Venue Schedule
+          const { data: schedData } = await supabase.from('venue_schedule').select('*').eq('venue_id', venueIds[0]).order('day_of_week');
+          if (schedData && schedData.length > 0) {
+            const sorted = [...schedData].sort((a, b) => (a.day_of_week === 0 ? 7 : a.day_of_week) - (b.day_of_week === 0 ? 7 : b.day_of_week));
+            setSchedule(sorted.map(s => ({
+              name: DAYS[s.day_of_week],
+              startTime: s.start_hour?.slice(0, 5) || '09:00',
+              endTime: s.end_hour?.slice(0, 5) || '20:00',
+              on: s.is_active
+            })));
           }
 
           // Fetch Clients for Venue
@@ -773,6 +787,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     fetchData();
   };
 
+  const getAllMasters = async () => {
+    if (isDemoMode) {
+      return [
+        { full_name: 'Александр Петров', specialization: 'Силовой тренинг', email: 'alex@example.com', slot_duration: 60, is_master: true, is_client: false, is_venue: false, category: 'Спорт' },
+        { full_name: 'Елена Соколова', specialization: 'Йога и пилатес', email: 'elena@example.com', slot_duration: 60, is_master: true, is_client: false, is_venue: false, category: 'Спорт' },
+        { full_name: 'Марина Иванова', specialization: 'Стрижка и окрашивание', email: 'marina@example.com', slot_duration: 60, is_master: true, is_client: false, is_venue: false, category: 'Бьюти' },
+      ] as TrainerProfile[];
+    }
+    const { data } = await supabase.from('trainers').select('*').eq('is_master', true);
+    return data || [];
+  };
+
   const switchActiveRole = (role: 'master' | 'client' | 'venue') => {
     setActiveRole(role);
     if (isDemoMode) {
@@ -793,7 +819,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     cancelSession: (id: string) => updateSessionStatus(id, 'cancelled'),
     completeSession: (id: string) => updateSessionStatus(id, 'completed'),
     addSession, addService, updateService, addVenue, updateVenue, removeVenue, addBlock, removeBlock,
-    addPartnership, removePartnership, addVenueStaff, removeVenueStaff,
+    addPartnership, removePartnership, addVenueStaff, removeVenueStaff, getAllMasters,
     toggleDay, updateScheduleTime, removeService,
     refresh: fetchData
   };
