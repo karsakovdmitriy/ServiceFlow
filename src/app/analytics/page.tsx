@@ -31,10 +31,13 @@ export default function AnalyticsPage() {
     };
   }, [sessions, completedSessions, clients, services]);
 
+  // Mock data for charts
+  const incomeData = [24000, 32000, 28000, 45000, 38000, 52000];
+  const sessionData = [12, 18, 15, 22, 20, 26];
+  const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн'];
+
   return (
     <div className="animate-fade-up">
-      <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-4">Аналитика и показатели</div>
-
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         {[
           { icon: <IconCurrencyRubel />, label: 'Общий доход (завершенные)', value: stats.totalIncome.toLocaleString() + ' ₽', color: 'text-green-custom', bg: 'bg-green-light' },
@@ -54,6 +57,59 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Income Chart */}
+        <div className="card">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-[15px] font-bold text-t1">Динамика дохода</h3>
+            <span className="text-[11px] text-green-custom font-bold bg-green-light px-2 py-0.5 rounded-full">+14% за мес.</span>
+          </div>
+          <div className="h-[200px] w-full relative flex items-end justify-between gap-1 pt-4 px-2">
+            {incomeData.map((val, i) => {
+              const height = (val / 60000) * 100;
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center group">
+                  <div
+                    className="w-full bg-accent/10 group-hover:bg-accent/20 rounded-t-lg transition-all relative"
+                    style={{ height: `${height}%` }}
+                  >
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                      {val.toLocaleString()} ₽
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-accent rounded-full"></div>
+                  </div>
+                  <span className="text-[10px] text-t3 mt-3 font-medium">{months[i]}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Sessions Chart */}
+        <div className="card">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-[15px] font-bold text-t1">Количество сессий</h3>
+            <span className="text-[11px] text-blue-custom font-bold bg-blue-light px-2 py-0.5 rounded-full">Всего {stats.completedCount + stats.activeCount}</span>
+          </div>
+          <div className="h-[200px] w-full relative flex items-end justify-between gap-3 pt-4 px-4">
+            {sessionData.map((val, i) => {
+              const height = (val / 30) * 100;
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center group">
+                  <div
+                    className="w-6 bg-blue-custom/80 group-hover:bg-blue-custom rounded-t-sm transition-all relative"
+                    style={{ height: `${height}%` }}
+                  >
+                     <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                      {val}
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-t3 mt-3 font-medium">{months[i]}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="card">
           <div className="text-[14px] font-bold text-t1 mb-4">Статистика по клиентам</div>
           <div className="space-y-4">

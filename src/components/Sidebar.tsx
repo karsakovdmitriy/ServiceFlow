@@ -14,7 +14,11 @@ import {
   IconMenu2,
   IconX,
   IconStethoscope,
-  IconChartBar
+  IconChartBar,
+  IconWindow,
+  IconStar,
+  IconMapPin,
+  IconCircleCheck
 } from '@tabler/icons-react';
 import { useStore } from '@/lib/store';
 
@@ -24,18 +28,20 @@ const Sidebar = () => {
   const { profile, requests } = useStore();
 
   const navItems = [
-    { label: 'Главное', type: 'group' },
-    { label: 'Обзор', icon: <IconLayoutDashboard size={18} />, href: '/', id: 'dashboard' },
+    { label: 'Рабочий стол', type: 'group' },
+    { label: 'Сегодня', icon: <IconCircleCheck size={18} />, href: '/', id: 'dashboard' },
     { label: 'Заявки', icon: <IconCalendarEvent size={18} />, href: '/requests', id: 'requests', badge: requests.length > 0 ? requests.length : undefined },
     { label: 'Расписание', icon: <IconCalendarWeek size={18} />, href: '/schedule', id: 'schedule' },
+
     { label: 'Клиенты', type: 'group' },
-    { label: 'Мои клиенты', icon: <IconUsers size={18} />, href: '/clients', id: 'clients' },
-    { label: 'Аналитика', icon: <IconChartBar size={18} />, href: '/analytics', id: 'analytics' },
-    { label: 'Инструменты', type: 'group' },
-    { label: 'Услуги', icon: <IconStethoscope size={18} />, href: '/services', id: 'services' },
-    { label: 'Площадки', icon: <IconBarbell size={18} />, href: '/venues', id: 'venues' },
+    { label: 'База клиентов', icon: <IconUsers size={18} />, href: '/clients', id: 'clients' },
+    { label: 'Доходы', icon: <IconChartBar size={18} />, href: '/analytics', id: 'analytics' },
+    { label: 'Отзывы', icon: <IconStar size={18} />, href: '/reviews', id: 'reviews' },
+
+    { label: 'Настройка', type: 'group' },
+    { label: 'Услуги и площадки', icon: <IconStethoscope size={18} />, href: '/services', id: 'services' },
     { label: 'Telegram-бот', icon: <IconBrandTelegram size={18} />, href: '/bot', id: 'bot' },
-    { label: 'Настройки', icon: <IconSettings size={18} />, href: '/settings', id: 'settings' },
+    { label: 'Профиль', icon: <IconSettings size={18} />, href: '/settings', id: 'settings' },
   ];
 
   const initials = profile?.full_name
@@ -46,10 +52,10 @@ const Sidebar = () => {
     <>
       <div className="p-[24px_18px_18px] border-b border-border-light relative">
         <div className="w-[38px] h-[38px] bg-gradient-to-br from-accent to-accent-mid rounded-[11px] flex items-center justify-center text-white shadow-[0_4px_14px_rgba(99,102,241,0.32)] mb-[10px]">
-          <IconBarbell size={19} />
+          <IconWindow size={20} />
         </div>
-        <div className="text-[15px] font-bold text-t1 tracking-[-0.3px]">TrainerSpace</div>
-        <div className="text-[11.5px] text-t3 mt-[1px]">Кабинет тренера</div>
+        <div className="text-[16px] font-bold text-t1 tracking-[-0.4px]">Окошко</div>
+        <div className="text-[11px] text-t3 mt-[1px]">Сервис записи</div>
 
         {/* Close button for mobile */}
         <button

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { IconBarbell, IconMail, IconLock, IconUser } from '@tabler/icons-react';
+import { IconBarbell, IconMail, IconLock, IconUser, IconWindow } from '@tabler/icons-react';
 
 export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -58,10 +58,10 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
         <div className="flex flex-col items-center mb-8">
           <div className="w-12 h-12 bg-accent rounded-xl flex items-center justify-center text-white mb-4 shadow-lg shadow-accent/20">
-            <IconBarbell size={24} />
+            <IconWindow size={28} />
           </div>
-          <h1 className="text-2xl font-bold text-t1 tracking-tight">TrainerSpace</h1>
-          <p className="text-t3 text-sm mt-1">Кабинет персонального тренера</p>
+          <h1 className="text-2xl font-bold text-t1 tracking-tight">Окошко</h1>
+          <p className="text-t3 text-sm mt-1">Сервис управления записями</p>
         </div>
 
         <div className="flex bg-gray-100 p-1 rounded-xl mb-8">

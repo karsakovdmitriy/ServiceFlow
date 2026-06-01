@@ -272,13 +272,16 @@ export default function SchedulePage() {
               {day.slots.map((slot, si) => (
                 <div
                   key={si}
-                  className={`text-[10px] p-[4px_2px] rounded-[5px] mb-[3px] cursor-pointer transition-all hover:opacity-70 select-none ${
-                    slot.s === 'booked' ? 'bg-blue-light text-blue-custom border border-blue-custom/10' :
-                    slot.s === 'free' ? 'bg-green-light text-green-custom border border-green-custom/10' :
-                    'bg-bg-custom text-t3 border border-border-light'
+                  title={slot.t}
+                  className={`h-6 rounded-[4px] mb-[4px] cursor-pointer transition-all hover:scale-[1.03] active:scale-95 select-none relative group/slot ${
+                    slot.s === 'booked' ? 'bg-blue-custom border border-blue-custom/20' :
+                    slot.s === 'free' ? 'bg-green-custom/90 border border-green-custom/20' :
+                    'bg-gray-200 border border-border-light'
                   }`}
                 >
-                  {slot.t}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/slot:opacity-100 transition-opacity pointer-events-none">
+                    <span className="text-[9px] font-bold text-white bg-slate-900/80 px-1 rounded shadow-sm">{slot.t}</span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -311,14 +314,14 @@ export default function SchedulePage() {
           </div>
         </div>
         <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 pt-2 border-t border-border-light">
-          <div className="flex items-center gap-[5px] text-[11px] text-t3">
-            <div className="w-[10px] h-[10px] rounded-[3px] bg-blue-light border border-blue-custom/20"></div>занято
+          <div className="flex items-center gap-[6px] text-[11px] text-t3 font-medium">
+            <div className="w-[12px] h-[12px] rounded-[4px] bg-blue-custom"></div>Занято
           </div>
-          <div className="flex items-center gap-[5px] text-[11px] text-t3">
-            <div className="w-[10px] h-[10px] rounded-[3px] bg-green-light border border-green-custom/20"></div>свободно
+          <div className="flex items-center gap-[6px] text-[11px] text-t3 font-medium">
+            <div className="w-[12px] h-[12px] rounded-[4px] bg-green-custom"></div>Свободно
           </div>
-          <div className="flex items-center gap-[5px] text-[11px] text-t3">
-            <div className="w-[10px] h-[10px] rounded-[3px] bg-bg-custom border border-border-custom"></div>заблокировано
+          <div className="flex items-center gap-[6px] text-[11px] text-t3 font-medium">
+            <div className="w-[12px] h-[12px] rounded-[4px] bg-gray-200"></div>Заблокировано
           </div>
         </div>
       </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { IconSearch, IconUserPlus, IconDotsVertical, IconCheck, IconClock, IconMail, IconPhone, IconSend, IconMessage, IconX } from '@tabler/icons-react';
+import { IconSearch, IconUserPlus, IconDotsVertical, IconCheck, IconClock, IconMail, IconPhone, IconSend, IconMessage, IconX, IconChevronRight } from '@tabler/icons-react';
 import { useStore, Message } from '@/lib/store';
 
 export default function ClientsPage() {
@@ -92,7 +92,7 @@ export default function ClientsPage() {
                 </tr>
               )}
               {clientsList.map((client, i) => (
-                <tr key={i} className="border-b border-border-light last:border-none hover:bg-bg-custom/50 transition-colors group">
+                <tr key={i} className="border-b border-border-light last:border-none hover:bg-bg-custom/80 transition-all group cursor-pointer">
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full bg-accent-light text-accent flex items-center justify-center text-[12px] font-bold shrink-0">
@@ -117,26 +117,30 @@ export default function ClientsPage() {
                     </div>
                   </td>
                   <td className="p-4">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5">
                       <button
-                        onClick={async () => {
+                        onClick={async (e) => {
+                            e.stopPropagation();
                             setChatClientId(client.id);
                             const msgs = await getMessages(client.id);
                             setChatMessages(msgs);
                         }}
-                        className="p-1.5 text-t3 hover:text-accent transition-colors"
+                        className="w-8 h-8 flex items-center justify-center text-t3 hover:text-accent hover:bg-accent-light rounded-lg transition-all group/btn"
                         title="Написать в бот"
                       >
                         <IconMessage size={16} />
                       </button>
-                      <button title={client.email} className="p-1.5 text-t3 hover:text-accent transition-colors"><IconMail size={16} /></button>
-                      <button className="p-1.5 text-t3 hover:text-accent transition-colors"><IconPhone size={16} /></button>
+                      <button onClick={e => e.stopPropagation()} title={client.email} className="w-8 h-8 flex items-center justify-center text-t3 hover:text-accent hover:bg-accent-light rounded-lg transition-all"><IconMail size={16} /></button>
+                      <button onClick={e => e.stopPropagation()} className="w-8 h-8 flex items-center justify-center text-t3 hover:text-accent hover:bg-accent-light rounded-lg transition-all"><IconPhone size={16} /></button>
                     </div>
                   </td>
                   <td className="p-4 text-right">
-                    <button className="p-1.5 text-t3 hover:text-t1 opacity-0 group-hover:opacity-100 transition-all">
-                      <IconDotsVertical size={18} />
-                    </button>
+                    <div className="flex items-center justify-end gap-2">
+                        <button onClick={e => e.stopPropagation()} className="p-1.5 text-t3 hover:text-t1 opacity-0 group-hover:opacity-100 transition-all">
+                        <IconDotsVertical size={18} />
+                        </button>
+                        <IconChevronRight size={18} className="text-t3 opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0" />
+                    </div>
                   </td>
                 </tr>
               ))}

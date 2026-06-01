@@ -7,8 +7,8 @@ import LayoutWrapper from "@/components/LayoutWrapper";
 import { StoreProvider } from "@/lib/store";
 
 export const metadata: Metadata = {
-  title: "TrainerSpace — Кабинет тренера",
-  description: "Система управления тренировками",
+  title: "Окошко — Сервис записи",
+  description: "Система управления записями и клиентами",
 };
 
 export default function RootLayout({
