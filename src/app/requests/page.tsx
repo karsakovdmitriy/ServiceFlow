@@ -10,6 +10,7 @@ export default function RequestsPage() {
   const [cancellingId, setCancellingId] = React.useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
+  const [showAllUpcoming, setShowAllUpcoming] = useState(false);
 
   const handleReject = (id: string, reschedule: boolean) => {
     rejectRequest(id, reschedule);
@@ -38,11 +39,34 @@ export default function RequestsPage() {
     return requests.filter(r => r.name.toLowerCase().includes(search.toLowerCase()));
   }, [requests, search]);
 
-  const filteredSessions = useMemo(() => {
-    return sessions.filter(s => s.name.toLowerCase().includes(search.toLowerCase()));
-  }, [sessions, search]);
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
-  const groupedSessions = useMemo(() => groupSessionsByDay(filteredSessions), [filteredSessions]);
+  const overdueSessions = useMemo(() => {
+    return sessions.filter(s => s.date < todayStr && s.name.toLowerCase().includes(search.toLowerCase()));
+  }, [sessions, search, todayStr]);
+
+  const filteredUpcomingSessions = useMemo(() => {
+    const upcoming = sessions.filter(s => s.date >= todayStr && s.name.toLowerCase().includes(search.toLowerCase()));
+
+    if (showAllUpcoming) return upcoming;
+
+    // Filter for current week (Mon-Sun)
+    const curr = new Date();
+    const day = curr.getDay();
+    const diff = curr.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(curr.setDate(diff));
+    monday.setHours(0,0,0,0);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23,59,59,999);
+
+    return upcoming.filter(s => {
+      const d = new Date(s.date);
+      return d >= monday && d <= sunday;
+    });
+  }, [sessions, search, todayStr, showAllUpcoming]);
+
+  const groupedUpcomingSessions = useMemo(() => groupSessionsByDay(filteredUpcomingSessions), [filteredUpcomingSessions]);
 
   return (
     <div className="animate-fade-up max-w-[1000px] mx-auto">
@@ -75,7 +99,53 @@ export default function RequestsPage() {
       </div>
 
       {activeTab === 'active' ? (
-        <div className="space-y-12">
+        <div className="space-y-16">
+          {/* Section: Overdue Sessions */}
+          {overdueSessions.length > 0 && (
+            <section className="bg-red-50/30 p-6 rounded-r-xl border border-red-100/50">
+              <div className="flex items-center gap-4 mb-6">
+                <h2 className="text-[14px] font-bold text-red-custom uppercase tracking-wider whitespace-nowrap flex items-center gap-2">
+                  <IconCalendarTime size={18} /> Просроченые записи
+                </h2>
+                <div className="h-px bg-red-100 flex-1"></div>
+                <span className="text-[11px] font-bold text-red-custom/60 uppercase">{overdueSessions.length} записей</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {overdueSessions.map((session, i) => (
+                  <div key={i} className="group relative bg-surface p-4 rounded-2xl border border-red-100/50 hover:shadow-sh-md transition-all">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-red-50 flex items-center justify-center text-[11px] font-bold text-red-custom shrink-0">
+                          {session.initials}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                          <div className="text-[14px] font-bold text-t1">{session.name}</div>
+                          <div className="text-[12px] text-red-custom/70 font-medium flex items-center gap-1">
+                              <IconCalendar size={12} stroke={2} /> {session.date} · {session.time}
+                          </div>
+                      </div>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                              onClick={() => completeSession(session.id)}
+                              className="w-8 h-8 flex items-center justify-center rounded-lg text-green-custom hover:bg-green-50 transition-all"
+                              title="Завершить"
+                          >
+                              <IconCheck size={18} stroke={2} />
+                          </button>
+                          <button
+                              onClick={() => setCancellingId(session.id)}
+                              className="w-8 h-8 flex items-center justify-center rounded-lg text-t3 hover:text-red-custom hover:bg-red-50 transition-all"
+                              title="Отменить"
+                          >
+                              <IconX size={18} stroke={2} />
+                          </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* Section: Pending Confirmation */}
           {filteredRequests.length > 0 && (
             <section>
@@ -118,27 +188,43 @@ export default function RequestsPage() {
           {/* Section: Upcoming (Timeline style) */}
           <section>
             <div className="flex items-center gap-4 mb-8">
-              <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider whitespace-nowrap">Предстоящие записи</h2>
-              <div className="h-px bg-slate-100 flex-1"></div>
+              <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider whitespace-nowrap">
+                {showAllUpcoming ? 'Все предстоящие записи' : 'Записи на эту неделю'}
+              </h2>
+              <div className="h-px bg-border flex-1"></div>
+              {!showAllUpcoming && sessions.length > filteredUpcomingSessions.length && (
+                <button
+                    onClick={() => setShowAllUpcoming(true)}
+                    className="text-[11px] font-bold text-accent hover:underline uppercase tracking-widest"
+                >
+                    Развернуть все
+                </button>
+              )}
             </div>
 
-            {filteredSessions.length === 0 ? (
-              <div className="text-center py-20 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
-                <div className="text-[13px] text-t3 font-medium">Активных записей не найдено</div>
+            {filteredUpcomingSessions.length === 0 ? (
+              <div className="text-center py-20 bg-bg-custom rounded-3xl border border-dashed border-border">
+                <div className="text-[13px] text-t3 font-medium">Предстоящих записей на эту неделю нет</div>
+                <button
+                  onClick={() => setShowAllUpcoming(true)}
+                  className="mt-4 text-[12px] font-bold text-accent hover:underline"
+                >
+                  Показать все записи
+                </button>
               </div>
             ) : (
-              <div className="relative pl-6 border-l border-slate-100 space-y-10">
-                {groupedSessions.map(([date, items]) => (
+              <div className="relative pl-6 border-l border-border space-y-10">
+                {groupedUpcomingSessions.map(([date, items]) => (
                   <div key={date} className="relative">
                     {/* Day Marker */}
-                    <div className="absolute -left-[31px] top-0 w-2.5 h-2.5 rounded-full bg-accent border-[2.5px] border-slate-50 shadow-[0_0_0_4px_white]"></div>
+                    <div className="absolute -left-[31px] top-0 w-2.5 h-2.5 rounded-full bg-accent border-[2.5px] border-bg-custom shadow-[0_0_0_4px_var(--surface)]"></div>
                     <div className="text-[12px] font-bold text-accent uppercase tracking-widest mb-4">
                       {new Date(date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' })}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {items.map((session, i) => (
-                        <div key={i} className="group relative bg-white p-4 rounded-2xl border border-slate-100 hover:shadow-sh-md hover:-translate-y-0.5 transition-all">
+                        <div key={i} className="group relative bg-surface p-4 rounded-2xl border border-border hover:shadow-sh-md hover:-translate-y-0.5 transition-all">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center text-[11px] font-bold text-t2 shrink-0">
                                 {session.initials}

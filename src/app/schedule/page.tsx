@@ -9,6 +9,7 @@ const DAYS_RU_FULL = ['Воскресенье', 'Понедельник', 'Вт�
 
 export default function SchedulePage() {
   const [activeDayIndex, setActiveDayIndex] = useState(0);
+  const [weekOffset, setWeekOffset] = useState(0);
 
   const {
     schedule,
@@ -38,8 +39,9 @@ export default function SchedulePage() {
   };
 
   // Weekly Overview Logic
-  const { weekGrid, weekRangeLabel } = useMemo(() => {
+  const { weekGrid, weekRangeLabel, currentWeekMonday, currentWeekSunday } = useMemo(() => {
     const curr = new Date();
+    curr.setDate(curr.getDate() + (weekOffset * 7));
     const day = curr.getDay(); // 0-6
     const diff = curr.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
     const monday = new Date(curr.setDate(diff));
@@ -104,11 +106,26 @@ export default function SchedulePage() {
 
     const lastDate = new Date(monday);
     lastDate.setDate(monday.getDate() + 6);
+    const sunday = new Date(lastDate);
+    sunday.setHours(23,59,59,999);
+
     const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
     const rangeLabel = `${monday.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })} – ${lastDate.toLocaleDateString('ru-RU', options)}`;
 
-    return { weekGrid: grid, weekRangeLabel: rangeLabel };
-  }, [schedule, sessions, blocks]);
+    return {
+        weekGrid: grid,
+        weekRangeLabel: rangeLabel,
+        currentWeekMonday: monday,
+        currentWeekSunday: sunday
+    };
+  }, [schedule, sessions, blocks, weekOffset]);
+
+  const filteredBlocks = useMemo(() => {
+    return blocks.filter(b => {
+        const d = new Date(b.date);
+        return d >= currentWeekMonday && d <= currentWeekSunday;
+    });
+  }, [blocks, currentWeekMonday, currentWeekSunday]);
 
   return (
     <div className="animate-fade-up max-w-[1200px] mx-auto space-y-10">
@@ -219,11 +236,11 @@ export default function SchedulePage() {
           </div>
 
           {/* List of blocked slots */}
-          {blocks.length > 0 && (
+          {filteredBlocks.length > 0 && (
             <div>
-               <div className="text-[11px] font-bold text-t3 uppercase tracking-wider mb-3">Заблокировано ({blocks.length})</div>
+               <div className="text-[11px] font-bold text-t3 uppercase tracking-wider mb-3">Заблокировано на эту неделю ({filteredBlocks.length})</div>
                <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
-                {blocks.map((block) => (
+                {filteredBlocks.map((block) => (
                   <div key={block.id} className="group flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-transparent hover:border-slate-100 transition-all">
                     <IconBan size={14} className="text-t3" stroke={1.5} />
                     <div className="flex-1 text-[13px] font-medium text-t2">{formatBlock(block)}</div>
@@ -246,9 +263,31 @@ export default function SchedulePage() {
         <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4 flex-1">
                 <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider whitespace-nowrap">Сетка недели</h2>
-                <div className="h-px bg-slate-100 flex-1"></div>
+                <div className="h-px bg-border flex-1"></div>
             </div>
-            <div className="text-[12px] font-bold text-t2 ml-6 bg-white px-3 py-1 rounded-full border border-slate-100">{weekRangeLabel}</div>
+            <div className="flex items-center gap-2 ml-6">
+                <div className="flex bg-surface border border-border p-1 rounded-lg">
+                    <button
+                        onClick={() => setWeekOffset(prev => prev - 1)}
+                        className="p-1 hover:bg-bg-custom rounded-md text-t3 hover:text-t1 transition-all"
+                    >
+                        <IconChevronLeft size={16} />
+                    </button>
+                    <button
+                        onClick={() => setWeekOffset(0)}
+                        className="px-2 text-[10px] font-bold uppercase text-t3 hover:text-accent transition-all"
+                    >
+                        Сегодня
+                    </button>
+                    <button
+                        onClick={() => setWeekOffset(prev => prev + 1)}
+                        className="p-1 hover:bg-bg-custom rounded-md text-t3 hover:text-t1 transition-all"
+                    >
+                        <IconChevronRight size={16} />
+                    </button>
+                </div>
+                <div className="text-[12px] font-bold text-t2 bg-surface px-3 py-2 rounded-lg border border-border shadow-sh-sm">{weekRangeLabel}</div>
+            </div>
         </div>
 
         {/* Mobile View */}
@@ -299,22 +338,22 @@ export default function SchedulePage() {
                     className={`h-7 rounded-lg cursor-pointer transition-all hover:scale-[1.02] active:scale-95 select-none relative group/slot flex items-center overflow-hidden border ${
                       slot.s === 'booked' ? 'bg-blue-50/50 border-blue-100' :
                       slot.s === 'free' ? 'bg-green-50/50 border-green-100' :
-                      'bg-slate-50 border-slate-100'
+                      'bg-bg-custom border-border'
                     }`}
                   >
                     {/* Status Indicator Bar */}
                     <div className={`w-1 h-full shrink-0 ${
                          slot.s === 'booked' ? 'bg-blue-custom' :
                          slot.s === 'free' ? 'bg-green-custom' :
-                         'bg-slate-200'
+                         'bg-border-custom'
                     }`}></div>
 
-                    <div className="px-2 text-[10px] font-bold text-t2 opacity-0 group-hover/slot:opacity-100 transition-opacity">
+                    <div className="px-2 text-[9px] font-bold text-t3">
                         {slot.t}
                     </div>
 
                     {slot.s === 'booked' && (
-                        <div className="absolute right-2 text-blue-custom opacity-40 group-hover/slot:opacity-100">
+                        <div className="absolute right-2 text-blue-custom">
                              <div className="w-1.5 h-1.5 rounded-full bg-current"></div>
                         </div>
                     )}

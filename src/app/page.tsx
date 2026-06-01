@@ -33,18 +33,23 @@ export default function Dashboard() {
   const pendingCount = requests.length;
 
   const [showHint, setShowHint] = React.useState(true);
+  const [showAllEvents, setShowAllEvents] = React.useState(false);
+
+  const displayEvents = useMemo(() => {
+    return showAllEvents ? events : events.slice(0, 5);
+  }, [events, showAllEvents]);
 
   return (
-    <div className="animate-fade-up max-w-[1100px] mx-auto">
+    <div className="animate-fade-up max-w-[1100px] mx-auto space-y-12">
       {/* Metrics Section (Overview) */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-surface p-6 rounded-r-xl border border-border-light shadow-sh-sm">
         {[
           { label: 'Доход', val: (sessions.length * 2500).toLocaleString('ru-RU') + ' ₽', sub: 'За сегодня' },
           { label: 'Сессии', val: sessions.length, sub: 'Всего' },
           { label: 'Клиенты', val: activeClients, sub: 'Активные' },
           { label: 'Заявки', val: pendingCount, sub: 'Ожидают', highlight: pendingCount > 0 },
         ].map((stat, i) => (
-          <div key={i} className="flex flex-col">
+          <div key={i} className="flex flex-col px-4 first:pl-0 last:pr-0 border-r border-border-light last:border-r-0">
             <div className="text-[11px] text-t3 font-bold uppercase tracking-wider mb-1">{stat.label}</div>
             <div className={`text-[28px] font-bold tracking-tight leading-none ${stat.highlight ? 'text-accent' : 'text-t1'}`}>
                 {stat.val}
@@ -61,21 +66,21 @@ export default function Dashboard() {
         <div className="lg:col-span-8 space-y-10">
 
           {/* Agenda */}
-          <section>
+          <section className="bg-surface p-6 rounded-r-xl border border-border-light shadow-sh-sm">
             <div className="flex items-center justify-between mb-5">
                 <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider">Повестка дня</h2>
-                <div className="h-px bg-slate-100 flex-1 mx-4"></div>
+                <div className="h-px bg-border flex-1 mx-4"></div>
                 <span className="text-[11px] font-bold text-t3">{todaySessions.length} записей</span>
             </div>
             <div className="space-y-1">
               {todaySessions.length === 0 && (
-                <div className="py-10 text-center text-t3 text-[13px] bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                <div className="py-10 text-center text-t3 text-[13px] bg-bg-custom rounded-xl border border-dashed border-border">
                     На сегодня нет записей
                 </div>
               )}
               {todaySessions.map((session, i) => (
-                <div key={i} className="group flex items-center gap-4 p-3 rounded-xl hover:bg-white transition-all">
-                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-[11px] font-bold text-t2 shrink-0 border border-white">
+                <div key={i} className="group flex items-center gap-4 p-3 rounded-xl hover:bg-bg-custom transition-all">
+                  <div className="w-10 h-10 rounded-full bg-bg-custom flex items-center justify-center text-[11px] font-bold text-t2 shrink-0 border border-surface">
                     {session.initials}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -94,23 +99,23 @@ export default function Dashboard() {
           </section>
 
           {/* New Requests */}
-          <section>
+          <section className="bg-surface p-6 rounded-r-xl border border-border-light shadow-sh-sm">
             <div className="flex items-center justify-between mb-5">
                 <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider">Новые заявки</h2>
-                <div className="h-px bg-slate-100 flex-1 mx-4"></div>
+                <div className="h-px bg-border flex-1 mx-4"></div>
                 {pendingCount > 0 && (
                   <span className="text-[11px] font-bold text-accent bg-accent/5 px-2 py-0.5 rounded-full">{pendingCount} ожидают</span>
                 )}
             </div>
             <div className="space-y-1">
               {requests.length === 0 && (
-                <div className="py-10 text-center text-t3 text-[13px] bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                <div className="py-10 text-center text-t3 text-[13px] bg-bg-custom rounded-xl border border-dashed border-border">
                     Новых заявок нет
                 </div>
               )}
               {requests.map((req, i) => (
-                <div key={i} className="group flex items-center gap-4 p-3 rounded-xl hover:bg-white transition-all">
-                  <div className="w-10 h-10 rounded-full bg-accent/5 flex items-center justify-center text-[11px] font-bold text-accent shrink-0 border border-white">
+                <div key={i} className="group flex items-center gap-4 p-3 rounded-xl hover:bg-bg-custom transition-all">
+                  <div className="w-10 h-10 rounded-full bg-accent/5 flex items-center justify-center text-[11px] font-bold text-accent shrink-0 border border-surface">
                     {req.initials}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -144,7 +149,7 @@ export default function Dashboard() {
         <div className="lg:col-span-4 space-y-10">
 
           {/* Recent Events */}
-          <section>
+          <section className="bg-surface p-6 rounded-r-xl border border-border-light shadow-sh-sm">
             <div className="flex items-center justify-between mb-5">
                 <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider">События</h2>
             </div>
@@ -152,7 +157,7 @@ export default function Dashboard() {
               {events.length === 0 && (
                 <div className="text-center py-4 text-t3 text-[12px] italic">Событий пока нет</div>
               )}
-              {events.map((act, i) => {
+              {displayEvents.map((act, i) => {
                 const date = new Date(act.created_at);
                 const now = new Date();
                 const diffMs = now.getTime() - date.getTime();
@@ -182,12 +187,20 @@ export default function Dashboard() {
                   </div>
                 );
               })}
+              {events.length > 5 && (
+                <button
+                    onClick={() => setShowAllEvents(!showAllEvents)}
+                    className="text-[11px] font-bold text-accent hover:underline uppercase tracking-widest pt-2"
+                >
+                    {showAllEvents ? 'Свернуть' : `Показать все (${events.length})`}
+                </button>
+              )}
             </div>
           </section>
 
           {/* Hint Card */}
           {showHint && (
-            <div className="p-5 rounded-2xl bg-white border border-slate-100 relative group overflow-hidden">
+            <div className="p-5 rounded-2xl bg-surface border border-border-light relative group overflow-hidden shadow-sh-sm">
               <button
                 onClick={() => setShowHint(false)}
                 className="absolute top-3 right-3 text-t3 hover:text-t1 opacity-0 group-hover:opacity-100 transition-opacity"

@@ -2,15 +2,31 @@
 
 import React, { useState } from 'react';
 import { IconPlus, IconTrash, IconEdit, IconCheck, IconX, IconMapPin, IconClock, IconCurrencyRubel, IconUsers, IconBarbell, IconDotsVertical } from '@tabler/icons-react';
-import { useStore, Service } from '@/lib/store';
+import { useStore, Service, Venue } from '@/lib/store';
 
 export default function ServicesPage() {
-  const { services, venues, addService, updateService, removeService } = useStore();
+  const {
+    services,
+    venues,
+    addService,
+    updateService,
+    removeService,
+    addVenue,
+    updateVenue,
+    removeVenue
+  } = useStore();
+
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  const [isAddingVenue, setIsAddingVenue] = useState(false);
+  const [editingVenueId, setEditingVenueId] = useState<string | null>(null);
+
   const [newData, setNewData] = useState({ name: '', duration: 60, price: 1000, is_group: false, venue_id: '' });
   const [editData, setEditData] = useState<Partial<Service>>({});
+
+  const [newVenueData, setNewVenueData] = useState({ name: '', address: '' });
+  const [editVenueData, setEditVenueData] = useState<Partial<Venue>>({});
 
   const handleAdd = () => {
     addService({
@@ -33,6 +49,19 @@ export default function ServicesPage() {
     }
   };
 
+  const handleAddVenue = () => {
+    addVenue(newVenueData);
+    setNewVenueData({ name: '', address: '' });
+    setIsAddingVenue(false);
+  };
+
+  const handleUpdateVenue = () => {
+    if (editingVenueId) {
+        updateVenue(editingVenueId, editVenueData);
+        setEditingVenueId(null);
+    }
+  };
+
   return (
     <div className="animate-fade-up max-w-[1000px] mx-auto">
       <div className="flex items-center justify-between mb-10">
@@ -45,10 +74,10 @@ export default function ServicesPage() {
         </button>
       </div>
 
-      <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm">
+      <div className="bg-surface rounded-3xl border border-border overflow-hidden shadow-sh-sm">
         <table className="w-full text-left border-collapse">
             <thead>
-                <tr className="bg-slate-50/50 border-b border-slate-100">
+                <tr className="bg-bg-custom border-b border-border">
                     <th className="px-6 py-4 text-[11px] font-bold text-t3 uppercase tracking-widest">Услуга</th>
                     <th className="px-6 py-4 text-[11px] font-bold text-t3 uppercase tracking-widest hidden md:table-cell">Тип</th>
                     <th className="px-6 py-4 text-[11px] font-bold text-t3 uppercase tracking-widest">Длительность</th>
@@ -58,7 +87,7 @@ export default function ServicesPage() {
             </thead>
             <tbody className="divide-y divide-slate-50">
                 {services.map(service => (
-                    <tr key={service.id} className="group hover:bg-slate-50/50 transition-colors">
+                    <tr key={service.id} className="group hover:bg-bg-custom transition-colors">
                         <td className="px-6 py-5">
                             <div className="flex flex-col">
                                 <span className="text-[14px] font-bold text-t1">{service.name}</span>
@@ -70,7 +99,7 @@ export default function ServicesPage() {
                             </div>
                         </td>
                         <td className="px-6 py-5 hidden md:table-cell">
-                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${service.is_group ? 'bg-blue-50 text-blue-custom' : 'bg-slate-100 text-t3'}`}>
+                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${service.is_group ? 'bg-blue-light text-blue-custom' : 'bg-bg-custom text-t3 border border-border-light'}`}>
                                 {service.is_group ? 'Групповая' : 'Индивид.'}
                             </span>
                         </td>
@@ -84,13 +113,13 @@ export default function ServicesPage() {
                             <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
                                     onClick={() => startEdit(service)}
-                                    className="p-2 text-t3 hover:text-accent hover:bg-accent/5 rounded-lg transition-all"
+                                    className="p-2 text-t3 hover:text-accent hover:bg-accent-light rounded-lg transition-all"
                                 >
                                     <IconEdit size={16} stroke={1.5} />
                                 </button>
                                 <button
                                     onClick={() => removeService(service.id)}
-                                    className="p-2 text-t3 hover:text-red-custom hover:bg-red-50 rounded-lg transition-all"
+                                    className="p-2 text-t3 hover:text-red-custom hover:bg-red-light rounded-lg transition-all"
                                 >
                                     <IconTrash size={16} stroke={1.5} />
                                 </button>
@@ -107,7 +136,62 @@ export default function ServicesPage() {
         )}
       </div>
 
-      {/* Add/Edit Modal */}
+      <div className="flex items-center justify-between mt-20 mb-10">
+        <h1 className="text-[14px] font-bold text-t1 uppercase tracking-wider">Площадки</h1>
+        <button
+          onClick={() => setIsAddingVenue(true)}
+          className="bg-bg-custom text-t1 border border-border text-[13px] font-bold px-5 py-2.5 rounded-xl hover:bg-surface transition-all flex items-center gap-2 shadow-sh-sm active:scale-95"
+        >
+          <IconPlus size={18} stroke={2.5} /> <span className="hidden sm:inline">Добавить площадку</span>
+        </button>
+      </div>
+
+      <div className="bg-surface rounded-3xl border border-border overflow-hidden shadow-sh-sm">
+        <table className="w-full text-left border-collapse">
+            <thead>
+                <tr className="bg-bg-custom border-b border-border">
+                    <th className="px-6 py-4 text-[11px] font-bold text-t3 uppercase tracking-widest">Название</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-t3 uppercase tracking-widest">Адрес</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-t3 uppercase tracking-widest"></th>
+                </tr>
+            </thead>
+            <tbody className="divide-y divide-border-light">
+                {venues.map(venue => (
+                    <tr key={venue.id} className="group hover:bg-bg-custom transition-colors">
+                        <td className="px-6 py-5">
+                            <span className="text-[14px] font-bold text-t1">{venue.name}</span>
+                        </td>
+                        <td className="px-6 py-5 text-[13px] font-medium text-t2">
+                            {venue.address || '—'}
+                        </td>
+                        <td className="px-6 py-5 text-right">
+                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                    onClick={() => { setEditingVenueId(venue.id); setEditVenueData(venue); }}
+                                    className="p-2 text-t3 hover:text-accent hover:bg-accent-light rounded-lg transition-all"
+                                >
+                                    <IconEdit size={16} stroke={1.5} />
+                                </button>
+                                <button
+                                    onClick={() => removeVenue(venue.id)}
+                                    className="p-2 text-t3 hover:text-red-custom hover:bg-red-light rounded-lg transition-all"
+                                >
+                                    <IconTrash size={16} stroke={1.5} />
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+        {venues.length === 0 && (
+            <div className="py-20 text-center text-t3 text-[13px] font-medium italic">
+                Площадки еще не добавлены
+            </div>
+        )}
+      </div>
+
+      {/* Add/Edit Service Modal */}
       {(isAdding || editingId) && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl animate-fade-up overflow-hidden border border-slate-100">
@@ -179,11 +263,57 @@ export default function ServicesPage() {
               </label>
             </div>
 
-            <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex gap-3">
+            <div className="p-6 bg-bg-custom border-t border-border flex gap-3">
               <button onClick={() => { setIsAdding(false); setEditingId(null); }} className="flex-1 py-3 text-[13px] font-bold text-t3 hover:text-t1 transition-all">Отмена</button>
               <button
                 onClick={editingId ? handleUpdate : handleAdd}
-                className="flex-1 py-3 text-[13px] font-bold text-white bg-accent hover:bg-accent-hover rounded-xl transition-all shadow-lg shadow-accent/10"
+                className="flex-1 py-3 text-[13px] font-bold text-white bg-accent hover:bg-accent-hover rounded-xl transition-all shadow-sh-md"
+              >
+                Сохранить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add/Edit Venue Modal */}
+      {(isAddingVenue || editingVenueId) && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+          <div className="bg-surface rounded-3xl w-full max-w-md shadow-2xl animate-fade-up overflow-hidden border border-border">
+            <div className="p-6 border-b border-border flex items-center justify-between">
+              <h2 className="text-[16px] font-bold text-t1 tracking-tight">{editingVenueId ? 'Редактировать площадку' : 'Новая площадка'}</h2>
+              <button onClick={() => { setIsAddingVenue(false); setEditingVenueId(null); }} className="text-t3 hover:text-t1 transition-colors"><IconX size={20} stroke={2} /></button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              <div>
+                <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Название</label>
+                <input
+                  type="text"
+                  placeholder="Напр. Фитнес-клуб Олимп"
+                  value={editingVenueId ? editVenueData.name : newVenueData.name}
+                  onChange={e => editingVenueId ? setEditVenueData({...editVenueData, name: e.target.value}) : setNewVenueData({...newVenueData, name: e.target.value})}
+                  className="w-full input-modern"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Адрес</label>
+                <input
+                  type="text"
+                  placeholder="Улица, дом, офис"
+                  value={editingVenueId ? editVenueData.address : newVenueData.address}
+                  onChange={e => editingVenueId ? setEditVenueData({...editVenueData, address: e.target.value}) : setNewVenueData({...newVenueData, address: e.target.value})}
+                  className="w-full input-modern"
+                />
+              </div>
+            </div>
+
+            <div className="p-6 bg-bg-custom border-t border-border flex gap-3">
+              <button onClick={() => { setIsAddingVenue(false); setEditingVenueId(null); }} className="flex-1 py-3 text-[13px] font-bold text-t3 hover:text-t1 transition-all">Отмена</button>
+              <button
+                onClick={editingVenueId ? handleUpdateVenue : handleAddVenue}
+                className="flex-1 py-3 text-[13px] font-bold text-white bg-accent hover:bg-accent-hover rounded-xl transition-all shadow-sh-md"
               >
                 Сохранить
               </button>

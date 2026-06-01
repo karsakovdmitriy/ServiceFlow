@@ -85,7 +85,7 @@ const Sidebar = () => {
               href={item.href!}
               onClick={() => setIsOpen(false)}
               className={`flex items-center gap-3 px-3 py-2 text-[13.5px] font-medium rounded-lg transition-all select-none mb-0.5 ${
-                isActive ? 'bg-slate-100 text-t1' : 'text-t2 hover:bg-slate-50 hover:text-t1'
+                isActive ? 'bg-bg-custom text-t1 border border-border-light shadow-sm' : 'text-t2 hover:bg-bg-custom hover:text-t1'
               }`}
             >
               <span className={isActive ? 'text-accent' : 'text-t3 opacity-70'}>{item.icon}</span>
@@ -100,7 +100,7 @@ const Sidebar = () => {
         })}
       </nav>
 
-      <div className="p-4 m-4 bg-slate-50 rounded-xl flex items-center gap-3">
+      <div className="p-4 m-4 bg-bg-custom border border-border-light rounded-xl flex items-center gap-3">
         <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-[11px] font-bold text-accent shrink-0 border border-accent/20">
           {initials}
         </div>
@@ -118,7 +118,7 @@ const Sidebar = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="lg:hidden fixed top-4 left-4 z-[110] p-2 bg-white rounded-lg border border-border-light shadow-sm text-t2"
+          className="lg:hidden fixed top-4 left-4 z-[110] p-2 bg-surface rounded-lg border border-border-light shadow-sm text-t2"
         >
           <IconMenu2 size={24} />
         </button>
@@ -133,12 +133,12 @@ const Sidebar = () => {
       )}
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-[240px] bg-white border-r border-slate-100 flex-col fixed top-0 left-0 h-screen z-[100]">
+      <aside className="hidden lg:flex w-[240px] bg-surface border-r border-border flex-col fixed top-0 left-0 h-screen z-[100]">
         <SidebarContent />
       </aside>
 
       {/* Mobile Sidebar */}
-      <aside className={`lg:hidden fixed top-0 left-0 h-screen w-[260px] bg-white z-[130] flex flex-col transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`lg:hidden fixed top-0 left-0 h-screen w-[260px] bg-surface z-[130] flex flex-col transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <SidebarContent />
       </aside>
     </>

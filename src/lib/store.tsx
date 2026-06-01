@@ -221,7 +221,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           time: `${s.start_time.split('T')[1].slice(0,5)} – ${s.end_time.split('T')[1].slice(0,5)}`,
           initials: (() => {
             const name = (s.client?.full_name || 'К').split('(')[0].trim();
-            const parts = name.split(/\s+/);
+            const parts = name.split(/\s+/).filter((p: string) => p.length > 0);
             if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
             return parts[0].slice(0, 2).toUpperCase();
           })()
