@@ -74,16 +74,17 @@ export async function POST(request: Request) {
           return NextResponse.json({ ok: true });
         }
 
-        // Validate UUID format to prevent Supabase error
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (!uuidRegex.test(trainerId)) {
-          await sendTelegramMessage(chat.id, '❌ Некорректная ссылка (неверный ID тренера).');
-          return NextResponse.json({ ok: true });
-        }
-
         // Handle Trainer Linking
         if (trainerId.startsWith('link_')) {
           const actualTrainerId = trainerId.replace('link_', '');
+
+          // Validate UUID format for linking
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          if (!uuidRegex.test(actualTrainerId)) {
+            await sendTelegramMessage(chat.id, '❌ Некорректная ссылка для привязки.');
+            return NextResponse.json({ ok: true });
+          }
+
           const { data: trainer, error: trainerError } = await supabase.from('trainers').select('full_name').eq('id', actualTrainerId).single();
 
           if (trainerError || !trainer) {
@@ -100,6 +101,13 @@ export async function POST(request: Request) {
             message: 'Telegram аккаунт успешно привязан'
           });
 
+          return NextResponse.json({ ok: true });
+        }
+
+        // Validate UUID format to prevent Supabase error
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(trainerId)) {
+          await sendTelegramMessage(chat.id, '❌ Некорректная ссылка (неверный ID тренера).');
           return NextResponse.json({ ok: true });
         }
 
