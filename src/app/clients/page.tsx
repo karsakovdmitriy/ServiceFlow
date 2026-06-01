@@ -27,7 +27,9 @@ export default function ClientsPage() {
         initials,
         status: isPending ? 'Ожидает' : (isActive ? 'Активен' : 'Завершено'),
         lastDate: lastSession?.date || '—',
-        email: client.email || (name.toLowerCase().replace(' ', '.') + '@example.com'),
+        email: client.email,
+        phone: client.phone,
+        telegram_id: client.telegram_id,
         isActive: isPending || isActive
       };
     }).filter(c => {
@@ -120,20 +122,40 @@ export default function ClientsPage() {
                   </td>
                   <td className="px-6 py-5">
                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={async (e) => {
-                            e.stopPropagation();
-                            setChatClientId(client.id);
-                            const msgs = await getMessages(client.id);
-                            setChatMessages(msgs);
-                        }}
-                        className="p-2 text-t3 hover:text-accent hover:bg-accent/5 rounded-lg transition-all"
-                        title="Написать в бот"
-                      >
-                        <IconMessage size={18} stroke={1.5} />
-                      </button>
-                      <button onClick={e => e.stopPropagation()} className="p-2 text-t3 hover:text-accent hover:bg-accent/5 rounded-lg transition-all"><IconMail size={18} stroke={1.5} /></button>
-                      <button onClick={e => e.stopPropagation()} className="p-2 text-t3 hover:text-accent hover:bg-accent/5 rounded-lg transition-all"><IconPhone size={18} stroke={1.5} /></button>
+                      {client.telegram_id && (
+                        <button
+                          onClick={async (e) => {
+                              e.stopPropagation();
+                              setChatClientId(client.id);
+                              const msgs = await getMessages(client.id);
+                              setChatMessages(msgs);
+                          }}
+                          className="p-2 text-t3 hover:text-accent hover:bg-accent/5 rounded-lg transition-all"
+                          title="Написать в бот"
+                        >
+                          <IconMessage size={18} stroke={1.5} />
+                        </button>
+                      )}
+                      {client.email && (
+                        <a
+                          href={`mailto:${client.email}`}
+                          onClick={e => e.stopPropagation()}
+                          className="p-2 text-t3 hover:text-accent hover:bg-accent/5 rounded-lg transition-all"
+                          title="Написать email"
+                        >
+                          <IconMail size={18} stroke={1.5} />
+                        </a>
+                      )}
+                      {client.phone && (
+                        <a
+                          href={`tel:${client.phone}`}
+                          onClick={e => e.stopPropagation()}
+                          className="p-2 text-t3 hover:text-accent hover:bg-accent/5 rounded-lg transition-all"
+                          title="Позвонить"
+                        >
+                          <IconPhone size={18} stroke={1.5} />
+                        </a>
+                      )}
                     </div>
                   </td>
                 </tr>

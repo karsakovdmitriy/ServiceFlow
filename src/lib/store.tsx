@@ -6,13 +6,13 @@ import { supabase } from './supabase';
 // Types and Mock Data
 export interface Venue { id: string; name: string; address?: string; }
 export interface Service { id: string; name: string; duration: number; price: number; is_group: boolean; venue_id?: string | null; venue?: Venue; }
-export interface Client { id: string; full_name: string; email?: string; telegram_id?: string; is_active: boolean; created_at: string; }
+export interface Client { id: string; full_name: string; email?: string; phone?: string; telegram_id?: string; is_active: boolean; created_at: string; }
 export interface Session { id: string; name: string; time: string; initials: string; bg?: string; color?: string; status: string; date: string; service?: string; serviceId?: string; clientId?: string; }
 export interface ScheduleDay { name: string; startTime: string; endTime: string; on: boolean; }
 export interface BlockedSlot { id: string; date: string; startTime: string; endTime: string; allDay: boolean; }
 export interface TrainerProfile { full_name: string; specialization: string; avatar_url?: string; email: string; slot_duration: number; telegram_id?: string; }
 export interface Message { id: string; trainer_id: string; client_id: string; sender_type: 'trainer' | 'client'; text: string; read: boolean; created_at: string; }
-export interface Event { id: string; trainer_id: string; type: string; message: string; created_at: string; }
+export interface Event { id: string; trainer_id: string; type: string; message: string; read: boolean; created_at: string; }
 export interface Review { id: string; rating: number; comment?: string; created_at: string; client_name?: string; }
 
 const DAYS = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
@@ -71,6 +71,7 @@ interface StoreContextType {
   sendMessage: (clientId: string, text: string) => Promise<void>;
   getMessages: (clientId: string) => Promise<Message[]>;
   logEvent: (type: string, message: string) => Promise<void>;
+  markEventsAsRead: () => Promise<void>;
   cancelSession: (id: string) => Promise<void>;
   completeSession: (id: string) => Promise<void>;
   addSession: (session: any) => Promise<void>;
@@ -254,7 +255,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
 
       const { data: eventsData } = await supabase.from('events').select('*').eq('trainer_id', trainerId).order('created_at', { ascending: false }).limit(20);
-      if (eventsData) setEvents(eventsData);
+      if (eventsData) setEvents(eventsData.map(e => ({ ...e, read: e.read ?? true })));
 
       const { data: reviewsData } = await supabase.from('reviews').select('*, clients(full_name)').eq('trainer_id', trainerId).order('created_at', { ascending: false });
       if (reviewsData) {
@@ -529,10 +530,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         trainer_id: 'demo',
         type,
         message,
+        read: false,
         created_at: new Date().toISOString()
       };
       const newEvents = [newEvent, ...events].slice(0, 20);
-      setEvents(newEvents);
+      setEvents(newEvents as Event[]);
       saveDemoData({ events: newEvents });
       return;
     }
@@ -578,12 +580,28 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     fetchData();
   };
 
+  const markEventsAsRead = async () => {
+    if (isDemoMode) {
+        const updated = events.map(e => ({ ...e, read: true }));
+        setEvents(updated);
+        saveDemoData({ events: updated });
+        return;
+    }
+    const unreadIds = events.filter(e => !e.read).map(e => e.id);
+    if (unreadIds.length === 0) return;
+
+    const { error } = await supabase.from('events').update({ read: true }).in('id', unreadIds);
+    if (!error) {
+        setEvents(events.map(e => ({ ...e, read: true })));
+    }
+  };
+
   const value = {
     sessions, completedSessions, requests, clients, schedule, blocks, services, venues, events, reviews, profile,
     loading, trainerId, isDemoMode,
     updateProfile, approveRequest: (id: string) => updateSessionStatus(id, 'confirmed'),
     rejectRequest: (id: string, reschedule: boolean = false) => updateSessionStatus(id, 'rejected', reschedule),
-    sendMessage, getMessages, logEvent,
+    sendMessage, getMessages, logEvent, markEventsAsRead,
     cancelSession: (id: string) => updateSessionStatus(id, 'cancelled'),
     completeSession: (id: string) => updateSessionStatus(id, 'completed'),
     addSession, addService, updateService, addVenue, updateVenue, removeVenue, addBlock, removeBlock, toggleDay, updateScheduleTime, removeService,

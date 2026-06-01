@@ -12,7 +12,7 @@ const Topbar = () => {
   const pathname = usePathname();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const { requests, events } = useStore();
+  const { requests, events, markEventsAsRead } = useStore();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
@@ -30,6 +30,12 @@ const Topbar = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (isNotificationsOpen) {
+      markEventsAsRead();
+    }
+  }, [isNotificationsOpen, markEventsAsRead]);
 
   const todayLabel = useMemo(() => {
     return new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -77,7 +83,7 @@ const Topbar = () => {
             }`}
           >
             <IconBell size={18} stroke={1.5} />
-            {events.length > 0 && (
+            {events.some(e => !e.read) && (
                 <span className="w-2 h-2 bg-accent rounded-full absolute top-2 right-2 border-2 border-surface"></span>
             )}
           </button>
@@ -94,14 +100,17 @@ const Topbar = () => {
                     {events.length > 0 ? (
                         events.map((event, i) => (
                             <div key={event.id} className={`p-4 flex gap-3 hover:bg-bg-custom/50 transition-colors ${i !== events.length - 1 ? 'border-b border-border/50' : ''}`}>
-                                <div className={`mt-1 shrink-0`}>
+                                <div className={`mt-1 shrink-0 relative`}>
                                     <IconCircleFilled size={8} className={
                                         event.type === 'booking' ? 'text-accent' :
                                         event.type === 'system' ? 'text-blue-custom' : 'text-t3'
                                     } />
+                                    {!event.read && (
+                                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-accent rounded-full border border-surface"></span>
+                                    )}
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-[13px] text-t1 leading-relaxed font-medium">{event.message}</p>
+                                    <p className={`text-[13px] leading-relaxed ${!event.read ? 'text-t1 font-bold' : 'text-t2 font-medium'}`}>{event.message}</p>
                                     <p className="text-[10px] text-t3 font-bold uppercase tracking-widest">
                                         {new Date(event.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })} · {new Date(event.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
                                     </p>

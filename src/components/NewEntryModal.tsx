@@ -54,7 +54,7 @@ export default function NewEntryModal({ isOpen, onClose }: { isOpen: boolean, on
   };
 
   const modalContent = (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
       <div
         className="bg-surface rounded-2xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200 overflow-hidden border border-border"
         onClick={(e) => e.stopPropagation()}
