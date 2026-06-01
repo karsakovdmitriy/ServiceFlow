@@ -14,7 +14,7 @@ import {
 import { useStore } from '@/lib/store';
 
 export default function Dashboard() {
-  const { sessions, requests, approveRequest, rejectRequest, profile } = useStore();
+  const { sessions, requests, approveRequest, rejectRequest, profile, events } = useStore();
   const [rejectingId, setRejectingId] = React.useState<string | null>(null);
 
   const handleReject = (id: string, reschedule: boolean) => {
@@ -167,19 +167,35 @@ export default function Dashboard() {
           <div className="flex items-start justify-between mb-4">
             <div className="text-[14px] font-semibold text-t1">Последние события</div>
           </div>
-          {[
-            { dot: 'bg-green-custom', text: 'Новая тренировка добавлена в расписание', time: 'Только что' },
-            { dot: 'bg-accent', text: 'Профиль тренера успешно обновлен', time: '10 мин' },
-            { dot: 'bg-yellow-custom', text: 'Напоминание о тренировке отправлено клиенту', time: '1 ч' },
-            { dot: 'bg-blue-custom', text: 'Статистика за неделю готова к просмотру', time: '3 ч' },
-            { dot: 'bg-green-custom', text: 'Новый клиент присоединился к Telegram-боту', time: '5 ч' },
-          ].map((act, i) => (
-            <div key={i} className="flex items-center gap-2.5 py-[10px] border-b border-border-light last:border-none last:pb-0 first:pt-0">
-              <div className={`w-2 h-2 rounded-full shrink-0 ${act.dot}`}></div>
-              <div className="text-[13px] text-t2 flex-1 leading-[1.45]">{act.text}</div>
-              <div className="text-[11px] text-t3 whitespace-nowrap">{act.time}</div>
-            </div>
-          ))}
+          {events.length === 0 && (
+            <div className="text-center py-8 text-t3 text-[13px]">Событий пока нет</div>
+          )}
+          {events.map((act, i) => {
+            const date = new Date(act.created_at);
+            const now = new Date();
+            const diffMs = now.getTime() - date.getTime();
+            const diffMin = Math.floor(diffMs / 60000);
+            const diffHr = Math.floor(diffMin / 60);
+            const diffDay = Math.floor(diffHr / 24);
+
+            let timeStr = 'Только что';
+            if (diffDay > 0) timeStr = `${diffDay} д`;
+            else if (diffHr > 0) timeStr = `${diffHr} ч`;
+            else if (diffMin > 0) timeStr = `${diffMin} мин`;
+
+            const dotColor =
+              act.type === 'booking' ? 'bg-green-custom' :
+              act.type === 'system' ? 'bg-accent' :
+              act.type === 'message' ? 'bg-blue-custom' : 'bg-yellow-custom';
+
+            return (
+              <div key={i} className="flex items-center gap-2.5 py-[10px] border-b border-border-light last:border-none last:pb-0 first:pt-0">
+                <div className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`}></div>
+                <div className="text-[13px] text-t2 flex-1 leading-[1.45]">{act.message}</div>
+                <div className="text-[11px] text-t3 whitespace-nowrap">{timeStr}</div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Performance Hint */}

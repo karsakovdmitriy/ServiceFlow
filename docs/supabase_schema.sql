@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS trainers (
   email TEXT UNIQUE NOT NULL,
   slot_duration INTEGER DEFAULT 60,
   telegram_bot_token TEXT,
+  telegram_id TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -153,6 +154,27 @@ ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
     DROP POLICY IF EXISTS "Trainers can manage their own messages" ON messages;
     CREATE POLICY "Trainers can manage their own messages" ON messages FOR ALL USING (auth.uid() = trainer_id);
+EXCEPTION WHEN others THEN NULL; END $$;
+
+-- Events / Activity Log
+CREATE TABLE IF NOT EXISTS events (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  trainer_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,
+  message TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Trainers can view their own events" ON events;
+    CREATE POLICY "Trainers can view their own events" ON events FOR SELECT USING (auth.uid() = trainer_id);
+EXCEPTION WHEN others THEN NULL; END $$;
+
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Trainers can log their own events" ON events;
+    CREATE POLICY "Trainers can log their own events" ON events FOR INSERT WITH CHECK (auth.uid() = trainer_id);
 EXCEPTION WHEN others THEN NULL; END $$;
 
 -- Blocked time slots

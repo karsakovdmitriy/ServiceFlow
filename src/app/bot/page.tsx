@@ -5,14 +5,52 @@ import { useStore } from '@/lib/store';
 import { IconBrandTelegram, IconCopy, IconChartBar, IconDeviceMobile, IconId } from '@tabler/icons-react';
 
 export default function BotPage() {
-  const { profile, trainerId } = useStore();
+  const { profile, trainerId, isDemoMode } = useStore();
   const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'TrainerSpaceBot';
   const botLink = `https://t.me/${botUsername}?start=${trainerId || 'id'}`;
+  const linkTgLink = `https://t.me/${botUsername}?start=link_${trainerId || 'id'}`;
 
   return (
     <div className="animate-fade-up">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-6">
+          {!isDemoMode && (
+            <div>
+                <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Оповещения тренера</div>
+                <div className={`card border-l-4 ${profile?.telegram_id ? 'border-green-500' : 'border-accent'}`}>
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${profile?.telegram_id ? 'bg-green-light text-green-custom' : 'bg-accent-light text-accent'}`}>
+                                <IconBrandTelegram size={22} />
+                            </div>
+                            <div>
+                                <div className="text-[14px] font-bold text-t1">
+                                    {profile?.telegram_id ? 'Telegram подключен' : 'Привязать Telegram'}
+                                </div>
+                                <div className="text-[12px] text-t3 mt-[2px]">
+                                    {profile?.telegram_id
+                                        ? 'Вы получаете уведомления о новых записях в Telegram'
+                                        : 'Получайте уведомления о новых записях прямо в мессенджер'}
+                                </div>
+                            </div>
+                        </div>
+                        <a
+                            href={linkTgLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`text-[12px] font-bold px-4 py-2 rounded-r-sm transition-all ${
+                                profile?.telegram_id
+                                ? 'bg-bg-custom text-t2 border border-border-custom hover:bg-border-light'
+                                : 'bg-accent text-white shadow-lg shadow-accent/20 hover:bg-accent-hover'
+                            }`}
+                        >
+                            {profile?.telegram_id ? 'Перепривязать' : 'Подключить'}
+                        </a>
+                    </div>
+                </div>
+            </div>
+          )}
+
           <div>
             <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Ваша ссылка на бот</div>
             <div className="card">

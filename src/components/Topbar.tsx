@@ -4,10 +4,13 @@ import React, { useState, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 import { IconBell, IconSearch, IconPlus } from '@tabler/icons-react';
 import NewEntryModal from './NewEntryModal';
+import { useStore } from '@/lib/store';
+import Link from 'next/link';
 
 const Topbar = () => {
   const pathname = usePathname();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { requests } = useStore();
 
   const todayLabel = useMemo(() => {
     return new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -35,10 +38,17 @@ const Topbar = () => {
         <div className="text-[12px] text-t3 mt-[1px] capitalize">{sub}</div>
       </div>
       <div className="flex items-center gap-[6px] lg:gap-[10px]">
-        <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-r-sm bg-bg-custom border border-border-custom flex items-center justify-center cursor-pointer text-t2 transition-all hover:bg-border-light hover:text-t1 relative">
+        <Link
+          href="/requests"
+          className="w-8 h-8 lg:w-9 lg:h-9 rounded-r-sm bg-bg-custom border border-border-custom flex items-center justify-center cursor-pointer text-t2 transition-all hover:bg-border-light hover:text-t1 relative"
+        >
           <IconBell size={18} />
-          <span className="w-[7px] h-[7px] bg-red-custom rounded-full absolute top-[7px] right-[7px] border-[1.5px] border-white"></span>
-        </div>
+          {requests.length > 0 && (
+            <span className="min-w-[16px] h-[16px] px-1 bg-red-custom text-white text-[9px] font-bold rounded-full absolute -top-1.5 -right-1.5 border-[2px] border-white flex items-center justify-center">
+              {requests.length}
+            </span>
+          )}
+        </Link>
         <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-r-sm bg-bg-custom border border-border-custom flex items-center justify-center cursor-pointer text-t2 transition-all hover:bg-border-light hover:text-t1">
           <IconSearch size={18} />
         </div>
