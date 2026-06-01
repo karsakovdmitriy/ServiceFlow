@@ -13,9 +13,11 @@ import {
   IconBulb
 } from '@tabler/icons-react';
 import { useStore } from '@/lib/store';
+import MyBookings from './my-bookings/page';
+import VenueDashboard from './venue/dashboard/page';
 
 export default function Dashboard() {
-  const { sessions, requests, approveRequest, rejectRequest, profile, events } = useStore();
+  const { sessions, requests, approveRequest, rejectRequest, profile, events, activeRole } = useStore();
   const [rejectingId, setRejectingId] = React.useState<string | null>(null);
 
   const handleReject = (id: string, reschedule: boolean) => {
@@ -38,6 +40,14 @@ export default function Dashboard() {
   const displayEvents = useMemo(() => {
     return showAllEvents ? events : events.slice(0, 5);
   }, [events, showAllEvents]);
+
+  if (activeRole === 'client') {
+    return <MyBookings />;
+  }
+
+  if (activeRole === 'venue') {
+    return <VenueDashboard />;
+  }
 
   return (
     <div className="animate-fade-up max-w-[1100px] mx-auto space-y-12">

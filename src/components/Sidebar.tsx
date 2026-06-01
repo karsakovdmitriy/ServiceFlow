@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   IconCalendarEvent,
   IconCalendarWeek,
@@ -15,31 +15,66 @@ import {
   IconChartBar,
   IconWindow,
   IconStar,
-  IconCircleCheck
+  IconCircleCheck,
+  IconChevronDown,
+  IconUser,
+  IconBuildingStore,
+  IconFriends,
+  IconSearch
 } from '@tabler/icons-react';
 import { useStore } from '@/lib/store';
 
 const Sidebar = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const { profile, requests } = useStore();
+  const [roleMenuOpen, setRoleMenuOpen] = useState(false);
+  const { profile, requests, activeRole, switchActiveRole } = useStore();
 
-  const navItems = [
-    { label: 'Рабочий стол', type: 'group' },
-    { label: 'Сегодня', icon: <IconCircleCheck size={18} stroke={1.5} />, href: '/', id: 'dashboard' },
-    { label: 'Заявки', icon: <IconCalendarEvent size={18} stroke={1.5} />, href: '/requests', id: 'requests', badge: requests.length > 0 ? requests.length : undefined },
-    { label: 'Расписание', icon: <IconCalendarWeek size={18} stroke={1.5} />, href: '/schedule', id: 'schedule' },
+  const getNavItems = () => {
+    if (activeRole === 'client') {
+      return [
+        { label: 'Мой профиль', type: 'group' },
+        { label: 'Мои записи', icon: <IconCircleCheck size={18} stroke={1.5} />, href: '/my-bookings', id: 'my-bookings' },
+        { label: 'Партнеры', icon: <IconFriends size={18} stroke={1.5} />, href: '/partners', id: 'partners' },
+        { label: 'Найти мастера', icon: <IconSearch size={18} stroke={1.5} />, href: '/search', id: 'search' },
+      ];
+    }
 
-    { label: 'Клиенты', type: 'group' },
-    { label: 'База клиентов', icon: <IconUsers size={18} stroke={1.5} />, href: '/clients', id: 'clients' },
-    { label: 'Доходы', icon: <IconChartBar size={18} stroke={1.5} />, href: '/analytics', id: 'analytics' },
-    { label: 'Отзывы', icon: <IconStar size={18} stroke={1.5} />, href: '/reviews', id: 'reviews' },
+    if (activeRole === 'venue') {
+      return [
+        { label: 'Площадка', type: 'group' },
+        { label: 'Обзор', icon: <IconCircleCheck size={18} stroke={1.5} />, href: '/venue/dashboard', id: 'venue-dashboard' },
+        { label: 'Мастера', icon: <IconUsers size={18} stroke={1.5} />, href: '/venue/masters', id: 'venue-masters' },
+        { label: 'Услуги', icon: <IconStethoscope size={18} stroke={1.5} />, href: '/venue/services', id: 'venue-services' },
+      ];
+    }
 
-    { label: 'Настройка', type: 'group' },
-    { label: 'Услуги и площадки', icon: <IconStethoscope size={18} stroke={1.5} />, href: '/services', id: 'services' },
-    { label: 'Telegram-бот', icon: <IconBrandTelegram size={18} stroke={1.5} />, href: '/bot', id: 'bot' },
-    { label: 'Профиль', icon: <IconSettings size={18} stroke={1.5} />, href: '/settings', id: 'settings' },
-  ];
+    return [
+      { label: 'Рабочий стол', type: 'group' },
+      { label: 'Сегодня', icon: <IconCircleCheck size={18} stroke={1.5} />, href: '/', id: 'dashboard' },
+      { label: 'Заявки', icon: <IconCalendarEvent size={18} stroke={1.5} />, href: '/requests', id: 'requests', badge: requests.length > 0 ? requests.length : undefined },
+      { label: 'Расписание', icon: <IconCalendarWeek size={18} stroke={1.5} />, href: '/schedule', id: 'schedule' },
+
+      { label: 'Клиенты', type: 'group' },
+      { label: 'База клиентов', icon: <IconUsers size={18} stroke={1.5} />, href: '/clients', id: 'clients' },
+      { label: 'Доходы', icon: <IconChartBar size={18} stroke={1.5} />, href: '/analytics', id: 'analytics' },
+      { label: 'Отзывы', icon: <IconStar size={18} stroke={1.5} />, href: '/reviews', id: 'reviews' },
+
+      { label: 'Настройка', type: 'group' },
+      { label: 'Услуги и площадки', icon: <IconStethoscope size={18} stroke={1.5} />, href: '/services', id: 'services' },
+      { label: 'Telegram-бот', icon: <IconBrandTelegram size={18} stroke={1.5} />, href: '/bot', id: 'bot' },
+      { label: 'Профиль', icon: <IconSettings size={18} stroke={1.5} />, href: '/settings', id: 'settings' },
+    ];
+  };
+
+  const navItems = getNavItems();
+
+  const roleLabels = {
+    master: { label: 'Мастер', icon: <IconStethoscope size={16} /> },
+    client: { label: 'Клиент', icon: <IconUser size={16} /> },
+    venue: { label: 'Площадка', icon: <IconBuildingStore size={16} /> },
+  };
 
   const initials = profile?.full_name
     ? profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase()
@@ -48,7 +83,7 @@ const Sidebar = () => {
   const SidebarContent = () => (
     <>
       <div className="p-8 pb-4 relative">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 mb-6">
           <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-white shrink-0">
             <IconWindow size={18} stroke={1.5} />
           </div>
@@ -56,6 +91,39 @@ const Sidebar = () => {
             <div className="text-[15px] font-bold text-t1 tracking-tight leading-none">Окошко</div>
             <div className="text-[11px] text-t3 mt-1 font-medium">Сервис записи</div>
           </div>
+        </div>
+
+        {/* Role Switcher */}
+        <div className="relative">
+          <button
+            onClick={() => setRoleMenuOpen(!roleMenuOpen)}
+            className="w-full flex items-center justify-between gap-2 px-3 py-2 bg-bg-custom border border-border-light rounded-xl text-[13px] font-bold text-t1 hover:bg-surface transition-all"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-accent">{roleLabels[activeRole].icon}</span>
+              {roleLabels[activeRole].label}
+            </div>
+            <IconChevronDown size={14} className={`transition-transform ${roleMenuOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {roleMenuOpen && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border-light rounded-xl shadow-xl z-50 overflow-hidden animate-fade-up">
+              {(['master', 'client', 'venue'] as const).map((role) => (
+                <button
+                  key={role}
+                  onClick={() => {
+                    switchActiveRole(role);
+                    setRoleMenuOpen(false);
+                    router.push('/');
+                  }}
+                  className={`w-full flex items-center gap-2 px-4 py-3 text-[13px] font-medium transition-all hover:bg-bg-custom ${activeRole === role ? 'text-accent bg-accent/5' : 'text-t2'}`}
+                >
+                  {roleLabels[role].icon}
+                  {roleLabels[role].label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Close button for mobile */}

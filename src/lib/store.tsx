@@ -10,7 +10,20 @@ export interface Client { id: string; full_name: string; email?: string; phone?:
 export interface Session { id: string; name: string; time: string; initials: string; bg?: string; color?: string; status: string; date: string; service?: string; serviceId?: string; clientId?: string; }
 export interface ScheduleDay { name: string; startTime: string; endTime: string; on: boolean; }
 export interface BlockedSlot { id: string; date: string; startTime: string; endTime: string; allDay: boolean; }
-export interface TrainerProfile { full_name: string; specialization: string; avatar_url?: string; email: string; slot_duration: number; telegram_id?: string; }
+export interface Partnership { id: string; user_id: string; partner_id: string; status: 'pending' | 'accepted'; partner_name?: string; }
+export interface VenueStaff { id: string; venue_id: string; trainer_id: string; trainer_name?: string; }
+export interface TrainerProfile {
+  id?: string;
+  full_name: string;
+  specialization: string;
+  avatar_url?: string;
+  email: string;
+  slot_duration: number;
+  telegram_id?: string;
+  is_master: boolean;
+  is_client: boolean;
+  is_venue: boolean;
+}
 export interface Message { id: string; trainer_id: string; client_id: string; sender_type: 'trainer' | 'client'; text: string; read: boolean; created_at: string; }
 export interface Event { id: string; trainer_id: string; type: string; message: string; read: boolean; created_at: string; }
 export interface Review { id: string; rating: number; comment?: string; created_at: string; client_name?: string; }
@@ -62,9 +75,13 @@ interface StoreContextType {
   events: Event[];
   reviews: Review[];
   profile: TrainerProfile | null;
+  activeRole: 'master' | 'client' | 'venue';
+  partners: Partnership[];
+  venueStaff: VenueStaff[];
   loading: boolean;
   trainerId: string | null;
   isDemoMode: boolean;
+  switchActiveRole: (role: 'master' | 'client' | 'venue') => void;
   updateProfile: (updated: Partial<TrainerProfile>) => Promise<{ error: any }>;
   approveRequest: (id: string) => Promise<void>;
   rejectRequest: (id: string, reschedule?: boolean) => Promise<void>;
@@ -82,6 +99,10 @@ interface StoreContextType {
   removeVenue: (id: string) => Promise<void>;
   addBlock: (block: Omit<BlockedSlot, 'id'>) => Promise<void>;
   removeBlock: (id: string) => Promise<void>;
+  addPartnership: (partnerEmail: string) => Promise<void>;
+  removePartnership: (partnershipId: string) => Promise<void>;
+  addVenueStaff: (venueId: string, trainerEmail: string) => Promise<void>;
+  removeVenueStaff: (staffId: string) => Promise<void>;
   toggleDay: (idx: number) => Promise<void>;
   updateScheduleTime: (idx: number, startTime: string, endTime: string) => Promise<void>;
   removeService: (id: string) => Promise<void>;
@@ -102,6 +123,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [events, setEvents] = useState<Event[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [profile, setProfile] = useState<TrainerProfile | null>(null);
+  const [activeRole, setActiveRole] = useState<'master' | 'client' | 'venue'>('master');
+  const [partners, setPartners] = useState<Partnership[]>([]);
+  const [venueStaff, setVenueStaff] = useState<VenueStaff[]>([]);
   const [loading, setLoading] = useState(true);
   const [trainerId, setTrainerId] = useState<string | null>(null);
   const [isDemoMode, setIsDemoMode] = useState(false);
@@ -158,14 +182,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setServices(data.services || MOCK_SERVICES);
       setVenues(data.venues || MOCK_VENUES);
       setEvents(data.events || []);
-      setProfile(data.profile || { full_name: 'Алексей (Демо)', specialization: 'Тренер', email: 'demo@example.com', slot_duration: 60 });
+      setProfile(data.profile || { full_name: 'Алексей (Демо)', specialization: 'Тренер', email: 'demo@example.com', slot_duration: 60, is_master: true, is_client: true, is_venue: true });
+      setActiveRole(data.activeRole || 'master');
+      setPartners(data.partners || []);
+      setVenueStaff(data.venueStaff || []);
     } else {
       setSessions(MOCK_SESSIONS);
       setRequests(MOCK_REQUESTS);
       setSchedule(MOCK_SCHEDULE);
       setServices(MOCK_SERVICES);
       setVenues(MOCK_VENUES);
-      setProfile({ full_name: 'Алексей (Демо)', specialization: 'Тренер', email: 'demo@example.com', slot_duration: 60 });
+      setProfile({ full_name: 'Алексей (Демо)', specialization: 'Тренер', email: 'demo@example.com', slot_duration: 60, is_master: true, is_client: true, is_venue: true });
+      setActiveRole('master');
     }
     setLoading(false);
   };
@@ -177,95 +205,172 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return newData;
   };
 
-  const fetchData = async () => {
+  const fetchData = async (roleOverride?: 'master' | 'client' | 'venue') => {
     if (!trainerId) return;
+    const role = roleOverride || activeRole;
     setLoading(true);
     try {
       const { data: profileData } = await supabase.from('trainers').select('*').eq('id', trainerId).maybeSingle();
       if (profileData) setProfile(profileData);
 
-      const { data: venuesData } = await supabase.from('venues').select('*').eq('trainer_id', trainerId).order('name');
-      if (venuesData) setVenues(venuesData);
+      if (role === 'master') {
+        const { data: venuesData } = await supabase.from('venues').select('*').eq('trainer_id', trainerId).order('name');
+        if (venuesData) setVenues(venuesData);
 
-      const { data: servicesData } = await supabase.from('services').select('*, venues!venue_id(id, name, address)').eq('trainer_id', trainerId).order('name');
-      if (servicesData) {
-        setServices(servicesData.map(s => ({
-          ...s,
-          venue: s.venues
-        })));
-      }
+        const { data: servicesData } = await supabase.from('services').select('*, venues!venue_id(id, name, address)').eq('trainer_id', trainerId).order('name');
+        if (servicesData) {
+          setServices(servicesData.map(s => ({
+            ...s,
+            venue: s.venues
+          })));
+        }
 
-      const { data: clientsData } = await supabase.from('clients').select('*').eq('trainer_id', trainerId).order('full_name');
-      if (clientsData) setClients(clientsData);
+        const { data: clientsData } = await supabase.from('clients').select('*').eq('trainer_id', trainerId).order('full_name');
+        if (clientsData) setClients(clientsData);
 
-      const { data: sessionsData, error: sessErr } = await supabase
-        .from('sessions')
-        .select(`
-          id,
-          status,
-          start_time,
-          end_time,
-          client:clients!client_id(id, full_name),
-          service:services!service_id(name, id)
-        `)
-        .eq('trainer_id', trainerId);
+        const { data: sessionsData, error: sessErr } = await supabase
+          .from('sessions')
+          .select(`
+            id,
+            status,
+            start_time,
+            end_time,
+            client:clients!client_id(id, full_name),
+            service:services!service_id(name, id)
+          `)
+          .eq('trainer_id', trainerId);
 
-      if (!sessErr && sessionsData) {
-        const formatted = sessionsData.map((s: any) => ({
-          id: s.id,
-          name: s.client?.full_name || 'Клиент',
-          clientId: s.client?.id,
-          service: s.service?.name,
-          serviceId: s.service?.id,
-          status: s.status,
-          date: s.start_time.split('T')[0],
-          time: `${s.start_time.split('T')[1].slice(0,5)} – ${s.end_time.split('T')[1].slice(0,5)}`,
-          initials: (() => {
-            const name = (s.client?.full_name || 'К').split('(')[0].trim();
-            const parts = name.split(/\s+/).filter((p: string) => p.length > 0);
-            if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-            return parts[0].slice(0, 2).toUpperCase();
-          })()
-        }));
-        setRequests(formatted.filter(s => s.status === 'pending'));
-        setSessions(formatted.filter(s => s.status === 'confirmed'));
-        setCompletedSessions(formatted.filter(s => s.status === 'completed'));
-      }
+        if (!sessErr && sessionsData) {
+          const formatted = sessionsData.map((s: any) => ({
+            id: s.id,
+            name: s.client?.full_name || 'Клиент',
+            clientId: s.client?.id,
+            service: s.service?.name,
+            serviceId: s.service?.id,
+            status: s.status,
+            date: s.start_time.split('T')[0],
+            time: `${s.start_time.split('T')[1].slice(0,5)} – ${s.end_time.split('T')[1].slice(0,5)}`,
+            initials: (() => {
+              const name = (s.client?.full_name || 'К').split('(')[0].trim();
+              const parts = name.split(/\s+/).filter((p: string) => p.length > 0);
+              if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+              return parts[0].slice(0, 2).toUpperCase();
+            })()
+          }));
+          setRequests(formatted.filter(s => s.status === 'pending'));
+          setSessions(formatted.filter(s => s.status === 'confirmed'));
+          setCompletedSessions(formatted.filter(s => s.status === 'completed'));
+        }
 
-      const { data: schedData } = await supabase.from('schedule_config').select('*').eq('trainer_id', trainerId).order('day_of_week');
-      if (schedData && schedData.length > 0) {
-        const sorted = [...schedData].sort((a, b) => (a.day_of_week === 0 ? 7 : a.day_of_week) - (b.day_of_week === 0 ? 7 : b.day_of_week));
-        setSchedule(sorted.map(s => ({
-          name: DAYS[s.day_of_week],
-          startTime: s.start_hour?.slice(0, 5) || '09:00',
-          endTime: s.end_hour?.slice(0, 5) || '20:00',
-          on: s.is_active
-        })));
-      }
+        const { data: schedData } = await supabase.from('schedule_config').select('*').eq('trainer_id', trainerId).order('day_of_week');
+        if (schedData && schedData.length > 0) {
+          const sorted = [...schedData].sort((a, b) => (a.day_of_week === 0 ? 7 : a.day_of_week) - (b.day_of_week === 0 ? 7 : b.day_of_week));
+          setSchedule(sorted.map(s => ({
+            name: DAYS[s.day_of_week],
+            startTime: s.start_hour?.slice(0, 5) || '09:00',
+            endTime: s.end_hour?.slice(0, 5) || '20:00',
+            on: s.is_active
+          })));
+        }
 
-      const { data: blocksData } = await supabase.from('blocked_slots').select('*').eq('trainer_id', trainerId).order('date');
-      if (blocksData) {
-        setBlocks(blocksData.map(b => ({
-          id: b.id,
-          date: b.date,
-          startTime: b.start_hour?.slice(0, 5) || '00:00',
-          endTime: b.end_hour?.slice(0, 5) || '23:59',
-          allDay: b.all_day
-        })));
-      }
+        const { data: blocksData } = await supabase.from('blocked_slots').select('*').eq('trainer_id', trainerId).order('date');
+        if (blocksData) {
+          setBlocks(blocksData.map(b => ({
+            id: b.id,
+            date: b.date,
+            startTime: b.start_hour?.slice(0, 5) || '00:00',
+            endTime: b.end_hour?.slice(0, 5) || '23:59',
+            allDay: b.all_day
+          })));
+        }
 
-      const { data: eventsData } = await supabase.from('events').select('*').eq('trainer_id', trainerId).order('created_at', { ascending: false }).limit(20);
-      if (eventsData) setEvents(eventsData.map(e => ({ ...e, read: e.read ?? true })));
+        const { data: eventsData } = await supabase.from('events').select('*').eq('trainer_id', trainerId).order('created_at', { ascending: false }).limit(20);
+        if (eventsData) setEvents(eventsData.map(e => ({ ...e, read: e.read ?? true })));
 
-      const { data: reviewsData } = await supabase.from('reviews').select('*, clients(full_name)').eq('trainer_id', trainerId).order('created_at', { ascending: false });
-      if (reviewsData) {
-        setReviews(reviewsData.map(r => ({
-          id: r.id,
-          rating: r.rating,
-          comment: r.comment,
-          created_at: r.created_at,
-          client_name: (r.clients as any)?.full_name
-        })));
+        const { data: reviewsData } = await supabase.from('reviews').select('*, clients(full_name)').eq('trainer_id', trainerId).order('created_at', { ascending: false });
+        if (reviewsData) {
+          setReviews(reviewsData.map(r => ({
+            id: r.id,
+            rating: r.rating,
+            comment: r.comment,
+            created_at: r.created_at,
+            client_name: (r.clients as any)?.full_name
+          })));
+        }
+      } else if (role === 'client') {
+        const { data: myClientRecords } = await supabase.from('clients').select('id').eq('user_id', trainerId);
+        const myClientIds = myClientRecords?.map(c => c.id) || [];
+
+        if (myClientIds.length > 0) {
+          const { data: sessionsData } = await supabase
+            .from('sessions')
+            .select(`
+              id,
+              status,
+              start_time,
+              end_time,
+              trainer:trainers!trainer_id(full_name),
+              service:services!service_id(name, id)
+            `)
+            .in('client_id', myClientIds);
+
+          if (sessionsData) {
+            const formatted = sessionsData.map((s: any) => ({
+              id: s.id,
+              name: s.trainer?.full_name || 'Тренер',
+              service: s.service?.name,
+              serviceId: s.service?.id,
+              status: s.status,
+              date: s.start_time.split('T')[0],
+              time: `${s.start_time.split('T')[1].slice(0,5)} – ${s.end_time.split('T')[1].slice(0,5)}`,
+              initials: (s.trainer?.full_name || 'Т').slice(0, 2).toUpperCase()
+            }));
+            setSessions(formatted.filter(s => s.status === 'confirmed'));
+            setRequests(formatted.filter(s => s.status === 'pending'));
+          }
+        }
+
+        const { data: partnersData } = await supabase.from('partnerships')
+          .select('*, partner:trainers!partner_id(full_name)')
+          .eq('user_id', trainerId);
+        if (partnersData) {
+          setPartners(partnersData.map(p => ({
+            ...p,
+            partner_name: (p.partner as any)?.full_name
+          })));
+        }
+      } else if (role === 'venue') {
+        const { data: myVenues } = await supabase.from('venues').select('*').eq('trainer_id', trainerId);
+        if (myVenues) {
+          setVenues(myVenues);
+          const venueIds = myVenues.map(v => v.id);
+          const { data: staffData } = await supabase.from('venue_staff').select('*, trainer:trainers!trainer_id(full_name)').in('venue_id', venueIds);
+          if (staffData) {
+            setVenueStaff(staffData.map(s => ({ ...s, trainer_name: (s.trainer as any)?.full_name })));
+          }
+
+          const { data: sessionsData } = await supabase
+            .from('sessions')
+            .select(`
+              id, status, start_time, end_time,
+              client:clients!client_id(full_name),
+              trainer:trainers!trainer_id(full_name),
+              service:services!service_id(name)
+            `)
+            .in('venue_id', venueIds);
+
+          if (sessionsData) {
+            setSessions(sessionsData.map((s: any) => ({
+              id: s.id,
+              name: `${s.trainer?.full_name} > ${s.client?.full_name}`,
+              service: s.service?.name,
+              status: s.status,
+              date: s.start_time.split('T')[0],
+              time: `${s.start_time.split('T')[1].slice(0,5)} – ${s.end_time.split('T')[1].slice(0,5)}`,
+              initials: 'VS'
+            })));
+          }
+        }
       }
 
     } catch (error) {
@@ -355,7 +460,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (isDemoMode) {
       const newSession = {
         ...session,
-        id: Math.random().toString(),
+        id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(),
         status: 'confirmed',
         initials: (() => {
             const name = session.name.split('(')[0].trim();
@@ -469,7 +574,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateService = async (id: string, service: Partial<Service>) => {
-    const { venue: _v, ...rest } = service;
+    const { venue: _unused, ...rest } = service;
+    console.log(_unused); // Keep it to avoid unused var if needed, or just omit
     if (isDemoMode) {
       const venue = rest.venue_id ? venues.find(v => v.id === rest.venue_id) : undefined;
       const newServices = services.map(s => s.id === id ? { ...s, ...rest, venue } : s);
@@ -596,15 +702,80 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const addPartnership = async (partnerEmail: string) => {
+    if (isDemoMode) {
+      const newP: Partnership = { id: Math.random().toString(), user_id: trainerId!, partner_id: 'demo-partner', status: 'pending', partner_name: partnerEmail };
+      const updated = [...partners, newP];
+      setPartners(updated);
+      saveDemoData({ partners: updated });
+      return;
+    }
+    const { data: partner } = await supabase.from('trainers').select('id').eq('email', partnerEmail).single();
+    if (partner) {
+      await supabase.from('partnerships').insert({ user_id: trainerId, partner_id: partner.id });
+      fetchData();
+    }
+  };
+
+  const removePartnership = async (partnershipId: string) => {
+    if (isDemoMode) {
+      const updated = partners.filter(p => p.id !== partnershipId);
+      setPartners(updated);
+      saveDemoData({ partners: updated });
+      return;
+    }
+    await supabase.from('partnerships').delete().eq('id', partnershipId);
+    fetchData();
+  };
+
+  const addVenueStaff = async (venueId: string, trainerEmail: string) => {
+    if (isDemoMode) {
+      const newS: VenueStaff = { id: Math.random().toString(), venue_id: venueId, trainer_id: 'demo-staff', trainer_name: trainerEmail };
+      const updated = [...venueStaff, newS];
+      setVenueStaff(updated);
+      saveDemoData({ venueStaff: updated });
+      return;
+    }
+    const { data: trainer } = await supabase.from('trainers').select('id').eq('email', trainerEmail).single();
+    if (trainer) {
+      await supabase.from('venue_staff').insert({ venue_id: venueId, trainer_id: trainer.id });
+      fetchData();
+    }
+  };
+
+  const removeVenueStaff = async (staffId: string) => {
+    if (isDemoMode) {
+      const updated = venueStaff.filter(s => s.id !== staffId);
+      setVenueStaff(updated);
+      saveDemoData({ venueStaff: updated });
+      return;
+    }
+    await supabase.from('venue_staff').delete().eq('id', staffId);
+    fetchData();
+  };
+
+  const switchActiveRole = (role: 'master' | 'client' | 'venue') => {
+    setActiveRole(role);
+    if (isDemoMode) {
+      saveDemoData({ activeRole: role });
+    } else {
+      fetchData(role);
+    }
+  };
+
   const value = {
     sessions, completedSessions, requests, clients, schedule, blocks, services, venues, events, reviews, profile,
+    activeRole, partners, venueStaff,
     loading, trainerId, isDemoMode,
+    switchActiveRole,
     updateProfile, approveRequest: (id: string) => updateSessionStatus(id, 'confirmed'),
     rejectRequest: (id: string, reschedule: boolean = false) => updateSessionStatus(id, 'rejected', reschedule),
     sendMessage, getMessages, logEvent, markEventsAsRead,
     cancelSession: (id: string) => updateSessionStatus(id, 'cancelled'),
     completeSession: (id: string) => updateSessionStatus(id, 'completed'),
-    addSession, addService, updateService, addVenue, updateVenue, removeVenue, addBlock, removeBlock, toggleDay, updateScheduleTime, removeService,
+    addSession, addService, updateService, addVenue, updateVenue, removeVenue, addBlock, removeBlock,
+    addPartnership, removePartnership, addVenueStaff, removeVenueStaff,
+    toggleDay, updateScheduleTime, removeService,
     refresh: fetchData
   };
 
