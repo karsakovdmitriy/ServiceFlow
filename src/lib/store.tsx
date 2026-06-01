@@ -10,8 +10,9 @@ export interface Client { id: string; full_name: string; email?: string; telegra
 export interface Session { id: string; name: string; time: string; initials: string; bg?: string; color?: string; status: string; date: string; service?: string; serviceId?: string; clientId?: string; }
 export interface ScheduleDay { name: string; startTime: string; endTime: string; on: boolean; }
 export interface BlockedSlot { id: string; date: string; startTime: string; endTime: string; allDay: boolean; }
-export interface TrainerProfile { full_name: string; specialization: string; avatar_url?: string; email: string; slot_duration: number; }
+export interface TrainerProfile { full_name: string; specialization: string; avatar_url?: string; email: string; slot_duration: number; telegram_id?: string; }
 export interface Message { id: string; trainer_id: string; client_id: string; sender_type: 'trainer' | 'client'; text: string; read: boolean; created_at: string; }
+export interface Event { id: string; trainer_id: string; type: string; message: string; created_at: string; }
 
 const DAYS = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
 
@@ -37,6 +38,10 @@ const MOCK_SESSIONS = [
   { id: '2', name: 'Дмитрий Макаров', time: '12:00 – 13:00', initials: 'ДМ', status: 'confirmed', date: getTodayStr(1) },
 ];
 
+const MOCK_REQUESTS = [
+  { id: 'req1', name: 'Мария Сидорова', time: '15:00 – 16:00', initials: 'МС', status: 'pending', date: getTodayStr(2) },
+];
+
 const MOCK_SCHEDULE = DAYS.map((name, i) => ({
   name,
   startTime: '09:00',
@@ -53,6 +58,7 @@ interface StoreContextType {
   blocks: BlockedSlot[];
   services: Service[];
   venues: Venue[];
+  events: Event[];
   profile: TrainerProfile | null;
   loading: boolean;
   trainerId: string | null;
@@ -62,6 +68,7 @@ interface StoreContextType {
   rejectRequest: (id: string, reschedule?: boolean) => Promise<void>;
   sendMessage: (clientId: string, text: string) => Promise<void>;
   getMessages: (clientId: string) => Promise<Message[]>;
+  logEvent: (type: string, message: string) => Promise<void>;
   cancelSession: (id: string) => Promise<void>;
   completeSession: (id: string) => Promise<void>;
   addSession: (session: any) => Promise<void>;
@@ -89,6 +96,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [blocks, setBlocks] = useState<BlockedSlot[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [profile, setProfile] = useState<TrainerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [trainerId, setTrainerId] = useState<string | null>(null);
@@ -140,14 +148,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const data = JSON.parse(saved);
       setSessions(data.sessions || MOCK_SESSIONS);
       setCompletedSessions(data.completedSessions || []);
-      setRequests(data.requests || []);
+      setRequests(data.requests || MOCK_REQUESTS);
       setSchedule(data.schedule || MOCK_SCHEDULE);
       setBlocks(data.blocks || []);
       setServices(data.services || MOCK_SERVICES);
       setVenues(data.venues || MOCK_VENUES);
+      setEvents(data.events || []);
       setProfile(data.profile || { full_name: 'Алексей (Демо)', specialization: 'Тренер', email: 'demo@example.com', slot_duration: 60 });
     } else {
       setSessions(MOCK_SESSIONS);
+      setRequests(MOCK_REQUESTS);
       setSchedule(MOCK_SCHEDULE);
       setServices(MOCK_SERVICES);
       setVenues(MOCK_VENUES);
@@ -235,6 +245,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         })));
       }
 
+      const { data: eventsData } = await supabase.from('events').select('*').eq('trainer_id', trainerId).order('created_at', { ascending: false }).limit(20);
+      if (eventsData) setEvents(eventsData);
+
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -247,10 +260,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const newProfile = { ...profile!, ...updated };
       setProfile(newProfile);
       saveDemoData({ profile: newProfile });
+      logEvent('system', 'Профиль обновлен (Демо)');
       return { error: null };
     }
     const { error } = await supabase.from('trainers').update(updated).eq('id', trainerId);
-    if (!error) fetchData();
+    if (!error) {
+        logEvent('system', 'Профиль обновлен');
+        fetchData();
+    }
     return { error };
   };
 
@@ -264,14 +281,33 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             const newSessions = sessions.filter(s => s.id !== id);
             const newCompleted = completedSessions.filter(s => s.id !== id);
             if (status === 'pending') newRequests.push(updated);
-            else if (status === 'confirmed') newSessions.push(updated);
-            else if (status === 'completed') newCompleted.push(updated);
+            else if (status === 'confirmed') {
+                newSessions.push(updated);
+                logEvent('booking', `Запись ${session.name} подтверждена`);
+            }
+            else if (status === 'completed') {
+                newCompleted.push(updated);
+                logEvent('booking', `Запись ${session.name} завершена`);
+            }
+            else if (status === 'rejected') {
+                logEvent('booking', `Запись ${session.name} отклонена`);
+            }
             setRequests(newRequests); setSessions(newSessions); setCompletedSessions(newCompleted);
             saveDemoData({ requests: newRequests, sessions: newSessions, completedSessions: newCompleted });
         }
         return;
     }
+    const { data: currentSession } = await supabase.from('sessions').select('client:clients!client_id(full_name)').eq('id', id).single();
+    const clientName = (currentSession?.client as any)?.full_name || 'Клиент';
+
     const { error } = await supabase.from('sessions').update({ status }).eq('id', id);
+
+    if (!error) {
+        if (status === 'confirmed') logEvent('booking', `Запись ${clientName} подтверждена`);
+        else if (status === 'completed') logEvent('booking', `Запись ${clientName} завершена`);
+        else if (status === 'rejected') logEvent('booking', `Запись ${clientName} отклонена`);
+    }
+
     if (!error && status === 'rejected' && reschedule) {
        // Notify client about rejection with reschedule request
        const { data: sessionData } = await supabase.from('sessions').select('client:clients!client_id(telegram_id), trainer:trainers!trainer_id(full_name)').eq('id', id).single();
@@ -332,6 +368,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       end_time: endTime,
       status: 'confirmed'
     });
+    logEvent('booking', `Добавлена новая запись: ${session.name}`);
     fetchData();
   };
 
@@ -461,6 +498,28 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return data || [];
   };
 
+  const logEvent = async (type: string, message: string) => {
+    if (isDemoMode) {
+      const newEvent = {
+        id: Math.random().toString(),
+        trainer_id: 'demo',
+        type,
+        message,
+        created_at: new Date().toISOString()
+      };
+      const newEvents = [newEvent, ...events].slice(0, 20);
+      setEvents(newEvents);
+      saveDemoData({ events: newEvents });
+      return;
+    }
+    await supabase.from('events').insert({
+      trainer_id: trainerId,
+      type,
+      message
+    });
+    fetchData();
+  };
+
   const addVenue = async (venue: Omit<Venue, 'id'>) => {
     if (isDemoMode) {
       const newV = { ...venue, id: Math.random().toString() };
@@ -496,11 +555,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   };
 
   const value = {
-    sessions, completedSessions, requests, clients, schedule, blocks, services, venues, profile,
+    sessions, completedSessions, requests, clients, schedule, blocks, services, venues, events, profile,
     loading, trainerId, isDemoMode,
     updateProfile, approveRequest: (id: string) => updateSessionStatus(id, 'confirmed'),
     rejectRequest: (id: string, reschedule: boolean = false) => updateSessionStatus(id, 'rejected', reschedule),
-    sendMessage, getMessages,
+    sendMessage, getMessages, logEvent,
     cancelSession: (id: string) => updateSessionStatus(id, 'cancelled'),
     completeSession: (id: string) => updateSessionStatus(id, 'completed'),
     addSession, addService, updateService, addVenue, updateVenue, removeVenue, addBlock, removeBlock, toggleDay, updateScheduleTime, removeService,

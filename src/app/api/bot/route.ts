@@ -42,7 +42,7 @@ export async function POST(request: Request) {
 
       // Handle direct messages to trainer
       if (text && !text.startsWith('/')) {
-         const { data: client } = await supabase.from('clients').select('id, trainer_id').eq('telegram_id', from.id.toString()).limit(1).single();
+         const { data: client } = await supabase.from('clients').select('id, trainer_id, full_name').eq('telegram_id', from.id.toString()).limit(1).single();
          if (client) {
             await supabase.from('messages').insert({
                 trainer_id: client.trainer_id,
@@ -50,7 +50,18 @@ export async function POST(request: Request) {
                 sender_type: 'client',
                 text
             });
-            // We could notify the trainer here via UI (realtime)
+
+            await supabase.from('events').insert({
+              trainer_id: client.trainer_id,
+              type: 'message',
+              message: `Новое сообщение от ${client.full_name}`
+            });
+
+            // Notify trainer about message
+            const { data: trainer } = await supabase.from('trainers').select('telegram_id').eq('id', client.trainer_id).single();
+            if (trainer?.telegram_id) {
+                await sendTelegramMessage(trainer.telegram_id, `💬 <b>Новое сообщение от ${escapeHtml(client.full_name)}:</b>\n\n${escapeHtml(text)}`);
+            }
          }
       }
 
@@ -67,6 +78,28 @@ export async function POST(request: Request) {
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         if (!uuidRegex.test(trainerId)) {
           await sendTelegramMessage(chat.id, '❌ Некорректная ссылка (неверный ID тренера).');
+          return NextResponse.json({ ok: true });
+        }
+
+        // Handle Trainer Linking
+        if (trainerId.startsWith('link_')) {
+          const actualTrainerId = trainerId.replace('link_', '');
+          const { data: trainer, error: trainerError } = await supabase.from('trainers').select('full_name').eq('id', actualTrainerId).single();
+
+          if (trainerError || !trainer) {
+             await sendTelegramMessage(chat.id, '❌ Ошибка при привязке: Тренер не найден.');
+             return NextResponse.json({ ok: true });
+          }
+
+          await supabase.from('trainers').update({ telegram_id: from.id.toString() }).eq('id', actualTrainerId);
+          await sendTelegramMessage(chat.id, `✅ <b>Аккаунт успешно привязан!</b>\n\nТеперь вы (${escapeHtml(trainer.full_name)}) будете получать уведомления о новых записях в этот чат.`);
+
+          await supabase.from('events').insert({
+            trainer_id: actualTrainerId,
+            type: 'system',
+            message: 'Telegram аккаунт успешно привязан'
+          });
+
           return NextResponse.json({ ok: true });
         }
 
@@ -217,7 +250,7 @@ export async function POST(request: Request) {
               end.setMinutes(end.getMinutes() + service.duration);
               const endTime = end.toISOString().replace('.000Z', '+00:00');
 
-              const { error: sessErr } = await supabase.from('sessions').insert({
+              const { data: session, error: sessErr } = await supabase.from('sessions').insert({
                 trainer_id: service.trainer_id,
                 client_id: client.id,
                 service_id: serviceId,
@@ -225,13 +258,38 @@ export async function POST(request: Request) {
                 start_time: startTime,
                 end_time: endTime,
                 status: 'pending'
-              });
+              }).select('id').single();
 
               if (sessErr) {
                 console.error('Session insert error:', sessErr);
                 await sendTelegramMessage(chatId, '❌ Ошибка при создании записи. Пожалуйста, попробуйте позже.');
                 return;
               }
+
+              // Notify Trainer
+              const { data: trainer } = await supabase.from('trainers').select('telegram_id, full_name').eq('id', service.trainer_id).single();
+              if (trainer?.telegram_id) {
+                 const { data: clientData } = await supabase.from('clients').select('full_name').eq('id', client.id).single();
+                 const { data: svcData } = await supabase.from('services').select('name').eq('id', serviceId).single();
+
+                 const trainerMsg = `🆕 <b>Новая заявка!</b>\n\n` +
+                   `Клиент: <b>${escapeHtml(clientData?.full_name || 'Неизвестно')}</b>\n` +
+                   `Услуга: <b>${escapeHtml(svcData?.name || 'Услуга')}</b>\n` +
+                   `Дата: <b>${date}</b>\n` +
+                   `Время: <b>${time}</b>\n\n` +
+                   `Подтвердите заявку в панели управления.`;
+
+                 await sendTelegramMessage(trainer.telegram_id, trainerMsg);
+              }
+
+              const namePart = `${from.first_name || ''} ${from.last_name || ''}`.trim() || 'Клиент';
+              const clientFullName = from.username ? `${namePart} (@${from.username})` : namePart;
+
+              await supabase.from('events').insert({
+                trainer_id: service.trainer_id,
+                type: 'booking',
+                message: `Новая заявка от ${clientFullName}`
+              });
 
               await sendTelegramMessage(chatId, `✅ <b>Заявка отправлена!</b>\n\nТренер получит уведомление и подтвердит вашу запись. Ожидайте сообщения.`);
             } else {
