@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   const supabase = createClient(url, key);
 
   try {
-    const { sessionId } = await request.json();
+    const { sessionId, status } = await request.json();
 
     if (!sessionId) {
       return NextResponse.json({ error: 'Session ID missing' }, { status: 400 });
@@ -45,12 +45,19 @@ export async function POST(request: Request) {
       const venueInfo = (sessionData.service as any)?.venues;
       const venueText = venueInfo ? `\nПлощадка: <b>${venueInfo.name}</b>${venueInfo.address ? ` (${venueInfo.address})` : ''}` : '';
 
-      const message = `✅ <b>Ваша запись подтверждена!</b>\n\n` +
-        `Тренер: <b>${(sessionData.trainer as any)?.full_name}</b>\n` +
-        `Услуга: <b>${(sessionData.service as any)?.name}</b>${venueText}\n` +
-        `Дата: <b>${dateStr}</b>\n` +
-        `Время: <b>${timeStr}</b>\n\n` +
-        `Ждем вас на тренировке!`;
+      let message = '';
+      if (status === 'completed') {
+        message = `💪 <b>Как прошла тренировка?</b>\n\n` +
+          `Надеемся, вам понравилось занятие с тренером <b>${(sessionData.trainer as any)?.full_name}</b>!\n\n` +
+          `Будем рады вашему отзыву. Также вы уже можете записаться на следующую тренировку через меню бота.`;
+      } else {
+        message = `✅ <b>Ваша запись подтверждена!</b>\n\n` +
+          `Тренер: <b>${(sessionData.trainer as any)?.full_name}</b>\n` +
+          `Услуга: <b>${(sessionData.service as any)?.name}</b>${venueText}\n` +
+          `Дата: <b>${dateStr}</b>\n` +
+          `Время: <b>${timeStr}</b>\n\n` +
+          `Ждем вас на тренировке!`;
+      }
 
       await sendTelegramMessage(clientTelegramId, message);
       return NextResponse.json({ ok: true });
