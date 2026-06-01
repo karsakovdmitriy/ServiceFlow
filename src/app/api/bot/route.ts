@@ -152,6 +152,27 @@ export async function POST(request: Request) {
           return NextResponse.json({ ok: true });
         }
 
+        // Handle Venue Booking
+        if (trainerId.startsWith('v_')) {
+           const venueId = trainerId.replace('v_', '');
+           const { data: venue } = await supabase.from('venues').select('name').eq('id', venueId).single();
+           if (!venue) {
+             await sendTelegramMessage(chat.id, '❌ Площадка не найдена.');
+             return NextResponse.json({ ok: true });
+           }
+
+           const { data: services } = await supabase.from('services').select('id, name, price').eq('venue_id', venueId);
+           const svcButtons = (services || []).map(s => ([{
+             text: `${s.name} — ${s.price} ₽`,
+             callback_data: `svc:${s.id}`
+           }]));
+
+           await sendTelegramMessage(chat.id, `👋 Добро пожаловать в <b>${escapeHtml(venue.name)}</b>!\n\nВыберите услугу для записи:`, {
+             inline_keyboard: svcButtons
+           });
+           return NextResponse.json({ ok: true });
+        }
+
         // Validate UUID format to prevent Supabase error
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         if (!uuidRegex.test(trainerId)) {
@@ -480,6 +501,8 @@ async function getDatesKeyboard(serviceId: string) {
 async function getTimesKeyboard(trainerId: string, serviceId: string, date: string) {
   const supabase = getSupabase();
   const dayOfWeek = new Date(date).getDay();
+
+  // 1. Fetch trainer schedule
   const { data: config } = await supabase.from('schedule_config')
     .select('start_hour, end_hour, is_active')
     .eq('trainer_id', trainerId)
@@ -488,11 +511,35 @@ async function getTimesKeyboard(trainerId: string, serviceId: string, date: stri
 
   if (!config || !config.is_active) return [[{ text: 'В этот день нет записи', callback_data: 'none' }]];
 
-  const start = parseInt(config.start_hour.split(':')[0]);
-  const end = parseInt(config.end_hour.split(':')[0]);
+  let start = parseInt(config.start_hour.split(':')[0]);
+  let end = parseInt(config.end_hour.split(':')[0]);
 
-  // Fetch info about the selected service
-  const { data: service } = await supabase.from('services').select('is_group').eq('id', serviceId).single();
+  // 2. Fetch service info to check venue
+  const { data: service } = await supabase.from('services').select('is_group, venue_id').eq('id', serviceId).single();
+
+  // 3. Intersect with venue schedule if exists
+  if (service?.venue_id) {
+    const { data: venueConfig } = await supabase.from('venue_schedule')
+      .select('start_hour, end_hour, is_active')
+      .eq('venue_id', service.venue_id)
+      .eq('day_of_week', dayOfWeek)
+      .single();
+
+    if (venueConfig) {
+      if (!venueConfig.is_active) return [[{ text: 'Площадка закрыта в этот день', callback_data: 'none' }]];
+
+      const vStart = parseInt(venueConfig.start_hour.split(':')[0]);
+      const vEnd = parseInt(venueConfig.end_hour.split(':')[0]);
+
+      // Tighten the window
+      start = Math.max(start, vStart);
+      end = Math.min(end, vEnd);
+
+      if (start >= end) return [[{ text: 'Нет пересечения времени мастера и площадки', callback_data: 'none' }]];
+    }
+  }
+
+  // Fetch info about the selected service (to get is_group flag)
   const isSelectedGroup = service?.is_group || false;
 
   // Fetch existing sessions and blocks

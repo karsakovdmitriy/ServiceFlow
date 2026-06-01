@@ -10,9 +10,11 @@ CREATE TABLE IF NOT EXISTS trainers (
   specialization TEXT,
   avatar_url TEXT,
   email TEXT UNIQUE NOT NULL,
+  phone TEXT,
   slot_duration INTEGER DEFAULT 60,
   telegram_bot_token TEXT,
   telegram_id TEXT,
+  category TEXT, -- Sport, Beauty, Education, Medicine, etc.
   is_master BOOLEAN DEFAULT TRUE,
   is_client BOOLEAN DEFAULT FALSE,
   is_venue BOOLEAN DEFAULT FALSE,
@@ -39,6 +41,11 @@ CREATE TABLE IF NOT EXISTS venues (
   trainer_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   address TEXT,
+  phone TEXT,
+  email TEXT,
+  telegram_id TEXT,
+  description TEXT,
+  telegram_bot_token TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -49,11 +56,34 @@ DO $$ BEGIN
     CREATE POLICY "Trainers can manage their own venues" ON venues FOR ALL USING (auth.uid() = trainer_id);
 EXCEPTION WHEN others THEN NULL; END $$;
 
+-- Venue Schedule Configuration
+CREATE TABLE IF NOT EXISTS venue_schedule (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  venue_id UUID REFERENCES venues(id) ON DELETE CASCADE,
+  day_of_week INTEGER NOT NULL,
+  is_active BOOLEAN DEFAULT TRUE,
+  start_hour TEXT DEFAULT '09:00',
+  end_hour TEXT DEFAULT '20:00',
+  UNIQUE(venue_id, day_of_week)
+);
+
+ALTER TABLE venue_schedule ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Venue owners can manage their schedule" ON venue_schedule;
+    CREATE POLICY "Venue owners can manage their schedule" ON venue_schedule FOR ALL USING (
+      EXISTS (
+        SELECT 1 FROM venues WHERE id = venue_id AND trainer_id = auth.uid()
+      )
+    );
+EXCEPTION WHEN others THEN NULL; END $$;
+
 -- Services
 CREATE TABLE IF NOT EXISTS services (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   trainer_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
   venue_id UUID REFERENCES venues(id) ON DELETE SET NULL,
+  assigned_trainer_id UUID REFERENCES trainers(id) ON DELETE SET NULL,
   name TEXT NOT NULL,
   duration INTEGER NOT NULL,
   price NUMERIC(10, 2) NOT NULL,
@@ -61,8 +91,9 @@ CREATE TABLE IF NOT EXISTS services (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Add venue_id if table already exists without it
+-- Add new columns if table already exists without them
 ALTER TABLE services ADD COLUMN IF NOT EXISTS venue_id UUID REFERENCES venues(id) ON DELETE SET NULL;
+ALTER TABLE services ADD COLUMN IF NOT EXISTS assigned_trainer_id UUID REFERENCES trainers(id) ON DELETE SET NULL;
 
 ALTER TABLE services ENABLE ROW LEVEL SECURITY;
 
