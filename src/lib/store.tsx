@@ -13,6 +13,7 @@ export interface BlockedSlot { id: string; date: string; startTime: string; endT
 export interface TrainerProfile { full_name: string; specialization: string; avatar_url?: string; email: string; slot_duration: number; telegram_id?: string; }
 export interface Message { id: string; trainer_id: string; client_id: string; sender_type: 'trainer' | 'client'; text: string; read: boolean; created_at: string; }
 export interface Event { id: string; trainer_id: string; type: string; message: string; created_at: string; }
+export interface Review { id: string; rating: number; comment?: string; created_at: string; client_name?: string; }
 
 const DAYS = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
 
@@ -59,6 +60,7 @@ interface StoreContextType {
   services: Service[];
   venues: Venue[];
   events: Event[];
+  reviews: Review[];
   profile: TrainerProfile | null;
   loading: boolean;
   trainerId: string | null;
@@ -97,6 +99,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [services, setServices] = useState<Service[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [profile, setProfile] = useState<TrainerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [trainerId, setTrainerId] = useState<string | null>(null);
@@ -247,6 +250,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
       const { data: eventsData } = await supabase.from('events').select('*').eq('trainer_id', trainerId).order('created_at', { ascending: false }).limit(20);
       if (eventsData) setEvents(eventsData);
+
+      const { data: reviewsData } = await supabase.from('reviews').select('*, clients(full_name)').eq('trainer_id', trainerId).order('created_at', { ascending: false });
+      if (reviewsData) {
+        setReviews(reviewsData.map(r => ({
+          id: r.id,
+          rating: r.rating,
+          comment: r.comment,
+          created_at: r.created_at,
+          client_name: (r.clients as any)?.full_name
+        })));
+      }
 
     } catch (error) {
       console.error('Error:', error);
@@ -555,7 +569,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   };
 
   const value = {
-    sessions, completedSessions, requests, clients, schedule, blocks, services, venues, events, profile,
+    sessions, completedSessions, requests, clients, schedule, blocks, services, venues, events, reviews, profile,
     loading, trainerId, isDemoMode,
     updateProfile, approveRequest: (id: string) => updateSessionStatus(id, 'confirmed'),
     rejectRequest: (id: string, reschedule: boolean = false) => updateSessionStatus(id, 'rejected', reschedule),

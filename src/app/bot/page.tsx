@@ -2,10 +2,14 @@
 
 import React from 'react';
 import { useStore } from '@/lib/store';
-import { IconBrandTelegram, IconCopy, IconChartBar, IconDeviceMobile, IconId } from '@tabler/icons-react';
+import { IconBrandTelegram, IconCopy, IconChartBar, IconDeviceMobile, IconId, IconStarFilled, IconMessage2 } from '@tabler/icons-react';
 
 export default function BotPage() {
-  const { profile, trainerId, isDemoMode } = useStore();
+  const { profile, trainerId, isDemoMode, reviews } = useStore();
+
+  const avgRating = reviews.length > 0
+    ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)
+    : '0.0';
   const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'TrainerSpaceBot';
   const botLink = `https://t.me/${botUsername}?start=${trainerId || 'id'}`;
   const linkTgLink = `https://t.me/${botUsername}?start=link_${trainerId || 'id'}`;
@@ -88,6 +92,16 @@ export default function BotPage() {
                         <div>
                             <div className="text-[18px] font-bold tracking-tight">{profile?.full_name || 'Ваше Имя'}</div>
                             <div className="text-[12px] text-accent font-medium uppercase tracking-wider">{profile?.specialization || 'Специализация'}</div>
+                            <div className="flex items-center gap-2 mt-1">
+                                <div className="flex items-center gap-1 text-yellow-400">
+                                    <IconStarFilled size={12} />
+                                    <span className="text-[12px] font-bold text-white">{avgRating}</span>
+                                </div>
+                                <div className="flex items-center gap-1 text-white/50 text-[11px]">
+                                    <IconMessage2 size={12} />
+                                    <span>{reviews.length} отзывов</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -118,6 +132,32 @@ export default function BotPage() {
                 <button className="mt-4 w-full bg-bg-custom border border-border-light text-t2 text-[12px] font-bold py-2 rounded-lg hover:border-accent hover:text-accent transition-all flex items-center justify-center gap-2">
                     <IconCopy size={16} /> Скачать визитку для печати
                 </button>
+            </div>
+
+            <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Последние отзывы</div>
+            <div className="card mb-6">
+                <div className="space-y-4">
+                    {reviews.length > 0 ? reviews.slice(0, 3).map((review) => (
+                        <div key={review.id} className="pb-3 border-b border-border-light last:border-0 last:pb-0">
+                            <div className="flex items-center justify-between mb-1">
+                                <span className="text-[13px] font-bold text-t1">{review.client_name || 'Клиент'}</span>
+                                <div className="flex items-center gap-0.5 text-yellow-500">
+                                    {[...Array(5)].map((_, i) => (
+                                        <IconStarFilled key={i} size={10} className={i < review.rating ? 'opacity-100' : 'opacity-20'} />
+                                    ))}
+                                </div>
+                            </div>
+                            <p className="text-[12px] text-t2 italic line-clamp-2">
+                                {review.comment || 'Оценка без комментария'}
+                            </p>
+                            <div className="text-[10px] text-t3 mt-1">
+                                {new Date(review.created_at).toLocaleDateString('ru-RU')}
+                            </div>
+                        </div>
+                    )) : (
+                        <div className="text-center py-4 text-t3 text-[13px]">Отзывов пока нет</div>
+                    )}
+                </div>
             </div>
 
             <div className="text-[10.5px] font-semibold text-t3 uppercase tracking-[0.08em] mb-3">Статистика бота</div>

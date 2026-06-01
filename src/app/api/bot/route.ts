@@ -40,27 +40,52 @@ export async function POST(request: Request) {
       const { chat, text, from } = body.message;
       console.log(`Message from ${from.id}: ${text}`);
 
-      // Handle direct messages to trainer
-      if (text && !text.startsWith('/')) {
-         const { data: client } = await supabase.from('clients').select('id, trainer_id, full_name').eq('telegram_id', from.id.toString()).limit(1).single();
+      // Handle direct messages to trainer and Review comments
+      if (text) {
+         const { data: client } = await supabase.from('clients').select('id, trainer_id, full_name, last_bot_state, last_session_id').eq('telegram_id', from.id.toString()).limit(1).single();
+
          if (client) {
-            await supabase.from('messages').insert({
+            if (client.last_bot_state === 'waiting_for_comment' && client.last_session_id) {
+               // This is a review comment
+               await supabase.from('reviews').update({ comment: text }).eq('session_id', client.last_session_id);
+               await supabase.from('clients').update({ last_bot_state: null, last_session_id: null }).eq('id', client.id);
+
+               await sendTelegramMessage(chat.id, '✅ <b>Спасибо за ваш отзыв!</b> Он очень важен для нас.');
+
+               // Log review event
+               await supabase.from('events').insert({
+                 trainer_id: client.trainer_id,
+                 type: 'review',
+                 message: `Получен отзыв от ${client.full_name}`
+               });
+               return NextResponse.json({ ok: true });
+            }
+
+            if (text === '/skip' && client.last_bot_state === 'waiting_for_comment') {
+                await supabase.from('clients').update({ last_bot_state: null, last_session_id: null }).eq('id', client.id);
+                await sendTelegramMessage(chat.id, '👌 Без проблем! Благодарим за оценку.');
+                return NextResponse.json({ ok: true });
+            }
+
+            if (!text.startsWith('/')) {
+                await supabase.from('messages').insert({
+                    trainer_id: client.trainer_id,
+                    client_id: client.id,
+                    sender_type: 'client',
+                    text
+                });
+
+                await supabase.from('events').insert({
                 trainer_id: client.trainer_id,
-                client_id: client.id,
-                sender_type: 'client',
-                text
-            });
+                type: 'message',
+                message: `Новое сообщение от ${client.full_name}`
+                });
 
-            await supabase.from('events').insert({
-              trainer_id: client.trainer_id,
-              type: 'message',
-              message: `Новое сообщение от ${client.full_name}`
-            });
-
-            // Notify trainer about message
-            const { data: trainer } = await supabase.from('trainers').select('telegram_id').eq('id', client.trainer_id).single();
-            if (trainer?.telegram_id) {
-                await sendTelegramMessage(trainer.telegram_id, `💬 <b>Новое сообщение от ${escapeHtml(client.full_name)}:</b>\n\n${escapeHtml(text)}`);
+                // Notify trainer about message
+                const { data: trainer } = await supabase.from('trainers').select('telegram_id').eq('id', client.trainer_id).single();
+                if (trainer?.telegram_id) {
+                    await sendTelegramMessage(trainer.telegram_id, `💬 <b>Новое сообщение от ${escapeHtml(client.full_name)}:</b>\n\n${escapeHtml(text)}`);
+                }
             }
          }
       }
@@ -239,6 +264,41 @@ export async function POST(request: Request) {
            if (sessionData && (sessionData.client as any)?.telegram_id) {
               const message = `❌ <b>Тренер ${(sessionData.trainer as any)?.full_name} отклонил вашу заявку.</b>\n\nНо он предлагает вам выбрать другое время! Пожалуйста, воспользуйтесь меню бота для повторной записи.`;
               await sendTelegramMessage((sessionData.client as any).telegram_id, message);
+           }
+        } else if (action === 'rate_init') {
+           const [sessionId] = params;
+           const { data: session } = await supabase.from('sessions').select('trainer:trainers!trainer_id(full_name)').eq('id', sessionId).single();
+
+           if (session) {
+                await supabase.from('clients').update({ last_bot_state: 'waiting_for_rating', last_session_id: sessionId }).eq('telegram_id', from.id.toString());
+
+                await sendTelegramMessage(chatId, `⭐ Пожалуйста, оцените вашу тренировку с тренером <b>${escapeHtml((session.trainer as any).full_name)}</b>:`, {
+                    inline_keyboard: [
+                        [
+                            { text: '1 ⭐', callback_data: `rate_val:${sessionId}:1` },
+                            { text: '2 ⭐', callback_data: `rate_val:${sessionId}:2` },
+                            { text: '3 ⭐', callback_data: `rate_val:${sessionId}:3` },
+                            { text: '4 ⭐', callback_data: `rate_val:${sessionId}:4` },
+                            { text: '5 ⭐', callback_data: `rate_val:${sessionId}:5` }
+                        ]
+                    ]
+                });
+           }
+        } else if (action === 'rate_val') {
+           const [sessionId, rating] = params;
+           const { data: session } = await supabase.from('sessions').select('trainer_id, client_id').eq('id', sessionId).single();
+
+           if (session) {
+                await supabase.from('reviews').upsert({
+                    trainer_id: session.trainer_id,
+                    client_id: session.client_id,
+                    session_id: sessionId,
+                    rating: parseInt(rating)
+                }, { onConflict: 'session_id' });
+
+                await supabase.from('clients').update({ last_bot_state: 'waiting_for_comment', last_session_id: sessionId }).eq('telegram_id', from.id.toString());
+
+                await sendTelegramMessage(chatId, '⭐ <b>Оценка сохранена!</b>\n\nТеперь вы можете написать текстовый отзыв или отправить /skip, чтобы пропустить этот шаг.');
            }
         } else if (action === 'my_bookings') {
           const [trainerId] = params;
