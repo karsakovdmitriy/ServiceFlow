@@ -23,6 +23,7 @@ export async function POST(request: Request) {
       .from('sessions')
       .select(`
         start_time,
+        trainer_id,
         client:clients!client_id(telegram_id),
         service:services!service_id(name, venues!venue_id(name, address)),
         trainer:trainers!trainer_id(full_name)
@@ -46,10 +47,18 @@ export async function POST(request: Request) {
       const venueText = venueInfo ? `\nПлощадка: <b>${venueInfo.name}</b>${venueInfo.address ? ` (${venueInfo.address})` : ''}` : '';
 
       let message = '';
+      let replyMarkup = undefined;
       if (status === 'completed') {
         message = `💪 <b>Как прошла тренировка?</b>\n\n` +
           `Надеемся, вам понравилось занятие с тренером <b>${(sessionData.trainer as any)?.full_name}</b>!\n\n` +
-          `Будем рады вашему отзыву. Также вы уже можете записаться на следующую тренировку через меню бота.`;
+          `Будем рады вашему отзыву.`;
+
+        replyMarkup = {
+          inline_keyboard: [
+            [{ text: '⭐ Оценить и оставить отзыв', callback_data: `rate_init:${sessionId}` }],
+            [{ text: '🔄 Записаться снова', callback_data: `svc_list:${sessionData.trainer_id}` }]
+          ]
+        };
       } else {
         message = `✅ <b>Ваша запись подтверждена!</b>\n\n` +
           `Тренер: <b>${(sessionData.trainer as any)?.full_name}</b>\n` +
@@ -59,7 +68,7 @@ export async function POST(request: Request) {
           `Ждем вас на тренировке!`;
       }
 
-      await sendTelegramMessage(clientTelegramId, message);
+      await sendTelegramMessage(clientTelegramId, message, replyMarkup);
       return NextResponse.json({ ok: true });
     }
 

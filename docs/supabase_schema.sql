@@ -76,6 +76,8 @@ CREATE TABLE IF NOT EXISTS clients (
   email TEXT,
   telegram_id TEXT,
   is_active BOOLEAN DEFAULT TRUE,
+  last_bot_state TEXT,
+  last_session_id UUID,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(trainer_id, telegram_id)
 );
@@ -194,6 +196,24 @@ ALTER TABLE blocked_slots ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
     DROP POLICY IF EXISTS "Trainers can manage their own blocked slots" ON blocked_slots;
     CREATE POLICY "Trainers can manage their own blocked slots" ON blocked_slots FOR ALL USING (auth.uid() = trainer_id);
+EXCEPTION WHEN others THEN NULL; END $$;
+
+-- Reviews table
+CREATE TABLE IF NOT EXISTS reviews (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  trainer_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
+  client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
+  session_id UUID REFERENCES sessions(id) ON DELETE CASCADE UNIQUE,
+  rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+  comment TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Trainers can view their own reviews" ON reviews;
+    CREATE POLICY "Trainers can view their own reviews" ON reviews FOR SELECT USING (auth.uid() = trainer_id);
 EXCEPTION WHEN others THEN NULL; END $$;
 
 -- Auth Trigger Function
