@@ -5,7 +5,7 @@ import { useStore } from '@/lib/store';
 import { IconDeviceFloppy, IconBuildingStore, IconMail, IconPhone, IconBrandTelegram, IconMapPin, IconInfoCircle, IconShieldCheck, IconCheck, IconDatabase, IconDatabaseOff } from '@tabler/icons-react';
 
 export default function VenueProfile() {
-  const { venues, updateVenue, profile, updateProfile, trainerId, isDemoMode } = useStore();
+  const { venues, addVenue, updateVenue, profile, updateProfile, trainerId, isDemoMode } = useStore();
   const venue = venues[0];
 
   const [formData, setFormData] = useState({
@@ -38,16 +38,21 @@ export default function VenueProfile() {
   const [message, setMessage] = useState('');
 
   const handleSave = async () => {
+    setSaving(true);
+    let result;
     if (venue) {
-      setSaving(true);
-      const { error } = await updateVenue(venue.id, formData) as any;
-      if (error) setMessage('Ошибка');
-      else {
-        setMessage('Сохранено');
-        setTimeout(() => setMessage(''), 3000);
-      }
-      setSaving(false);
+      result = await updateVenue(venue.id, formData);
+    } else {
+      result = await addVenue(formData);
     }
+
+    if (result?.error) {
+      setMessage('Ошибка при сохранении');
+    } else {
+      setMessage('Данные успешно сохранены');
+      setTimeout(() => setMessage(''), 3000);
+    }
+    setSaving(false);
   };
 
   return (
@@ -90,7 +95,16 @@ export default function VenueProfile() {
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Telegram username</label>
+                  <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Email площадки</label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full input-modern bg-bg-custom/50"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Telegram ID / Username</label>
                   <input
                     type="text"
                     value={formData.telegram_id}
@@ -98,6 +112,17 @@ export default function VenueProfile() {
                     className="w-full input-modern bg-bg-custom/50"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2 text-accent">Токен Telegram-бота (для прямых записей)</label>
+                <input
+                  type="password"
+                  value={formData.telegram_bot_token}
+                  onChange={(e) => setFormData({ ...formData, telegram_bot_token: e.target.value })}
+                  className="w-full input-modern bg-bg-custom/50"
+                  placeholder="123456789:ABCDefGhI..."
+                />
               </div>
 
               <div className="space-y-2">
