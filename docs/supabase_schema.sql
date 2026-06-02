@@ -18,8 +18,16 @@ CREATE TABLE IF NOT EXISTS trainers (
   is_master BOOLEAN DEFAULT TRUE,
   is_client BOOLEAN DEFAULT FALSE,
   is_venue BOOLEAN DEFAULT FALSE,
+  onboarding_completed_master BOOLEAN DEFAULT FALSE,
+  onboarding_completed_client BOOLEAN DEFAULT FALSE,
+  onboarding_completed_venue BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Add onboarding columns if table already exists
+ALTER TABLE trainers ADD COLUMN IF NOT EXISTS onboarding_completed_master BOOLEAN DEFAULT FALSE;
+ALTER TABLE trainers ADD COLUMN IF NOT EXISTS onboarding_completed_client BOOLEAN DEFAULT FALSE;
+ALTER TABLE trainers ADD COLUMN IF NOT EXISTS onboarding_completed_venue BOOLEAN DEFAULT FALSE;
 
 -- Enable RLS
 ALTER TABLE trainers ENABLE ROW LEVEL SECURITY;

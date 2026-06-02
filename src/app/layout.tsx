@@ -6,6 +6,7 @@ import { AuthProvider } from "@/components/AuthProvider";
 import LayoutWrapper from "@/components/LayoutWrapper";
 import { StoreProvider } from "@/lib/store";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import OnboardingWizard from "@/components/OnboardingWizard";
 
 export const metadata: Metadata = {
   title: "Окошко — Сервис записи",
@@ -24,6 +25,7 @@ export default function RootLayout({
           <AuthProvider>
             <StoreProvider>
               <LayoutWrapper>
+                <OnboardingWizard />
                 {children}
               </LayoutWrapper>
             </StoreProvider>
