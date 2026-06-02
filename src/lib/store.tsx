@@ -449,9 +449,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return { error: null };
     }
     const { error } = await supabase.from('trainers').update(updated).eq('id', trainerId);
-    if (!error) {
-        logEvent('system', 'Профиль обновлен');
-        fetchData();
+    if (error) {
+      console.error('Update profile error:', error);
+    } else {
+      logEvent('system', 'Профиль обновлен');
+      fetchData();
     }
     return { error };
   };

@@ -25,6 +25,11 @@ CREATE TABLE IF NOT EXISTS trainers (
 );
 
 -- Add onboarding columns if table already exists
+-- Add missing columns if table already exists
+ALTER TABLE trainers ADD COLUMN IF NOT EXISTS category TEXT;
+ALTER TABLE trainers ADD COLUMN IF NOT EXISTS is_master BOOLEAN DEFAULT TRUE;
+ALTER TABLE trainers ADD COLUMN IF NOT EXISTS is_client BOOLEAN DEFAULT FALSE;
+ALTER TABLE trainers ADD COLUMN IF NOT EXISTS is_venue BOOLEAN DEFAULT FALSE;
 ALTER TABLE trainers ADD COLUMN IF NOT EXISTS onboarding_completed_master BOOLEAN DEFAULT FALSE;
 ALTER TABLE trainers ADD COLUMN IF NOT EXISTS onboarding_completed_client BOOLEAN DEFAULT FALSE;
 ALTER TABLE trainers ADD COLUMN IF NOT EXISTS onboarding_completed_venue BOOLEAN DEFAULT FALSE;
