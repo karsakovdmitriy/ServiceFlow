@@ -48,26 +48,10 @@ export default function VenueRequests() {
     return sessions.filter(s => s.name.toLowerCase().includes(search.toLowerCase()));
   }, [sessions, search]);
 
-  const stats = [
-    { label: 'Новые', value: requests.length, color: 'text-accent' },
-    { label: 'Активные', value: sessions.length, color: 'text-green-custom' },
-    { label: 'Завершено', value: completedSessions.length, color: 'text-t3' },
-  ];
-
   return (
-    <div className="animate-fade-up max-w-[1000px] mx-auto space-y-8">
-      {/* Summary Widgets */}
-      <div className="grid grid-cols-3 gap-4">
-        {stats.map((s, i) => (
-          <div key={i} className="bg-surface p-4 rounded-xl border border-border-light shadow-sh-sm">
-            <div className="text-[11px] font-bold text-t3 uppercase tracking-wider mb-1">{s.label}</div>
-            <div className={`text-2xl font-black ${s.color}`}>{s.value}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Tabs & Search */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+    <div className="animate-fade-up max-w-[1000px] mx-auto">
+      {/* Header & Tabs */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-10">
         <div className="flex bg-bg-custom p-1 rounded-xl border border-border">
            <button
              onClick={() => setActiveTab('active')}
@@ -95,10 +79,13 @@ export default function VenueRequests() {
       </div>
 
       {activeTab === 'active' ? (
-        <div className="space-y-10">
+        <div className="space-y-16">
           {/* New Requests Section */}
           <section>
-            <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider mb-4">Новые заявки</h2>
+            <div className="flex items-center gap-4 mb-6">
+              <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider whitespace-nowrap">Новые заявки</h2>
+              <div className="h-px bg-border flex-1"></div>
+            </div>
             <div className="space-y-3">
               {filteredRequests.length === 0 && (
                 <div className="py-12 text-center text-t3 text-[13px] bg-bg-custom rounded-xl border border-dashed border-border">
@@ -120,12 +107,12 @@ export default function VenueRequests() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => setDistributingId(distributingId === req.id ? null : req.id)}
-                        className="bg-accent text-white px-4 py-1.5 rounded-lg text-[12px] font-bold hover:bg-accent-hover transition-all flex items-center gap-1.5"
+                        className="bg-accent text-white px-4 py-1.5 rounded-lg text-[12px] font-bold hover:bg-accent-hover transition-all flex items-center gap-1.5 shadow-lg shadow-accent/10 active:scale-95"
                       >
                         <IconArrowRight size={14} /> Назначить
                       </button>
-                      <button onClick={() => setRejectingId(req.id)} className="p-1.5 text-t3 hover:text-red-custom transition-all">
-                        <IconX size={20} />
+                      <button onClick={() => setRejectingId(req.id)} className="text-red-custom text-[12px] font-bold px-4 py-1.5 rounded-lg hover:bg-red-50 transition-all active:scale-95">
+                        Отклонить
                       </button>
                     </div>
                   </div>
@@ -136,7 +123,7 @@ export default function VenueRequests() {
                         <button
                           key={staff.id}
                           onClick={() => handleAssign(req.id, staff.trainer_id)}
-                          className="px-3 py-2 rounded-lg bg-bg-custom border border-border-light text-[11px] font-bold text-t2 hover:border-accent text-left"
+                          className="px-3 py-2 rounded-lg bg-bg-custom border border-border-light text-[11px] font-bold text-t2 hover:border-accent text-left transition-all"
                         >
                           {staff.trainer_name}
                         </button>
@@ -150,7 +137,10 @@ export default function VenueRequests() {
 
           {/* Active Sessions Section */}
           <section>
-            <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider mb-4">Предстоящие тренировки</h2>
+            <div className="flex items-center gap-4 mb-6">
+              <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider whitespace-nowrap">Предстоящие тренировки</h2>
+              <div className="h-px bg-border flex-1"></div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {filteredSessions.map((session) => (
                 <div key={session.id} className="group flex items-center justify-between p-4 rounded-xl bg-surface border border-border-light hover:shadow-sh-sm transition-all gap-4">

@@ -219,7 +219,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         const { data: venuesData } = await supabase.from('venues').select('*').eq('trainer_id', trainerId).order('name');
         if (venuesData) setVenues(venuesData);
 
-        const { data: servicesData } = await supabase.from('services').select('*, venues!venue_id(id, name, address)').eq('trainer_id', trainerId).order('name');
+        const { data: servicesData } = await supabase.from('services')
+          .select('*, venues!venue_id(id, name, address)')
+          .or(`trainer_id.eq.${trainerId},assigned_trainer_id.eq.${trainerId}`)
+          .order('name');
         if (servicesData) {
           setServices(servicesData.map(s => ({
             ...s,
@@ -608,7 +611,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const updateService = async (id: string, service: Partial<Service>) => {
     const { venue: _unused, ...rest } = service;
-    console.log(_unused); // Keep it to avoid unused var if needed, or just omit
     if (isDemoMode) {
       const venue = rest.venue_id ? venues.find(v => v.id === rest.venue_id) : undefined;
       const newServices = services.map(s => s.id === id ? { ...s, ...rest, venue } : s);
@@ -735,15 +737,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const addPartnership = async (partnerEmail: string) => {
+  const addPartnership = async (partnerSearch: string) => {
     if (isDemoMode) {
-      const newP: Partnership = { id: Math.random().toString(), user_id: trainerId!, partner_id: 'demo-partner', status: 'pending', partner_name: partnerEmail };
+      const newP: Partnership = { id: Math.random().toString(), user_id: trainerId!, partner_id: 'demo-partner', status: 'pending', partner_name: partnerSearch };
       const updated = [...partners, newP];
       setPartners(updated);
       saveDemoData({ partners: updated });
       return;
     }
-    const { data: partner } = await supabase.from('trainers').select('id').eq('email', partnerEmail).single();
+    const { data: partner } = await supabase.from('trainers')
+      .select('id')
+      .or(`email.eq.${partnerSearch},telegram_id.eq.${partnerSearch},phone.eq.${partnerSearch}`)
+      .maybeSingle();
+
     if (partner) {
       await supabase.from('partnerships').insert({ user_id: trainerId, partner_id: partner.id });
       fetchData();
@@ -761,15 +767,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     fetchData();
   };
 
-  const addVenueStaff = async (venueId: string, trainerEmail: string) => {
+  const addVenueStaff = async (venueId: string, trainerSearch: string) => {
     if (isDemoMode) {
-      const newS: VenueStaff = { id: Math.random().toString(), venue_id: venueId, trainer_id: 'demo-staff', trainer_name: trainerEmail };
+      const newS: VenueStaff = { id: Math.random().toString(), venue_id: venueId, trainer_id: 'demo-staff', trainer_name: trainerSearch };
       const updated = [...venueStaff, newS];
       setVenueStaff(updated);
       saveDemoData({ venueStaff: updated });
       return;
     }
-    const { data: trainer } = await supabase.from('trainers').select('id').eq('email', trainerEmail).single();
+    const { data: trainer } = await supabase.from('trainers')
+      .select('id')
+      .or(`email.eq.${trainerSearch},telegram_id.eq.${trainerSearch},phone.eq.${trainerSearch}`)
+      .maybeSingle();
+
     if (trainer) {
       await supabase.from('venue_staff').insert({ venue_id: venueId, trainer_id: trainer.id });
       fetchData();
