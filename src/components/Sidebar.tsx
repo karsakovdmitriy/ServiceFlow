@@ -16,6 +16,7 @@ import {
   IconWindow,
   IconStar,
   IconCircleCheck,
+  IconLogout,
   IconChevronDown,
   IconUser,
   IconBuildingStore,
@@ -23,10 +24,12 @@ import {
   IconSearch
 } from '@tabler/icons-react';
 import { useStore } from '@/lib/store';
+import { useAuth } from './AuthProvider';
 
 const Sidebar = () => {
   const pathname = usePathname();
   const router = useRouter();
+  const { signOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const { profile, requests, activeRole, switchActiveRole } = useStore();
@@ -181,14 +184,22 @@ const Sidebar = () => {
         })}
       </nav>
 
-      <div className="p-4 m-4 bg-bg-custom border border-border-light rounded-xl flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-[11px] font-bold text-accent shrink-0 border border-accent/20">
-          {initials}
+      <div className="p-4 m-4 bg-bg-custom border border-border-light rounded-xl flex flex-col gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-[11px] font-bold text-accent shrink-0 border border-accent/20">
+            {initials}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[13px] font-semibold text-t1 truncate">{profile?.full_name?.split(' ')[0] || 'Загрузка...'}</div>
+            <div className="text-[11px] text-t3 truncate">{profile?.specialization || 'Профиль'}</div>
+          </div>
         </div>
-        <div className="min-w-0">
-          <div className="text-[13px] font-semibold text-t1 truncate">{profile?.full_name?.split(' ')[0] || 'Загрузка...'}</div>
-          <div className="text-[11px] text-t3 truncate">{profile?.specialization || 'Профиль'}</div>
-        </div>
+        <button
+          onClick={signOut}
+          className="w-full flex items-center justify-center gap-2 py-2 text-[12px] font-bold text-red-custom bg-white/50 border border-red-500/10 rounded-lg hover:bg-red-50 transition-all active:scale-95"
+        >
+          <IconLogout size={14} /> Выйти
+        </button>
       </div>
     </>
   );
