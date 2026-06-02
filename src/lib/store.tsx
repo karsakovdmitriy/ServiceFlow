@@ -24,6 +24,9 @@ export interface TrainerProfile {
   is_master: boolean;
   is_client: boolean;
   is_venue: boolean;
+  onboarding_completed_master: boolean;
+  onboarding_completed_client: boolean;
+  onboarding_completed_venue: boolean;
 }
 export interface Message { id: string; trainer_id: string; client_id: string; sender_type: 'trainer' | 'client'; text: string; read: boolean; created_at: string; }
 export interface Event { id: string; trainer_id: string; type: string; message: string; read: boolean; created_at: string; }
@@ -84,7 +87,7 @@ interface StoreContextType {
   isDemoMode: boolean;
   switchActiveRole: (role: 'master' | 'client' | 'venue') => void;
   updateProfile: (updated: Partial<TrainerProfile>) => Promise<{ error: any }>;
-  approveRequest: (id: string) => Promise<void>;
+  approveRequest: (id: string, trainerId?: string) => Promise<void>;
   rejectRequest: (id: string, reschedule?: boolean) => Promise<void>;
   sendMessage: (clientId: string, text: string) => Promise<void>;
   getMessages: (clientId: string) => Promise<Message[]>;
@@ -184,7 +187,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setServices(data.services || MOCK_SERVICES);
       setVenues(data.venues || MOCK_VENUES);
       setEvents(data.events || []);
-      setProfile(data.profile || { full_name: 'Алексей (Демо)', specialization: 'Тренер', email: 'demo@example.com', slot_duration: 60, is_master: true, is_client: true, is_venue: true });
+      setProfile(data.profile || {
+        full_name: 'Алексей (Демо)', specialization: 'Тренер', email: 'demo@example.com', slot_duration: 60,
+        is_master: true, is_client: true, is_venue: true,
+        onboarding_completed_master: false, onboarding_completed_client: false, onboarding_completed_venue: false
+      });
       setActiveRole(data.activeRole || 'master');
       setPartners(data.partners || []);
       setVenueStaff(data.venueStaff || []);
@@ -194,7 +201,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setSchedule(MOCK_SCHEDULE);
       setServices(MOCK_SERVICES);
       setVenues(MOCK_VENUES);
-      setProfile({ full_name: 'Алексей (Демо)', specialization: 'Тренер', email: 'demo@example.com', slot_duration: 60, is_master: true, is_client: true, is_venue: true });
+      setProfile({
+        full_name: 'Алексей (Демо)', specialization: 'Тренер', email: 'demo@example.com', slot_duration: 60,
+        is_master: true, is_client: true, is_venue: true,
+        onboarding_completed_master: false, onboarding_completed_client: false, onboarding_completed_venue: false
+      });
       setActiveRole('master');
     }
     setLoading(false);
@@ -213,7 +224,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       const { data: profileData } = await supabase.from('trainers').select('*').eq('id', trainerId).maybeSingle();
-      if (profileData) setProfile(profileData);
+      if (profileData) {
+        setProfile(profileData);
+        // Ensure activeRole is one of the enabled roles
+        if (role === 'master' && !profileData.is_master) {
+          if (profileData.is_client) { setActiveRole('client'); return fetchData('client'); }
+          if (profileData.is_venue) { setActiveRole('venue'); return fetchData('venue'); }
+        } else if (role === 'client' && !profileData.is_client) {
+          if (profileData.is_master) { setActiveRole('master'); return fetchData('master'); }
+          if (profileData.is_venue) { setActiveRole('venue'); return fetchData('venue'); }
+        } else if (role === 'venue' && !profileData.is_venue) {
+          if (profileData.is_master) { setActiveRole('master'); return fetchData('master'); }
+          if (profileData.is_client) { setActiveRole('client'); return fetchData('client'); }
+        }
+      }
 
       if (role === 'master') {
         const { data: venuesData } = await supabase.from('venues').select('*').eq('trainer_id', trainerId).order('name');
@@ -432,7 +456,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
-  const updateSessionStatus = async (id: string, status: string, reschedule: boolean = false) => {
+  const updateSessionStatus = async (id: string, status: string, reschedule: boolean = false, assignedTrainerId?: string) => {
     if (isDemoMode) {
         const all = [...sessions, ...requests, ...completedSessions];
         const session = all.find(s => s.id === id);
@@ -443,6 +467,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             const newCompleted = completedSessions.filter(s => s.id !== id);
             if (status === 'pending') newRequests.push(updated);
             else if (status === 'confirmed') {
+                if (assignedTrainerId) updated.name = `(Назначен) ${session.name}`;
                 newSessions.push(updated);
                 logEvent('booking', `Запись ${session.name} подтверждена`);
             }
@@ -461,7 +486,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const { data: currentSession } = await supabase.from('sessions').select('client:clients!client_id(full_name)').eq('id', id).single();
     const clientName = (currentSession?.client as any)?.full_name || 'Клиент';
 
-    const { error } = await supabase.from('sessions').update({ status }).eq('id', id);
+    const updateData: any = { status };
+    if (assignedTrainerId) updateData.trainer_id = assignedTrainerId;
+
+    const { error } = await supabase.from('sessions').update(updateData).eq('id', id);
 
     if (!error) {
         if (status === 'confirmed') logEvent('booking', `Запись ${clientName} подтверждена`);
@@ -823,7 +851,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     activeRole, partners, venueStaff,
     loading, trainerId, isDemoMode,
     switchActiveRole,
-    updateProfile, approveRequest: (id: string) => updateSessionStatus(id, 'confirmed'),
+    updateProfile, approveRequest: (id: string, trId?: string) => updateSessionStatus(id, 'confirmed', false, trId),
     rejectRequest: (id: string, reschedule: boolean = false) => updateSessionStatus(id, 'rejected', reschedule),
     sendMessage, getMessages, logEvent, markEventsAsRead,
     cancelSession: (id: string) => updateSessionStatus(id, 'cancelled'),

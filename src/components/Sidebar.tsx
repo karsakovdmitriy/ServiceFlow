@@ -32,7 +32,7 @@ const Sidebar = () => {
   const { signOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
-  const { profile, requests, activeRole, switchActiveRole } = useStore();
+  const { profile, requests, activeRole, switchActiveRole, updateProfile } = useStore();
 
   const getNavItems = () => {
     if (activeRole === 'client') {
@@ -124,20 +124,43 @@ const Sidebar = () => {
 
           {roleMenuOpen && (
             <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border-light rounded-xl shadow-xl z-50 overflow-hidden animate-fade-up">
-              {(['master', 'client', 'venue'] as const).map((role) => (
-                <button
-                  key={role}
-                  onClick={() => {
-                    switchActiveRole(role);
-                    setRoleMenuOpen(false);
-                    router.push('/');
-                  }}
-                  className={`w-full flex items-center gap-2 px-4 py-3 text-[13px] font-medium transition-all hover:bg-bg-custom ${activeRole === role ? 'text-accent bg-accent/5' : 'text-t2'}`}
-                >
-                  {roleLabels[role].icon}
-                  {roleLabels[role].label}
-                </button>
-              ))}
+              {(['master', 'client', 'venue'] as const).map((role) => {
+                const isEnabled = profile?.[`is_${role}` as keyof typeof profile];
+                if (!isEnabled) return null;
+                return (
+                  <button
+                    key={role}
+                    onClick={() => {
+                      switchActiveRole(role);
+                      setRoleMenuOpen(false);
+                      router.push('/');
+                    }}
+                    className={`w-full flex items-center gap-2 px-4 py-3 text-[13px] font-medium transition-all hover:bg-bg-custom ${activeRole === role ? 'text-accent bg-accent/5' : 'text-t2'}`}
+                  >
+                    {roleLabels[role].icon}
+                    {roleLabels[role].label}
+                  </button>
+                );
+              })}
+              <div className="border-t border-border-light bg-slate-50/50 p-2">
+                <div className="text-[10px] font-bold text-t3 uppercase px-2 mb-1">Добавить роль</div>
+                {(['master', 'client', 'venue'] as const).map((role) => {
+                  const isEnabled = profile?.[`is_${role}` as keyof typeof profile];
+                  if (isEnabled) return null;
+                  return (
+                    <button
+                      key={role}
+                      onClick={async () => {
+                        await updateProfile({ [`is_${role}`]: true });
+                        setRoleMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 text-[11px] font-bold text-t2 hover:text-accent transition-colors"
+                    >
+                      + {roleLabels[role].label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

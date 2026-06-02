@@ -36,7 +36,7 @@ export default function VenueRequests() {
   };
 
   const handleAssign = (requestId: string, trainerId: string) => {
-    approveRequest(requestId);
+    approveRequest(requestId, trainerId);
     setDistributingId(null);
   };
 
