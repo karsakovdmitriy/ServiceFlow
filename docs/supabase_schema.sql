@@ -254,10 +254,14 @@ CREATE TABLE IF NOT EXISTS reviews (
   trainer_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
   client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
   session_id UUID REFERENCES sessions(id) ON DELETE CASCADE UNIQUE,
+  venue_id UUID REFERENCES venues(id) ON DELETE SET NULL,
   rating INTEGER CHECK (rating >= 1 AND rating <= 5),
   comment TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Add venue_id if table exists
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS venue_id UUID REFERENCES venues(id) ON DELETE SET NULL;
 
 ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 
