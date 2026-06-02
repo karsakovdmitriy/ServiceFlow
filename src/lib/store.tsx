@@ -189,7 +189,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setEvents(data.events || []);
       setProfile(data.profile || {
         full_name: 'Алексей (Демо)', specialization: 'Тренер', email: 'demo@example.com', slot_duration: 60,
-        is_master: true, is_client: true, is_venue: true,
+        is_master: false, is_client: false, is_venue: false,
         onboarding_completed_master: false, onboarding_completed_client: false, onboarding_completed_venue: false
       });
       setActiveRole(data.activeRole || 'master');
@@ -203,7 +203,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setVenues(MOCK_VENUES);
       setProfile({
         full_name: 'Алексей (Демо)', specialization: 'Тренер', email: 'demo@example.com', slot_duration: 60,
-        is_master: true, is_client: true, is_venue: true,
+        is_master: false, is_client: false, is_venue: false,
         onboarding_completed_master: false, onboarding_completed_client: false, onboarding_completed_venue: false
       });
       setActiveRole('master');
@@ -449,9 +449,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return { error: null };
     }
     const { error } = await supabase.from('trainers').update(updated).eq('id', trainerId);
-    if (!error) {
-        logEvent('system', 'Профиль обновлен');
-        fetchData();
+    if (error) {
+      console.error('Update profile error:', error);
+    } else {
+      logEvent('system', 'Профиль обновлен');
+      fetchData();
     }
     return { error };
   };

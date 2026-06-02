@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS trainers (
   telegram_bot_token TEXT,
   telegram_id TEXT,
   category TEXT, -- Sport, Beauty, Education, Medicine, etc.
-  is_master BOOLEAN DEFAULT TRUE,
+  is_master BOOLEAN DEFAULT FALSE,
   is_client BOOLEAN DEFAULT FALSE,
   is_venue BOOLEAN DEFAULT FALSE,
   onboarding_completed_master BOOLEAN DEFAULT FALSE,
@@ -25,6 +25,11 @@ CREATE TABLE IF NOT EXISTS trainers (
 );
 
 -- Add onboarding columns if table already exists
+-- Add missing columns if table already exists
+ALTER TABLE trainers ADD COLUMN IF NOT EXISTS category TEXT;
+ALTER TABLE trainers ADD COLUMN IF NOT EXISTS is_master BOOLEAN DEFAULT TRUE;
+ALTER TABLE trainers ADD COLUMN IF NOT EXISTS is_client BOOLEAN DEFAULT FALSE;
+ALTER TABLE trainers ADD COLUMN IF NOT EXISTS is_venue BOOLEAN DEFAULT FALSE;
 ALTER TABLE trainers ADD COLUMN IF NOT EXISTS onboarding_completed_master BOOLEAN DEFAULT FALSE;
 ALTER TABLE trainers ADD COLUMN IF NOT EXISTS onboarding_completed_client BOOLEAN DEFAULT FALSE;
 ALTER TABLE trainers ADD COLUMN IF NOT EXISTS onboarding_completed_venue BOOLEAN DEFAULT FALSE;
@@ -307,8 +312,8 @@ EXCEPTION WHEN others THEN NULL; END $$;
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.trainers (id, full_name, email)
-  VALUES (new.id, COALESCE(new.raw_user_meta_data->>'full_name', 'Новый тренер'), new.email)
+  INSERT INTO public.trainers (id, full_name, email, is_master)
+  VALUES (new.id, COALESCE(new.raw_user_meta_data->>'full_name', 'Новый тренер'), new.email, false)
   ON CONFLICT (id) DO NOTHING;
 
   INSERT INTO public.schedule_config (trainer_id, day_of_week, start_hour, end_hour, is_active)

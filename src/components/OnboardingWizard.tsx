@@ -30,10 +30,13 @@ export default function OnboardingWizard() {
   if (loading || !profile || isCompleted) return null;
 
   const handleComplete = async () => {
-    await updateProfile({
+    const { error } = await updateProfile({
       ...formData,
       [onboardingField]: true
     });
+    if (error) {
+      alert('Ошибка при сохранении профиля. Пожалуйста, попробуйте еще раз или проверьте консоль.');
+    }
   };
 
   const renderMasterWizard = () => (
