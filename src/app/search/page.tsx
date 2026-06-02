@@ -60,31 +60,37 @@ export default function SearchMasters() {
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         {filtered.map((r, i) => (
-          <div key={i} className="bg-surface p-5 rounded-2xl border border-border-light shadow-sh-sm hover:border-accent/30 transition-all cursor-pointer group">
+          <div key={i} className="bg-surface p-4 sm:p-5 rounded-2xl border border-border-light shadow-sh-sm hover:border-accent/30 transition-all cursor-pointer group">
             <div className="flex gap-4">
-              <div className="w-14 h-14 rounded-full bg-accent/5 flex items-center justify-center text-accent shrink-0 border border-accent/10">
-                <IconUser size={28} />
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-accent/5 flex items-center justify-center text-accent shrink-0 border border-accent/10">
+                <IconUser size={24} className="sm:hidden" />
+                <IconUser size={28} className="hidden sm:block" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <div className="text-[16px] font-bold text-t1 truncate">{r.name}</div>
-                  <div className="flex items-center gap-1 text-yellow-500 text-[13px] font-bold">
-                    <IconStar size={14} fill="currentColor" /> {r.rating}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-[15px] sm:text-[16px] font-bold text-t1 truncate">{r.name}</div>
+                  <div className="flex items-center gap-1 text-yellow-500 text-[12px] sm:text-[13px] font-bold shrink-0">
+                    <IconStar size={14} fill="currentColor" /> {r.rating.toFixed(1)}
                   </div>
                 </div>
-                <div className="text-[13px] text-t2 mt-0.5">{r.spec}</div>
-                <div className="flex items-center gap-1 text-[12px] text-t3 mt-3">
+                <div className="text-[12px] sm:text-[13px] text-t2 mt-0.5 truncate">{r.spec}</div>
+                <div className="flex items-center gap-1 text-[11px] sm:text-[12px] text-t3 mt-2 sm:mt-3">
                   <IconMapPin size={14} /> {r.location}
                 </div>
               </div>
             </div>
-            <button className="w-full mt-4 py-2 bg-bg-custom text-accent text-[13px] font-bold rounded-xl group-hover:bg-accent group-hover:text-white transition-all">
+            <button className="w-full mt-4 py-2.5 bg-bg-custom text-accent text-[13px] font-bold rounded-xl group-hover:bg-accent group-hover:text-white transition-all shadow-sm">
               Профиль и запись
             </button>
           </div>
         ))}
+        {filtered.length === 0 && (
+          <div className="col-span-full py-20 text-center text-t3 text-[14px] italic bg-bg-custom/30 rounded-3xl border border-dashed border-border">
+            Мастера не найдены
+          </div>
+        )}
       </div>
     </div>
   );

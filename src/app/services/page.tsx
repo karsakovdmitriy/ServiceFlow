@@ -74,7 +74,8 @@ export default function ServicesPage() {
         </button>
       </div>
 
-      <div className="bg-surface rounded-3xl border border-border overflow-hidden shadow-sh-sm">
+      {/* Services List - Desktop Table */}
+      <div className="hidden md:block bg-surface rounded-3xl border border-border overflow-hidden shadow-sh-sm">
         <table className="w-full text-left border-collapse">
             <thead>
                 <tr className="bg-bg-custom border-b border-border">
@@ -129,12 +130,53 @@ export default function ServicesPage() {
                 ))}
             </tbody>
         </table>
+      </div>
+
+      {/* Services List - Mobile Cards */}
+      <div className="md:hidden space-y-4">
+        {services.map(service => (
+          <div key={service.id} className="bg-surface p-5 rounded-2xl border border-border shadow-sh-sm space-y-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <div className="text-[15px] font-bold text-t1">{service.name}</div>
+                {service.venue && (
+                  <div className="text-[11px] text-t3 mt-1 flex items-center gap-1">
+                    <IconMapPin size={12} stroke={2} /> {service.venue.name}
+                  </div>
+                )}
+              </div>
+              <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${service.is_group ? 'bg-blue-custom/10 text-blue-custom' : 'bg-bg-custom text-t3 border border-border'}`}>
+                {service.is_group ? 'Групповая' : 'Индивид.'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-[13px]">
+              <div className="flex items-center gap-4">
+                <span className="text-t2 font-medium">{service.duration} мин</span>
+                <span className="text-t1 font-bold">{service.price} ₽</span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => startEdit(service)}
+                  className="w-8 h-8 flex items-center justify-center bg-bg-custom text-t3 rounded-lg hover:text-accent"
+                >
+                  <IconEdit size={16} />
+                </button>
+                <button
+                  onClick={() => removeService(service.id)}
+                  className="w-8 h-8 flex items-center justify-center bg-bg-custom text-t3 rounded-lg hover:text-red-custom"
+                >
+                  <IconTrash size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
         {services.length === 0 && (
             <div className="py-20 text-center text-t3 text-[13px] font-medium italic">
                 Услуги еще не добавлены
             </div>
         )}
-      </div>
 
       <div className="flex items-center justify-between mt-20 mb-10">
         <h1 className="text-[14px] font-bold text-t1 uppercase tracking-wider">Площадки</h1>
@@ -146,7 +188,8 @@ export default function ServicesPage() {
         </button>
       </div>
 
-      <div className="bg-surface rounded-3xl border border-border overflow-hidden shadow-sh-sm">
+      {/* Venues List - Desktop Table */}
+      <div className="hidden md:block bg-surface rounded-3xl border border-border overflow-hidden shadow-sh-sm">
         <table className="w-full text-left border-collapse">
             <thead>
                 <tr className="bg-bg-custom border-b border-border">
@@ -184,12 +227,42 @@ export default function ServicesPage() {
                 ))}
             </tbody>
         </table>
+      </div>
+
+      {/* Venues List - Mobile Cards */}
+      <div className="md:hidden space-y-4">
+        {venues.map(venue => (
+          <div key={venue.id} className="bg-surface p-5 rounded-2xl border border-border shadow-sh-sm space-y-3">
+            <div className="flex justify-between items-start">
+              <div>
+                <div className="text-[15px] font-bold text-t1">{venue.name}</div>
+                <div className="text-[12px] text-t3 mt-1 flex items-center gap-1">
+                  <IconMapPin size={12} stroke={2} /> {venue.address || 'Адрес не указан'}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setEditingVenueId(venue.id); setEditVenueData(venue); }}
+                  className="w-8 h-8 flex items-center justify-center bg-bg-custom text-t3 rounded-lg"
+                >
+                  <IconEdit size={16} />
+                </button>
+                <button
+                  onClick={() => removeVenue(venue.id)}
+                  className="w-8 h-8 flex items-center justify-center bg-bg-custom text-t3 rounded-lg"
+                >
+                  <IconTrash size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
         {venues.length === 0 && (
             <div className="py-20 text-center text-t3 text-[13px] font-medium italic">
                 Площадки еще не добавлены
             </div>
         )}
-      </div>
 
       {/* Add/Edit Service Modal */}
       {(isAdding || editingId) && (

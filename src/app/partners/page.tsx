@@ -22,19 +22,19 @@ export default function PartnersPage() {
       <p className="text-t2 text-[14px]">Добавляйте друзей, чтобы вместе записываться на групповые занятия и следить за прогрессом друг друга.</p>
 
       <section className="bg-surface p-6 rounded-xl border border-border-light shadow-sh-sm">
-        <h2 className="text-sm font-bold text-t1 uppercase tracking-wider mb-4">Пригласить партнера</h2>
-        <form onSubmit={handleInvite} className="flex gap-3">
+        <h2 className="text-sm font-bold text-t1 uppercase tracking-wider mb-4 text-center sm:text-left">Пригласить партнера</h2>
+        <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-3">
           <input
             type="text"
             placeholder="Email, Telegram или телефон"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="flex-1 px-4 py-2 bg-bg-custom border border-border-light rounded-xl text-[14px] focus:outline-none focus:ring-2 focus:ring-accent/20"
+            className="flex-1 px-4 py-2.5 bg-bg-custom border border-border-light rounded-xl text-[14px] focus:outline-none focus:ring-2 focus:ring-accent/20"
             required
           />
           <button
             type="submit"
-            className="px-6 py-2 bg-accent text-white rounded-xl text-[14px] font-bold hover:bg-accent-hover transition-all flex items-center gap-2"
+            className="px-6 py-2.5 bg-accent text-white rounded-xl text-[14px] font-bold hover:bg-accent-hover transition-all flex items-center justify-center gap-2 shadow-lg shadow-accent/10"
           >
             <IconUserPlus size={18} />
             Пригласить

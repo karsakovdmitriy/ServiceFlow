@@ -49,7 +49,8 @@ export default function VenueServices() {
         </button>
       </div>
 
-      <div className="bg-surface rounded-3xl border border-border overflow-hidden shadow-sh-sm">
+      {/* Services List - Desktop Table */}
+      <div className="hidden md:block bg-surface rounded-3xl border border-border overflow-hidden shadow-sh-sm">
         <table className="w-full text-left border-collapse">
             <thead>
                 <tr className="bg-bg-custom border-b border-border">
@@ -86,10 +87,38 @@ export default function VenueServices() {
                 })}
             </tbody>
         </table>
-        {venueServices.length === 0 && (
-            <div className="py-20 text-center text-t3 text-[13px] font-medium italic">Услуги на этой площадке еще не добавлены</div>
-        )}
       </div>
+
+      {/* Services List - Mobile Cards */}
+      <div className="md:hidden space-y-4">
+        {venueServices.map(service => {
+          const assignedStaff = venueStaff.find(st => st.trainer_id === (service as any).assigned_trainer_id);
+          return (
+            <div key={service.id} className="bg-surface p-5 rounded-2xl border border-border shadow-sh-sm space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="min-w-0">
+                  <div className="text-[15px] font-bold text-t1 truncate">{service.name}</div>
+                  <div className="text-[12px] text-t3 mt-1 font-medium flex items-center gap-1.5">
+                    <div className="w-4 h-4 rounded-full bg-accent/10 flex items-center justify-center text-[8px] font-black text-accent">M</div>
+                    {assignedStaff ? assignedStaff.trainer_name : 'Любой мастер'}
+                  </div>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button onClick={() => startEdit(service)} className="w-8 h-8 flex items-center justify-center bg-bg-custom text-t3 rounded-lg"><IconEdit size={16} /></button>
+                  <button onClick={() => removeService(service.id)} className="w-8 h-8 flex items-center justify-center bg-bg-custom text-t3 rounded-lg"><IconTrash size={16} /></button>
+                </div>
+              </div>
+              <div className="pt-3 border-t border-border-light flex items-center justify-between text-[13px]">
+                 <span className="text-t2 font-medium">{service.duration} мин</span>
+                 <span className="text-t1 font-bold">{service.price} ₽</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {venueServices.length === 0 && (
+          <div className="py-20 text-center text-t3 text-[13px] font-medium italic bg-bg-custom/30 rounded-3xl border border-dashed border-border">Услуги на этой площадке еще не добавлены</div>
+      )}
 
       {/* Add/Edit Modal */}
       {(isAdding || editingId) && (
