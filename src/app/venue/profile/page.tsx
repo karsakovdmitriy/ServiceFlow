@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useStore } from '@/lib/store';
-import { IconDeviceFloppy, IconBuildingStore, IconMail, IconPhone, IconBrandTelegram, IconMapPin, IconInfoCircle } from '@tabler/icons-react';
+import { IconDeviceFloppy, IconBuildingStore, IconMail, IconPhone, IconBrandTelegram, IconMapPin, IconInfoCircle, IconShieldCheck, IconCheck } from '@tabler/icons-react';
 
 export default function VenueProfile() {
-  const { venues, updateVenue } = useStore();
+  const { venues, updateVenue, profile, updateProfile } = useStore();
   const venue = venues[0];
 
   const [formData, setFormData] = useState({
@@ -125,6 +125,36 @@ export default function VenueProfile() {
         </div>
 
         <div className="lg:col-span-4 space-y-10">
+          <section className="p-6 rounded-3xl bg-surface border border-border shadow-sh-sm">
+             <div className="flex items-center gap-3 text-accent mb-4">
+                <IconShieldCheck size={20} stroke={1.5} />
+                <h4 className="text-[13px] font-bold uppercase tracking-wider">Мои роли</h4>
+             </div>
+             <div className="space-y-3">
+                {[
+                  { id: 'is_master', label: 'Мастер' },
+                  { id: 'is_client', label: 'Клиент' },
+                  { id: 'is_venue', label: 'Площадка' }
+                ].map(role => {
+                  const active = profile?.[role.id as keyof typeof profile];
+                  return (
+                    <button
+                      key={role.id}
+                      onClick={() => updateProfile({ [role.id]: !active })}
+                      className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border text-[13px] font-bold transition-all ${
+                        active ? 'bg-accent/5 border-accent text-accent' : 'bg-bg-custom border-border text-t3 opacity-60'
+                      }`}
+                    >
+                      {role.label}
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${active ? 'bg-accent border-accent text-white' : 'border-t3'}`}>
+                        {active && <IconCheck size={10} stroke={3} />}
+                      </div>
+                    </button>
+                  );
+                })}
+             </div>
+          </section>
+
           <section className="p-6 rounded-3xl bg-surface border border-border shadow-sh-sm">
              <h4 className="text-[13px] font-bold uppercase tracking-wider text-t1 mb-4">Информация</h4>
              <p className="text-[12px] text-t2 leading-relaxed font-medium">
