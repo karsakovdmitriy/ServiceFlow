@@ -142,25 +142,6 @@ const Sidebar = () => {
                   </button>
                 );
               })}
-              <div className="border-t border-border-light bg-slate-50/50 p-2">
-                <div className="text-[10px] font-bold text-t3 uppercase px-2 mb-1">Добавить роль</div>
-                {(['master', 'client', 'venue'] as const).map((role) => {
-                  const isEnabled = profile?.[`is_${role}` as keyof typeof profile];
-                  if (isEnabled) return null;
-                  return (
-                    <button
-                      key={role}
-                      onClick={async () => {
-                        await updateProfile({ [`is_${role}`]: true });
-                        setRoleMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-2 px-2 py-1.5 text-[11px] font-bold text-t2 hover:text-accent transition-colors"
-                    >
-                      + {roleLabels[role].label}
-                    </button>
-                  );
-                })}
-              </div>
             </div>
           )}
         </div>
