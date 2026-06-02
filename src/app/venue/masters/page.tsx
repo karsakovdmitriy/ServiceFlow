@@ -48,7 +48,8 @@ export default function VenueMasters() {
         </form>
       </section>
 
-      <div className="bg-surface rounded-xl border border-border-light shadow-sh-sm overflow-hidden">
+      {/* Masters List - Desktop Table */}
+      <div className="hidden md:block bg-surface rounded-xl border border-border-light shadow-sh-sm overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-bg-custom border-bottom border-border-light">
@@ -93,6 +94,37 @@ export default function VenueMasters() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Masters List - Mobile Cards */}
+      <div className="md:hidden space-y-4">
+        {venueStaff.length === 0 && (
+           <div className="py-12 text-center text-t3 text-[13px] italic bg-bg-custom/30 rounded-2xl border border-dashed border-border">
+              Мастера еще не добавлены
+           </div>
+        )}
+        {venueStaff.map((staff) => (
+          <div key={staff.id} className="bg-surface p-5 rounded-2xl border border-border-light shadow-sh-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-[12px] font-bold text-accent shrink-0">
+                  {(staff.trainer_name || 'М').slice(0, 2).toUpperCase()}
+                </div>
+                <div className="text-[15px] font-bold text-t1">{staff.trainer_name}</div>
+              </div>
+              <button
+                onClick={() => removeVenueStaff(staff.id)}
+                className="w-9 h-9 flex items-center justify-center bg-bg-custom text-t3 rounded-xl active:bg-red-50 active:text-red-custom transition-all"
+              >
+                <IconTrash size={18} />
+              </button>
+            </div>
+            <div className="pt-3 border-t border-border-light flex items-center gap-2 text-t2 text-[13px] font-medium">
+              <IconMail size={16} className="text-t3" />
+              <span>{getStaffEmail(staff.trainer_name || '')}</span>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

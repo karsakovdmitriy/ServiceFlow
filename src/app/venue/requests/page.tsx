@@ -153,21 +153,21 @@ export default function VenueRequests() {
             <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider mb-4">Предстоящие тренировки</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {filteredSessions.map((session) => (
-                <div key={session.id} className="group flex items-center justify-between p-4 rounded-xl bg-surface border border-border-light hover:shadow-sh-sm transition-all">
-                  <div className="flex items-center gap-3">
+                <div key={session.id} className="group flex items-center justify-between p-4 rounded-xl bg-surface border border-border-light hover:shadow-sh-sm transition-all gap-4">
+                  <div className="flex items-center gap-3 min-w-0 overflow-hidden">
                     <div className="w-9 h-9 rounded-full bg-bg-custom flex items-center justify-center text-[11px] font-bold text-t2 shrink-0">
                       {session.initials}
                     </div>
                     <div className="min-w-0">
                       <div className="text-[14px] font-bold text-t1 truncate">{session.name}</div>
-                      <div className="text-[11px] text-t3">{session.date} · {session.time}</div>
+                      <div className="text-[11px] text-t3 whitespace-nowrap overflow-hidden text-ellipsis">{session.date} · {session.time}</div>
                     </div>
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => completeSession(session.id)} className="w-8 h-8 flex items-center justify-center text-green-custom hover:bg-green-50 rounded-lg">
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <button onClick={() => completeSession(session.id)} className="w-8 h-8 flex items-center justify-center text-green-custom hover:bg-green-50 rounded-lg transition-colors">
                       <IconCheck size={18} stroke={2} />
                     </button>
-                    <button onClick={() => setCancellingId(session.id)} className="w-8 h-8 flex items-center justify-center text-t3 hover:text-red-custom hover:bg-red-50 rounded-lg">
+                    <button onClick={() => setCancellingId(session.id)} className="w-8 h-8 flex items-center justify-center text-t3 hover:text-red-custom hover:bg-red-50 rounded-lg transition-colors">
                       <IconX size={18} stroke={2} />
                     </button>
                   </div>

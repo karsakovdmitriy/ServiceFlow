@@ -141,35 +141,46 @@ export default function SchedulePage() {
           </div>
           <div className="space-y-1">
             {schedule.map((day, i) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-xl hover:bg-bg-custom transition-all group">
-                <div className="text-[13.5px] font-medium text-t1 w-24">{day.name}</div>
-                <div className="flex-1 flex items-center gap-2">
-                  {day.on ? (
-                    <div className="flex items-center gap-1.5">
-                      <input
-                        type="time"
-                        value={day.startTime}
-                        onChange={(e) => updateScheduleTime(i, e.target.value, day.endTime)}
-                        className="text-[12px] font-semibold text-t1 bg-bg-custom border-none rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-accent/10"
-                      />
-                      <span className="text-t3 opacity-50">—</span>
-                      <input
-                        type="time"
-                        value={day.endTime}
-                        onChange={(e) => updateScheduleTime(i, day.startTime, e.target.value)}
-                        className="text-[12px] font-semibold text-t1 bg-bg-custom border-none rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-accent/10"
-                      />
-                    </div>
-                  ) : (
-                    <div className="text-[12px] text-t3 italic">Выходной</div>
-                  )}
+              <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl hover:bg-bg-custom transition-all group gap-3">
+                <div className="flex items-center justify-between sm:justify-start gap-4">
+                  <div className="text-[13.5px] font-bold text-t1 min-w-[100px]">{day.name}</div>
+                  <button
+                    onClick={() => toggleDay(i)}
+                    className={`w-9 h-5 rounded-full transition-all relative sm:hidden ${day.on ? 'bg-accent' : 'bg-border'}`}
+                  >
+                    <div className={`absolute w-3 h-3 bg-white rounded-full top-1 transition-all ${day.on ? 'left-5' : 'left-1'}`}></div>
+                  </button>
                 </div>
-                <button
-                  onClick={() => toggleDay(i)}
-                  className={`w-9 h-5 rounded-full transition-all relative ${day.on ? 'bg-accent' : 'bg-border'}`}
-                >
-                  <div className={`absolute w-3 h-3 bg-white rounded-full top-1 transition-all ${day.on ? 'left-5' : 'left-1'}`}></div>
-                </button>
+
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 flex items-center gap-2">
+                    {day.on ? (
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="time"
+                          value={day.startTime}
+                          onChange={(e) => updateScheduleTime(i, e.target.value, day.endTime)}
+                          className="text-[12px] font-bold text-t1 bg-bg-custom border border-border-light rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-accent/10"
+                        />
+                        <span className="text-t3 opacity-50">—</span>
+                        <input
+                          type="time"
+                          value={day.endTime}
+                          onChange={(e) => updateScheduleTime(i, day.startTime, e.target.value)}
+                          className="text-[12px] font-bold text-t1 bg-bg-custom border border-border-light rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-accent/10"
+                        />
+                      </div>
+                    ) : (
+                      <div className="text-[12px] text-t3 font-medium italic">Выходной день</div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => toggleDay(i)}
+                    className={`hidden sm:block w-9 h-5 rounded-full transition-all relative ${day.on ? 'bg-accent' : 'bg-border'}`}
+                  >
+                    <div className={`absolute w-3 h-3 bg-white rounded-full top-1 transition-all ${day.on ? 'left-5' : 'left-1'}`}></div>
+                  </button>
+                </div>
               </div>
             ))}
           </div>
