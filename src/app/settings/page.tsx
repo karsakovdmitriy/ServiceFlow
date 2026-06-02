@@ -11,6 +11,7 @@ export default function SettingsPage() {
     specialization: '',
     avatar_url: '',
     email: '',
+    phone: '',
     slot_duration: '60',
     category: 'Спорт'
   });
@@ -27,6 +28,7 @@ export default function SettingsPage() {
         specialization: profile.specialization || '',
         avatar_url: profile.avatar_url || '',
         email: profile.email || '',
+        phone: (profile as any).phone || '',
         slot_duration: String(profile.slot_duration || 60),
         category: (profile as any).category || 'Спорт'
       });
@@ -42,6 +44,7 @@ export default function SettingsPage() {
       specialization: formData.specialization,
       avatar_url: formData.avatar_url,
       email: formData.email,
+      phone: formData.phone,
       slot_duration: parseInt(formData.slot_duration),
       category: formData.category
     } as any) as any;
@@ -110,6 +113,16 @@ export default function SettingsPage() {
                       <option value="Образование">Образование</option>
                       <option value="Медицина">Медицина</option>
                     </select>
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Контактный телефон</label>
+                    <input
+                      className="w-full input-modern bg-bg-custom/50"
+                      type="tel"
+                      placeholder="+7 (999) 000-00-00"
+                      value={formData.phone}
+                      onChange={e => setFormData({...formData, phone: e.target.value})}
+                    />
                   </div>
               </div>
 

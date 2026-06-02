@@ -18,6 +18,7 @@ export interface TrainerProfile {
   specialization: string;
   avatar_url?: string;
   email: string;
+  phone?: string;
   slot_duration: number;
   telegram_id?: string;
   category?: string;
@@ -98,8 +99,8 @@ interface StoreContextType {
   addSession: (session: any) => Promise<void>;
   addService: (service: Omit<Service, 'id' | 'venue'>) => Promise<void>;
   updateService: (id: string, service: Partial<Service>) => Promise<void>;
-  addVenue: (venue: Omit<Venue, 'id'>) => Promise<void>;
-  updateVenue: (id: string, venue: Partial<Venue>) => Promise<void>;
+  addVenue: (venue: Omit<Venue, 'id'>) => Promise<{ error: any }>;
+  updateVenue: (id: string, venue: Partial<Venue>) => Promise<{ error: any }>;
   removeVenue: (id: string) => Promise<void>;
   addBlock: (block: Omit<BlockedSlot, 'id'>) => Promise<void>;
   removeBlock: (id: string) => Promise<void>;
@@ -240,7 +241,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (role === 'master') {
-        const { data: venuesData } = await supabase.from('venues').select('*').eq('trainer_id', trainerId).order('name');
+        const { data: venuesData } = await supabase.from('venues').select('*').eq('trainer_id', trainerId).order('created_at');
         if (venuesData) setVenues(venuesData);
 
         const { data: servicesData } = await supabase.from('services')
@@ -369,7 +370,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           })));
         }
       } else if (role === 'venue') {
-        const { data: myVenues } = await supabase.from('venues').select('*').eq('trainer_id', trainerId);
+        const { data: myVenues } = await supabase.from('venues').select('*').eq('trainer_id', trainerId).order('created_at');
         if (myVenues && myVenues.length > 0) {
           setVenues(myVenues);
           const venueIds = myVenues.map(v => v.id);
@@ -737,10 +738,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const newVenues = [...venues, newV];
       setVenues(newVenues);
       saveDemoData({ venues: newVenues });
-      return;
+      return { error: null };
     }
-    await supabase.from('venues').insert({ trainer_id: trainerId, ...venue });
-    fetchData();
+    if (!trainerId) return { error: new Error('Trainer ID not found') };
+    const { error } = await supabase.from('venues').insert({ trainer_id: trainerId, ...venue });
+    if (!error) fetchData();
+    return { error };
   };
 
   const updateVenue = async (id: string, venue: Partial<Venue>) => {
@@ -748,10 +751,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const newVenues = venues.map(v => v.id === id ? { ...v, ...venue } : v);
       setVenues(newVenues);
       saveDemoData({ venues: newVenues });
-      return;
+      return { error: null };
     }
-    await supabase.from('venues').update(venue).eq('id', id);
-    fetchData();
+    if (!id) return { error: new Error('Venue ID not found') };
+    const { error } = await supabase.from('venues').update(venue).eq('id', id);
+    if (!error) fetchData();
+    return { error };
   };
 
   const removeVenue = async (id: string) => {
