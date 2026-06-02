@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useStore } from '@/lib/store';
-import { IconUsers, IconCalendarEvent, IconActivity } from '@tabler/icons-react';
+import { IconUsers, IconCalendarEvent, IconActivity, IconClock } from '@tabler/icons-react';
 
 export default function VenueDashboard() {
   const { venues, sessions, venueStaff, schedule } = useStore();
@@ -17,69 +17,73 @@ export default function VenueDashboard() {
 
   return (
     <div className="animate-fade-up max-w-[1100px] mx-auto space-y-12">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-t1">Обзор площадки: {currentVenue?.name || 'Загрузка...'}</h1>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-surface p-6 rounded-xl border border-border-light shadow-sh-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">
-            <IconUsers size={24} />
-          </div>
-          <div>
-            <div className="text-[11px] text-t3 font-bold uppercase tracking-wider">Мастера</div>
-            <div className="text-[24px] font-bold text-t1">{venueStaff.length}</div>
-          </div>
-        </div>
-
-        <div className="bg-surface p-6 rounded-xl border border-border-light shadow-sh-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center text-green-500">
-            <IconCalendarEvent size={24} />
-          </div>
-          <div>
-            <div className="text-[11px] text-t3 font-bold uppercase tracking-wider">Записи</div>
-            <div className="text-[24px] font-bold text-t1">{sessions.length}</div>
-          </div>
-        </div>
-
-        <div className="bg-surface p-6 rounded-xl border border-border-light shadow-sh-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center text-accent">
-            <IconActivity size={24} />
-          </div>
-          <div>
-            <div className="text-[11px] text-t3 font-bold uppercase tracking-wider">Загрузка</div>
-            <div className="text-[24px] font-bold text-t1">{occupancyRate}%</div>
-          </div>
-        </div>
-      </div>
-
-      <section className="bg-surface p-6 rounded-xl border border-border-light shadow-sh-sm">
-        <h2 className="text-sm font-bold text-t1 uppercase tracking-wider mb-6">Последняя активность</h2>
-        <div className="space-y-4">
-          {sessions.length === 0 && (
-             <div className="py-10 text-center text-t3 text-[13px] bg-bg-custom rounded-xl border border-dashed border-border">
-                На площадке пока нет активных записей
-             </div>
-          )}
-          {sessions.map((s) => (
-            <div key={s.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-bg-custom transition-all">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-bg-custom flex items-center justify-center text-[11px] font-bold text-t2 border border-surface">
-                  {s.initials}
-                </div>
-                <div>
-                  <div className="text-[14px] font-semibold text-t1">{s.name}</div>
-                  <div className="text-[12px] text-t3">{s.service}</div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-[13px] font-medium text-t1">{s.time}</div>
-                <div className="text-[11px] text-t3">{s.date}</div>
-              </div>
+      {/* Metrics Section (Overview) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-surface p-6 rounded-r-xl border border-border-light shadow-sh-sm">
+        {[
+          { label: 'Площадка', val: currentVenue?.name || 'Загрузка...', sub: 'Текущая' },
+          { label: 'Мастера', val: venueStaff.length, sub: 'Активные' },
+          { label: 'Записи', val: sessions.length, sub: 'Всего' },
+          { label: 'Загрузка', val: occupancyRate + '%', sub: 'Общая', highlight: occupancyRate > 80 },
+        ].map((stat, i) => (
+          <div key={i} className="flex flex-col px-4 first:pl-0 last:pr-0 border-r border-border-light last:border-r-0">
+            <div className="text-[11px] text-t3 font-bold uppercase tracking-wider mb-1">{stat.label}</div>
+            <div className={`text-[28px] font-bold tracking-tight leading-none truncate ${stat.highlight ? 'text-accent' : 'text-t1'}`}>
+                {stat.val}
             </div>
-          ))}
+            <div className="text-[11px] text-t3 mt-1.5 font-medium">{stat.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+
+        {/* LEFT COLUMN */}
+        <div className="lg:col-span-8 space-y-10">
+          <section className="bg-surface p-6 rounded-r-xl border border-border-light shadow-sh-sm">
+            <div className="flex items-center justify-between mb-5">
+                <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider">Последняя активность</h2>
+                <div className="h-px bg-border flex-1 mx-4"></div>
+                <span className="text-[11px] font-bold text-t3">{sessions.length} записей</span>
+            </div>
+            <div className="space-y-1">
+              {sessions.length === 0 && (
+                <div className="py-10 text-center text-t3 text-[13px] bg-bg-custom rounded-xl border border-dashed border-border">
+                    На площадке пока нет активных записей
+                </div>
+              )}
+              {sessions.map((s, i) => (
+                <div key={i} className="group flex items-center gap-4 p-3 rounded-xl hover:bg-bg-custom transition-all">
+                  <div className="w-10 h-10 rounded-full bg-bg-custom flex items-center justify-center text-[11px] font-bold text-t2 shrink-0 border border-surface">
+                    {s.initials}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[14px] font-semibold text-t1">{s.name}</div>
+                    <div className="text-[12px] text-t3 mt-0.5 flex items-center gap-1.5">
+                      <IconClock size={12} stroke={1.5} /> {s.time}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[13px] font-medium text-t1">{s.service}</div>
+                    <div className="text-[11px] text-t3">{s.date}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
         </div>
-      </section>
+
+        {/* RIGHT COLUMN */}
+        <div className="lg:col-span-4 space-y-10">
+          {/* Recent Events or other info can go here to match Master layout */}
+          <div className="bg-surface p-6 rounded-r-xl border border-border-light shadow-sh-sm">
+             <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider mb-5">Информация</h2>
+             <p className="text-[12px] text-t2 leading-relaxed">
+               Управляйте мастерами и расписанием вашей площадки в соответствующих разделах.
+             </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
