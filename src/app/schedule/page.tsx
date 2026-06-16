@@ -30,7 +30,10 @@ export default function SchedulePage() {
   });
 
   const handleAddBlock = () => {
-    addBlock(newBlock);
+    addBlock({
+      ...newBlock,
+      master_id: (profile as any)?.master_id || '' // master_id is handled in store but type requires it
+    } as any);
   };
 
   const formatBlock = (block: any) => {

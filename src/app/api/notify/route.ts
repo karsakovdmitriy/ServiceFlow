@@ -23,10 +23,10 @@ export async function POST(request: Request) {
       .from('sessions')
       .select(`
         start_time,
-        trainer_id,
+        master_id,
         client:clients!client_id(telegram_id),
         service:services!service_id(name, venues!venue_id(name, address)),
-        trainer:trainers!trainer_id(full_name)
+        master:masters!master_id(full_name)
       `)
       .eq('id', sessionId)
       .single();
@@ -50,18 +50,18 @@ export async function POST(request: Request) {
       let replyMarkup = undefined;
       if (status === 'completed') {
         message = `💪 <b>Как прошла тренировка?</b>\n\n` +
-          `Надеемся, вам понравилось занятие с тренером <b>${(sessionData.trainer as any)?.full_name}</b>!\n\n` +
+          `Надеемся, вам понравилось занятие с тренером <b>${(sessionData.master as any)?.full_name}</b>!\n\n` +
           `Будем рады вашему отзыву.`;
 
         replyMarkup = {
           inline_keyboard: [
             [{ text: '⭐ Оценить и оставить отзыв', callback_data: `rate_init:${sessionId}` }],
-            [{ text: '🔄 Записаться снова', callback_data: `svc_list:${sessionData.trainer_id}` }]
+            [{ text: '🔄 Записаться снова', callback_data: `svc_list:${sessionData.master_id}` }]
           ]
         };
       } else {
         message = `✅ <b>Ваша запись подтверждена!</b>\n\n` +
-          `Тренер: <b>${(sessionData.trainer as any)?.full_name}</b>\n` +
+          `Тренер: <b>${(sessionData.master as any)?.full_name}</b>\n` +
           `Услуга: <b>${(sessionData.service as any)?.name}</b>${venueText}\n` +
           `Дата: <b>${dateStr}</b>\n` +
           `Время: <b>${timeStr}</b>\n\n` +

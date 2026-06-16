@@ -14,7 +14,7 @@ export default function VenuesPage() {
 
   const handleAdd = () => {
     if (newData.name.trim()) {
-      addVenue(newData);
+      addVenue(newData as any);
       setNewData({ name: '', address: '' });
       setIsAdding(false);
     }

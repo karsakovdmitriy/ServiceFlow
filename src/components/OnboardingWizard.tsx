@@ -19,8 +19,8 @@ export default function OnboardingWizard() {
     if (profile) {
       setFormData(prev => ({
         ...prev,
-        specialization: prev.specialization || profile.specialization || '',
-        category: prev.category === 'Спорт' ? (profile.category || 'Спорт') : prev.category,
+        specialization: prev.specialization || (profile as any).specialization || '',
+        category: prev.category === 'Спорт' ? ((profile as any).category || 'Спорт') : prev.category,
         full_name: prev.full_name || profile.full_name || '',
       }));
     }

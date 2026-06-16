@@ -10,7 +10,7 @@ export default function VenueServices() {
 
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [newData, setNewData] = useState({ name: '', duration: 60, price: 1000, is_group: false, venue_id: currentVenue?.id || '', assigned_trainer_id: '' });
+  const [newData, setNewData] = useState({ name: '', duration: 60, price: 1000, is_group: false, venue_id: currentVenue?.id || '', master_id: '' });
   const [editData, setEditData] = useState<Partial<Service>>({});
 
   const venueServices = services.filter(s => s.venue_id === currentVenue?.id);
@@ -19,9 +19,9 @@ export default function VenueServices() {
     addService({
       ...newData,
       venue_id: currentVenue?.id || null,
-      assigned_trainer_id: (newData as any).assigned_trainer_id || null
+      master_id: (newData as any).master_id || null
     } as any);
-    setNewData({ name: '', duration: 60, price: 1000, is_group: false, venue_id: currentVenue?.id || '', assigned_trainer_id: '' });
+    setNewData({ name: '', duration: 60, price: 1000, is_group: false, venue_id: currentVenue?.id || '', master_id: '' });
     setIsAdding(false);
   };
 
@@ -63,7 +63,7 @@ export default function VenueServices() {
             </thead>
             <tbody className="divide-y divide-border-light">
                 {venueServices.map(service => {
-                    const assignedStaff = venueStaff.find(st => st.trainer_id === (service as any).assigned_trainer_id);
+                    const assignedStaff = venueStaff.find(st => st.master_id === (service as any).master_id);
                     return (
                         <tr key={service.id} className="group hover:bg-bg-custom transition-colors">
                             <td className="px-6 py-5">
@@ -71,7 +71,7 @@ export default function VenueServices() {
                             </td>
                             <td className="px-6 py-5">
                                 <span className="text-[13px] text-t2">
-                                    {assignedStaff ? assignedStaff.trainer_name : 'Любой мастер'}
+                                    {assignedStaff ? assignedStaff.master_name : 'Любой мастер'}
                                 </span>
                             </td>
                             <td className="px-6 py-5 text-[13px] font-medium text-t2">{service.duration} мин</td>
@@ -92,7 +92,7 @@ export default function VenueServices() {
       {/* Services List - Mobile Cards */}
       <div className="md:hidden space-y-4">
         {venueServices.map(service => {
-          const assignedStaff = venueStaff.find(st => st.trainer_id === (service as any).assigned_trainer_id);
+          const assignedStaff = venueStaff.find(st => st.master_id === (service as any).master_id);
           return (
             <div key={service.id} className="bg-surface p-5 rounded-2xl border border-border shadow-sh-sm space-y-4">
               <div className="flex justify-between items-start">
@@ -100,7 +100,7 @@ export default function VenueServices() {
                   <div className="text-[15px] font-bold text-t1 truncate">{service.name}</div>
                   <div className="text-[12px] text-t3 mt-1 font-medium flex items-center gap-1.5">
                     <div className="w-4 h-4 rounded-full bg-accent/10 flex items-center justify-center text-[8px] font-black text-accent">M</div>
-                    {assignedStaff ? assignedStaff.trainer_name : 'Любой мастер'}
+                    {assignedStaff ? assignedStaff.master_name : 'Любой мастер'}
                   </div>
                 </div>
                 <div className="flex gap-2 shrink-0">
@@ -164,13 +164,13 @@ export default function VenueServices() {
               <div>
                 <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Назначенный мастер</label>
                 <select
-                  value={editingId ? ((editData as any).assigned_trainer_id || '') : newData.assigned_trainer_id}
-                  onChange={e => editingId ? setEditData({...editData, assigned_trainer_id: e.target.value || null} as any) : setNewData({...newData, assigned_trainer_id: e.target.value})}
+                  value={editingId ? ((editData as any).master_id || '') : newData.master_id}
+                  onChange={e => editingId ? setEditData({...editData, master_id: e.target.value || null} as any) : setNewData({...newData, master_id: e.target.value})}
                   className="w-full input-modern appearance-none"
                 >
                   <option value="">Любой мастер</option>
                   {venueStaff.map(st => (
-                    <option key={st.id} value={st.trainer_id}>{st.trainer_name}</option>
+                    <option key={st.id} value={st.master_id}>{st.master_name}</option>
                   ))}
                 </select>
               </div>

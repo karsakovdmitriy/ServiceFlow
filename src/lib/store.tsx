@@ -25,6 +25,9 @@ export interface Profile {
   onboarding_completed_client: boolean;
   onboarding_completed_venue: boolean;
   telegram_id?: string;
+  subscription_tier?: 'free' | 'pro' | 'business';
+  subscription_status?: string;
+  subscription_period_end?: string;
 }
 export interface Master {
   id: string;

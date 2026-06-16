@@ -5,7 +5,7 @@ import { useStore } from '@/lib/store';
 import { IconDeviceFloppy, IconBuildingStore, IconMail, IconPhone, IconBrandTelegram, IconMapPin, IconInfoCircle, IconShieldCheck, IconCheck, IconDatabase, IconDatabaseOff } from '@tabler/icons-react';
 
 export default function VenueProfile() {
-  const { venues, addVenue, updateVenue, profile, updateProfile, trainerId, isDemoMode } = useStore();
+  const { venues, addVenue, updateVenue, profile, updateProfile, activeMaster, isDemoMode } = useStore();
   const venue = venues[0];
 
   const [formData, setFormData] = useState({
@@ -33,7 +33,7 @@ export default function VenueProfile() {
   }, [venue]);
 
   const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'TrainerSpaceBot';
-  const linkTgLink = `https://t.me/${botUsername}?start=link_${trainerId || 'id'}`;
+  const linkTgLink = `https://t.me/${botUsername}?start=link_${activeMaster?.id || 'id'}`;
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -43,7 +43,7 @@ export default function VenueProfile() {
     if (venue) {
       result = await updateVenue(venue.id, formData);
     } else {
-      result = await addVenue(formData);
+      result = await addVenue(formData as any);
     }
 
     if (result?.error) {

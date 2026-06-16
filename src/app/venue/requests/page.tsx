@@ -35,8 +35,8 @@ export default function VenueRequests() {
     setCancellingId(null);
   };
 
-  const handleAssign = (requestId: string, trainerId: string) => {
-    approveRequest(requestId, trainerId);
+  const handleAssign = (requestId: string, masterId: string) => {
+    approveRequest(requestId, masterId);
     setDistributingId(null);
   };
 
@@ -122,10 +122,10 @@ export default function VenueRequests() {
                       {venueStaff.map(staff => (
                         <button
                           key={staff.id}
-                          onClick={() => handleAssign(req.id, staff.trainer_id)}
+                          onClick={() => handleAssign(req.id, staff.master_id)}
                           className="px-3 py-2 rounded-lg bg-bg-custom border border-border-light text-[11px] font-bold text-t2 hover:border-accent text-left transition-all"
                         >
-                          {staff.trainer_name}
+                          {staff.master_name}
                         </button>
                       ))}
                     </div>

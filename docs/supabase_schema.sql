@@ -16,8 +16,34 @@ CREATE TABLE IF NOT EXISTS profiles (
   onboarding_completed_master BOOLEAN DEFAULT FALSE,
   onboarding_completed_client BOOLEAN DEFAULT FALSE,
   onboarding_completed_venue BOOLEAN DEFAULT FALSE,
+  subscription_tier TEXT DEFAULT 'free', -- 'free', 'pro', 'business'
+  subscription_status TEXT DEFAULT 'active',
+  subscription_period_end TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Subscription Plans Definition
+CREATE TABLE IF NOT EXISTS subscription_plans (
+  tier TEXT PRIMARY KEY,
+  max_venues INTEGER,
+  max_masters INTEGER,
+  max_services INTEGER,
+  has_analytics BOOLEAN DEFAULT FALSE,
+  has_custom_bot BOOLEAN DEFAULT FALSE
+);
+
+-- Insert default plans
+INSERT INTO subscription_plans (tier, max_venues, max_masters, max_services, has_analytics, has_custom_bot)
+VALUES
+  ('free', 1, 1, 5, FALSE, FALSE),
+  ('pro', 3, 3, 100, TRUE, TRUE),
+  ('business', 1000, 1000, 1000, TRUE, TRUE)
+ON CONFLICT (tier) DO UPDATE SET
+  max_venues = EXCLUDED.max_venues,
+  max_masters = EXCLUDED.max_masters,
+  max_services = EXCLUDED.max_services,
+  has_analytics = EXCLUDED.has_analytics,
+  has_custom_bot = EXCLUDED.has_custom_bot;
 
 -- Enable RLS for profiles
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -56,8 +82,15 @@ DO $$ BEGIN
 EXCEPTION WHEN others THEN NULL; END $$;
 
 DO $$ BEGIN
-    DROP POLICY IF EXISTS "Users can manage masters they created" ON masters;
-    CREATE POLICY "Users can manage masters they created" ON masters FOR ALL USING (auth.uid() = user_id);
+    DROP POLICY IF EXISTS "Users can view/update/delete masters they created" ON masters;
+    CREATE POLICY "Users can view/update/delete masters they created" ON masters
+    FOR ALL USING (auth.uid() = user_id);
+EXCEPTION WHEN others THEN NULL; END $$;
+
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can create masters within subscription limit" ON masters;
+    CREATE POLICY "Users can create masters within subscription limit" ON masters
+    FOR INSERT WITH CHECK (auth.uid() = user_id AND check_subscription_limit(auth.uid(), 'masters'));
 EXCEPTION WHEN others THEN NULL; END $$;
 
 -- Venues
@@ -77,8 +110,15 @@ CREATE TABLE IF NOT EXISTS venues (
 ALTER TABLE venues ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-    DROP POLICY IF EXISTS "Owners can manage their own venues" ON venues;
-    CREATE POLICY "Owners can manage their own venues" ON venues FOR ALL USING (auth.uid() = owner_id);
+    DROP POLICY IF EXISTS "Owners can view/update/delete their own venues" ON venues;
+    CREATE POLICY "Owners can view/update/delete their own venues" ON venues
+    FOR ALL USING (auth.uid() = owner_id);
+EXCEPTION WHEN others THEN NULL; END $$;
+
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Owners can create venues within subscription limit" ON venues;
+    CREATE POLICY "Owners can create venues within subscription limit" ON venues
+    FOR INSERT WITH CHECK (auth.uid() = owner_id AND check_subscription_limit(auth.uid(), 'venues'));
 EXCEPTION WHEN others THEN NULL; END $$;
 
 -- Venue Schedule Configuration
@@ -119,8 +159,15 @@ CREATE TABLE IF NOT EXISTS services (
 ALTER TABLE services ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-    DROP POLICY IF EXISTS "Owners can manage their own services" ON services;
-    CREATE POLICY "Owners can manage their own services" ON services FOR ALL USING (auth.uid() = owner_id);
+    DROP POLICY IF EXISTS "Owners can view/update/delete their own services" ON services;
+    CREATE POLICY "Owners can view/update/delete their own services" ON services
+    FOR ALL USING (auth.uid() = owner_id);
+EXCEPTION WHEN others THEN NULL; END $$;
+
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Owners can create services within subscription limit" ON services;
+    CREATE POLICY "Owners can create services within subscription limit" ON services
+    FOR INSERT WITH CHECK (auth.uid() = owner_id AND check_subscription_limit(auth.uid(), 'services'));
 EXCEPTION WHEN others THEN NULL; END $$;
 
 -- Clients
@@ -220,7 +267,14 @@ ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
     DROP POLICY IF EXISTS "Users can view their own events" ON events;
-    CREATE POLICY "Users can view their own events" ON events FOR SELECT USING (auth.uid() = profile_id);
+    CREATE POLICY "Users can view their own events" ON events
+    FOR SELECT USING (
+      auth.uid() = profile_id
+      AND (
+        type != 'analytics'
+        OR check_subscription_feature(auth.uid(), 'analytics')
+      )
+    );
 EXCEPTION WHEN others THEN NULL; END $$;
 
 DO $$ BEGIN
@@ -313,6 +367,64 @@ DO $$ BEGIN
         EXISTS (SELECT 1 FROM masters WHERE id = master_id AND user_id = auth.uid())
     );
 EXCEPTION WHEN others THEN NULL; END $$;
+
+-- Subscription Helper Functions
+CREATE OR REPLACE FUNCTION public.get_user_subscription_plan(user_id UUID)
+RETURNS SETOF subscription_plans AS $$
+BEGIN
+  RETURN QUERY
+  SELECT sp.*
+  FROM subscription_plans sp
+  JOIN profiles p ON p.subscription_tier = sp.tier
+  WHERE p.id = user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.check_subscription_limit(u_id UUID, entity_type TEXT)
+RETURNS BOOLEAN AS $$
+DECLARE
+  current_count INTEGER;
+  max_allowed INTEGER;
+  user_tier TEXT;
+BEGIN
+  SELECT subscription_tier INTO user_tier FROM profiles WHERE id = u_id;
+
+  IF entity_type = 'venues' THEN
+    SELECT COUNT(*) INTO current_count FROM venues WHERE owner_id = u_id;
+    SELECT max_venues INTO max_allowed FROM subscription_plans WHERE tier = user_tier;
+  ELSIF entity_type = 'masters' THEN
+    SELECT COUNT(*) INTO current_count FROM masters WHERE user_id = u_id;
+    SELECT max_masters INTO max_allowed FROM subscription_plans WHERE tier = user_tier;
+  ELSIF entity_type = 'services' THEN
+    SELECT COUNT(*) INTO current_count FROM services WHERE owner_id = u_id;
+    SELECT max_services INTO max_allowed FROM subscription_plans WHERE tier = user_tier;
+  ELSE
+    RETURN TRUE;
+  END IF;
+
+  RETURN current_count < max_allowed;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.check_subscription_feature(u_id UUID, feature_name TEXT)
+RETURNS BOOLEAN AS $$
+DECLARE
+  user_tier TEXT;
+  allowed BOOLEAN;
+BEGIN
+  SELECT subscription_tier INTO user_tier FROM profiles WHERE id = u_id;
+
+  IF feature_name = 'analytics' THEN
+    SELECT has_analytics INTO allowed FROM subscription_plans WHERE tier = user_tier;
+  ELSIF feature_name = 'custom_bot' THEN
+    SELECT has_custom_bot INTO allowed FROM subscription_plans WHERE tier = user_tier;
+  ELSE
+    RETURN FALSE;
+  END IF;
+
+  RETURN allowed;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Auth Trigger Function
 CREATE OR REPLACE FUNCTION public.handle_new_user()
