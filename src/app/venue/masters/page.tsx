@@ -10,8 +10,8 @@ export default function VenueMasters() {
   const currentVenue = venues[0];
 
   // Helper to find email for staff
-  const getStaffEmail = (trainerName: string) => {
-    const client = clients.find(c => c.full_name === trainerName);
+  const getStaffEmail = (masterName: string) => {
+    const client = clients.find(c => c.full_name === masterName);
     return client?.email || 'master@example.com';
   };
 
@@ -71,15 +71,15 @@ export default function VenueMasters() {
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center text-[12px] font-bold text-accent">
-                      {(staff.trainer_name || 'М').slice(0, 2).toUpperCase()}
+                      {(staff.master_name || 'М').slice(0, 2).toUpperCase()}
                     </div>
-                    <span className="text-[14px] font-bold text-t1">{staff.trainer_name}</span>
+                    <span className="text-[14px] font-bold text-t1">{staff.master_name}</span>
                   </div>
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2 text-t2 text-[13px]">
                     <IconMail size={14} className="text-t3" />
-                    <span>{getStaffEmail(staff.trainer_name || '')}</span>
+                    <span>{getStaffEmail(staff.master_name || '')}</span>
                   </div>
                 </td>
                 <td className="px-6 py-4 text-right">
@@ -108,9 +108,9 @@ export default function VenueMasters() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-[12px] font-bold text-accent shrink-0">
-                  {(staff.trainer_name || 'М').slice(0, 2).toUpperCase()}
+                  {(staff.master_name || 'М').slice(0, 2).toUpperCase()}
                 </div>
-                <div className="text-[15px] font-bold text-t1">{staff.trainer_name}</div>
+                <div className="text-[15px] font-bold text-t1">{staff.master_name}</div>
               </div>
               <button
                 onClick={() => removeVenueStaff(staff.id)}
@@ -121,7 +121,7 @@ export default function VenueMasters() {
             </div>
             <div className="pt-3 border-t border-border-light flex items-center gap-2 text-t2 text-[13px] font-medium">
               <IconMail size={16} className="text-t3" />
-              <span>{getStaffEmail(staff.trainer_name || '')}</span>
+              <span>{getStaffEmail(staff.master_name || '')}</span>
             </div>
           </div>
         ))}

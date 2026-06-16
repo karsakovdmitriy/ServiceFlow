@@ -32,7 +32,7 @@ export default function ServicesPage() {
     addService({
       ...newData,
       venue_id: newData.venue_id || null
-    });
+    } as any);
     setNewData({ name: '', duration: 60, price: 1000, is_group: false, venue_id: '' });
     setIsAdding(false);
   };
@@ -50,7 +50,7 @@ export default function ServicesPage() {
   };
 
   const handleAddVenue = () => {
-    addVenue(newVenueData);
+    addVenue(newVenueData as any);
     setNewVenueData({ name: '', address: '' });
     setIsAddingVenue(false);
   };

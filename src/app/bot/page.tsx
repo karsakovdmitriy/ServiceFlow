@@ -6,14 +6,14 @@ import { IconBrandTelegram, IconCopy, IconChartBar, IconDeviceMobile, IconStarFi
 import { QRCodeSVG } from 'qrcode.react';
 
 export default function BotPage() {
-  const { profile, trainerId, isDemoMode, reviews, sessions, completedSessions } = useStore();
+  const { profile, activeMaster, isDemoMode, reviews, sessions, completedSessions } = useStore();
 
   const avgRating = reviews.length > 0
     ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)
     : '0.0';
   const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'TrainerSpaceBot';
-  const botLink = `https://t.me/${botUsername}?start=${trainerId || 'id'}`;
-  const linkTgLink = `https://t.me/${botUsername}?start=link_${trainerId || 'id'}`;
+  const botLink = `https://t.me/${botUsername}?start=${activeMaster?.id || 'id'}`;
+  const linkTgLink = `https://t.me/${botUsername}?start=link_${activeMaster?.id || 'id'}`;
 
   return (
     <div className="animate-fade-up max-w-[1000px] mx-auto">
@@ -60,8 +60,8 @@ export default function BotPage() {
                     </div>
 
                     <div className="space-y-1 mb-8">
-                        <h3 className="text-[20px] font-extrabold text-t1 tracking-tight">{profile?.full_name || 'Ваше Имя'}</h3>
-                        <p className="text-[12px] font-bold text-accent uppercase tracking-widest">{profile?.specialization || 'Специализация'}</p>
+                        <h3 className="text-[20px] font-extrabold text-t1 tracking-tight">{activeMaster?.full_name || profile?.full_name || 'Ваше Имя'}</h3>
+                        <p className="text-[12px] font-bold text-accent uppercase tracking-widest">{activeMaster?.specialization || 'Специализация'}</p>
                         <div className="flex items-center justify-center gap-3 pt-2">
                              <div className="flex items-center gap-1 text-yellow-500 font-bold text-[12px]">
                                 <IconStarFilled size={12} /> {avgRating}
@@ -133,7 +133,7 @@ export default function BotPage() {
                 {/* Bubble 1 */}
                 <div className="bg-surface rounded-2xl rounded-bl-none p-4 mb-4 max-w-[90%] shadow-sm animate-fade-up border border-border/50">
                     <div className="text-[13px] text-t1 leading-relaxed">
-                        👋 Привет! Я помогу вам записаться к тренеру <strong>{profile?.full_name || 'Алексей'}</strong>.
+                        👋 Привет! Я помогу вам записаться к тренеру <strong>{activeMaster?.full_name || profile?.full_name || 'Алексей'}</strong>.
                         <br/><br/>
                         На этой неделе есть <strong>12 свободных слотов</strong>.
                     </div>

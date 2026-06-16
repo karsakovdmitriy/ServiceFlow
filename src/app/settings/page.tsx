@@ -5,7 +5,7 @@ import { useStore } from '@/lib/store';
 import { IconDatabase, IconDatabaseOff, IconInfoCircle, IconShieldCheck, IconLock, IconBrandTelegram, IconPhoto, IconCheck } from '@tabler/icons-react';
 
 export default function SettingsPage() {
-  const { profile, trainerId, updateProfile, loading: storeLoading, isDemoMode } = useStore();
+  const { profile, activeMaster, updateProfile, loading: storeLoading, isDemoMode } = useStore();
   const [formData, setFormData] = useState({
     full_name: '',
     specialization: '',
@@ -17,23 +17,23 @@ export default function SettingsPage() {
   });
 
   const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'TrainerSpaceBot';
-  const linkTgLink = `https://t.me/${botUsername}?start=link_${trainerId || 'id'}`;
+  const linkTgLink = `https://t.me/${botUsername}?start=link_${activeMaster?.id || 'id'}`;
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
     if (profile) {
       setFormData({
-        full_name: profile.full_name || '',
-        specialization: profile.specialization || '',
-        avatar_url: profile.avatar_url || '',
+        full_name: activeMaster?.full_name || profile.full_name || '',
+        specialization: activeMaster?.specialization || '',
+        avatar_url: activeMaster?.avatar_url || profile.avatar_url || '',
         email: profile.email || '',
-        phone: (profile as any).phone || '',
-        slot_duration: String(profile.slot_duration || 60),
-        category: (profile as any).category || 'Спорт'
+        phone: activeMaster?.phone || profile.phone || '',
+        slot_duration: String(activeMaster?.slot_duration || 60),
+        category: activeMaster?.category || 'Спорт'
       });
     }
-  }, [profile]);
+  }, [profile, activeMaster]);
 
   const handleSave = async () => {
     setSaving(true);
