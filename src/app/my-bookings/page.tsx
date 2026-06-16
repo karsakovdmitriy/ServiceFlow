@@ -33,7 +33,7 @@ export default function MyBookings() {
         <div className="lg:col-span-8 space-y-10">
           <section className="bg-surface p-6 rounded-r-xl border border-border-light shadow-sh-sm">
             <div className="flex items-center justify-between mb-5">
-                <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider">Предстоящие тренировки</h2>
+                <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider">Предстоящие записи</h2>
                 <div className="h-px bg-border flex-1 mx-4"></div>
                 <span className="text-[11px] font-bold text-t3">{sessions.length} записей</span>
             </div>
