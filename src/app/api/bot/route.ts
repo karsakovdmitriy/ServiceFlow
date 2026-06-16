@@ -140,7 +140,15 @@ export async function POST(request: Request) {
              return NextResponse.json({ ok: true });
           }
 
-          await supabase.from('profiles').update({ telegram_id: from.id.toString() }).eq('id', master.user_id);
+          const { error: pErr } = await supabase.from('profiles').update({ telegram_id: from.id.toString() }).eq('id', master.user_id);
+          const { error: mErr } = await supabase.from('masters').update({ telegram_id: from.id.toString() }).eq('id', actualMasterId);
+
+          if (pErr || mErr) {
+             console.error('Linking error:', pErr, mErr);
+             await sendTelegramMessage(chat.id, '❌ Произошла ошибка при привязке аккаунта. Пожалуйста, попробуйте позже.');
+             return NextResponse.json({ ok: true });
+          }
+
           await sendTelegramMessage(chat.id, `✅ <b>Аккаунт успешно привязан!</b>\n\nТеперь вы (${escapeHtml(master.full_name)}) будете получать уведомления о новых записях в этот чат.`);
 
           await supabase.from('events').insert({
@@ -284,10 +292,12 @@ export async function POST(request: Request) {
            await supabase.from('sessions').update({ status: 'rejected' }).eq('id', sessionId);
            await sendTelegramMessage(chatId, '📅 Предложение о переносе отправлено клиенту.');
 
-           const { data: sessionData } = await supabase.from('sessions').select('client:clients!client_id(telegram_id), master:masters!master_id(full_name)').eq('id', sessionId).single();
+           const { data: sessionData } = await supabase.from('sessions').select('service_id, client:clients!client_id(telegram_id), master:masters!master_id(full_name)').eq('id', sessionId).single();
            if (sessionData && (sessionData.client as any)?.telegram_id) {
-              const message = `❌ <b>Тренер ${(sessionData.master as any)?.full_name} отклонил вашу заявку.</b>\n\nНо он предлагает вам выбрать другое время! Пожалуйста, воспользуйтесь меню бота для повторной записи.`;
-              await sendTelegramMessage((sessionData.client as any).telegram_id, message);
+              const message = `❌ <b>Мастер ${(sessionData.master as any)?.full_name} отклонил вашу текущую заявку, но предлагает выбрать другое время!</b>\n\nПожалуйста, выберите подходящую дату для записи:`;
+              await sendTelegramMessage((sessionData.client as any).telegram_id, message, {
+                  inline_keyboard: await getDatesKeyboard(sessionData.service_id)
+              });
            }
         } else if (action === 'rate_init') {
            const [sessionId] = params;

@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { IconSearch, IconUserPlus, IconDotsVertical, IconCheck, IconClock, IconMail, IconPhone, IconSend, IconMessage, IconX, IconChevronRight, IconUsers } from '@tabler/icons-react';
 import { useStore, Message } from '@/lib/store';
+import PortalModal from '@/components/PortalModal';
 
 export default function ClientsPage() {
   const { sessions, requests, completedSessions, clients: storeClients, sendMessage, getMessages } = useStore();
@@ -200,8 +201,7 @@ export default function ClientsPage() {
       </div>
 
       {/* Chat Modal */}
-      {chatClientId && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
+      <PortalModal isOpen={!!chatClientId} onClose={() => setChatClientId(null)}>
             <div className="bg-surface rounded-3xl w-full max-w-lg shadow-2xl animate-fade-up overflow-hidden flex flex-col h-[550px] border border-border">
                 <div className="p-5 border-b border-border flex items-center justify-between bg-bg-custom/50">
                     <div>
@@ -241,9 +241,9 @@ export default function ClientsPage() {
                             value={newMessage}
                             onChange={e => setNewMessage(e.target.value)}
                             onKeyDown={e => e.key === 'Enter' && newMessage.trim() && (async () => {
-                                await sendMessage(chatClientId, newMessage);
+                                await sendMessage(chatClientId!, newMessage);
                                 setNewMessage('');
-                                const msgs = await getMessages(chatClientId);
+                                const msgs = await getMessages(chatClientId!);
                                 setChatMessages(msgs);
                             })()}
                             placeholder="Напишите клиенту в бот..."
@@ -252,9 +252,9 @@ export default function ClientsPage() {
                         <button
                             disabled={!newMessage.trim()}
                             onClick={async () => {
-                                await sendMessage(chatClientId, newMessage);
+                                await sendMessage(chatClientId!, newMessage);
                                 setNewMessage('');
-                                const msgs = await getMessages(chatClientId);
+                                const msgs = await getMessages(chatClientId!);
                                 setChatMessages(msgs);
                             }}
                             className="bg-accent text-white w-11 h-11 flex items-center justify-center rounded-xl hover:bg-accent-hover transition-all disabled:opacity-50 active:scale-95"
@@ -264,8 +264,7 @@ export default function ClientsPage() {
                     </div>
                 </div>
             </div>
-        </div>
-      )}
+      </PortalModal>
     </div>
   );
 }

@@ -305,7 +305,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             start_time,
             end_time,
             client:clients!client_id(id, full_name),
-            service:services!service_id(name, id)
+            service:services!service_id(name, id, price)
           `)
           .eq('master_id', currentMasterId);
 
@@ -316,6 +316,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             clientId: s.client?.id,
             service: s.service?.name,
             serviceId: s.service?.id,
+            price: s.service?.price || 0,
             status: s.status,
             date: s.start_time.split('T')[0],
             time: `${s.start_time.split('T')[1].slice(0,5)} – ${s.end_time.split('T')[1].slice(0,5)}`,

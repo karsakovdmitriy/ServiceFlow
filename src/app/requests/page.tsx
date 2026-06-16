@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { IconCalendar, IconCheck, IconX, IconSearch, IconChevronRight, IconClock, IconHistory, IconCalendarTime } from '@tabler/icons-react';
 import { useStore } from '@/lib/store';
+import PortalModal from '@/components/PortalModal';
 
 export default function RequestsPage() {
   const { requests, sessions, completedSessions, approveRequest, rejectRequest, cancelSession, completeSession } = useStore();
@@ -296,8 +297,7 @@ export default function RequestsPage() {
       )}
 
       {/* Reject/Cancel Modal */}
-      {(rejectingId || cancellingId) && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
+      <PortalModal isOpen={!!(rejectingId || cancellingId)} onClose={() => { setRejectingId(null); setCancellingId(null); }}>
             <div className="bg-surface rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-fade-up border border-border">
                 <div className="text-[16px] font-bold text-t1 mb-2 tracking-tight">{rejectingId ? 'Отклонить заявку?' : 'Отменить тренировку?'}</div>
                 <p className="text-[13px] text-t3 mb-6 leading-relaxed">Вы можете просто {rejectingId ? 'отклонить запись' : 'отменить тренировку'} или предложить клиенту выбрать другое время в боте.</p>
@@ -322,8 +322,7 @@ export default function RequestsPage() {
                     </button>
                 </div>
             </div>
-        </div>
-      )}
+      </PortalModal>
     </div>
   );
 }
