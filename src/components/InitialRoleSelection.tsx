@@ -7,7 +7,7 @@ import { IconStethoscope, IconUser, IconBuildingStore, IconCheck } from '@tabler
 
 export default function InitialRoleSelection() {
   const pathname = usePathname();
-  const { profile, updateProfile, loading, switchActiveRole } = useStore();
+  const { profile, updateProfile, loading, switchActiveRole, addMaster, userId } = useStore();
   const [selectedRoles, setSelectedRoles] = useState<{ master: boolean; client: boolean; venue: boolean }>({
     master: false,
     client: false,
@@ -27,7 +27,16 @@ export default function InitialRoleSelection() {
       is_venue: selectedRoles.venue
     };
 
-    await updateProfile(rolesToEnable);
+    const { error } = await updateProfile(rolesToEnable);
+
+    if (!error && selectedRoles.master) {
+      // Create initial master record if it doesn't exist
+      await addMaster({
+        user_id: userId || profile?.id,
+        full_name: profile?.full_name || 'Новый мастер',
+        slot_duration: 60
+      });
+    }
 
     // Set active role to the first selected one
     if (selectedRoles.master) switchActiveRole('master');

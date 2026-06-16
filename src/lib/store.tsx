@@ -496,14 +496,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateProfile = async (updated: Partial<Profile>) => {
+    // Explicitly allow only valid profile fields to prevent PGRST204 errors
+    const allowedFields = [
+      'full_name', 'email', 'phone', 'avatar_url',
+      'is_master', 'is_client', 'is_venue',
+      'onboarding_completed_master', 'onboarding_completed_client', 'onboarding_completed_venue',
+      'subscription_tier', 'subscription_status', 'subscription_period_end'
+    ];
+
+    const filteredUpdate = Object.keys(updated)
+      .filter(key => allowedFields.includes(key))
+      .reduce((obj, key) => {
+        obj[key as keyof Profile] = updated[key as keyof Profile];
+        return obj;
+      }, {} as any);
+
     if (isDemoMode) {
-      const newProfile = { ...profile!, ...updated };
+      const newProfile = { ...profile!, ...filteredUpdate };
       setProfile(newProfile);
       saveDemoData({ profile: newProfile });
       logEvent('system', 'Профиль обновлен (Демо)');
       return { error: null };
     }
-    const { error } = await supabase.from('profiles').update(updated).eq('id', userId);
+    const { error } = await supabase.from('profiles').update(filteredUpdate).eq('id', userId);
     if (error) {
       console.error('Update profile error:', error);
     } else {
