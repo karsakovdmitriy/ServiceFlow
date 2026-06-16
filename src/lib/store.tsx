@@ -46,7 +46,7 @@ export interface Message { id: string; profile_id: string; client_id: string; se
 export interface Event { id: string; profile_id: string; type: string; message: string; read: boolean; created_at: string; }
 export interface Review { id: string; master_id: string; rating: number; comment?: string; created_at: string; client_name?: string; }
 
-const DAYS = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+const DAYS = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 
 const getTodayStr = (offset = 0) => {
     const d = new Date();
@@ -345,7 +345,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             name,
             startTime: '09:00',
             endTime: '20:00',
-            on: i !== 0
+            on: i !== 6 // Sunday is last in DAYS now
           })));
         }
 
@@ -471,7 +471,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
                 name,
                 startTime: '09:00',
                 endTime: '20:00',
-                on: i !== 0
+                on: i !== 6
               })));
             }
           }
@@ -517,7 +517,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       'full_name', 'email', 'phone', 'avatar_url',
       'is_master', 'is_client', 'is_venue',
       'onboarding_completed_master', 'onboarding_completed_client', 'onboarding_completed_venue',
-      'subscription_tier', 'subscription_status', 'subscription_period_end'
+      'subscription_tier', 'subscription_status', 'subscription_period_end',
+      'telegram_id'
     ];
 
     const filteredUpdate = Object.keys(updated)
@@ -688,7 +689,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const toggleDay = async (idx: number) => {
     const day = schedule[idx];
-    const dayOfWeek = DAYS.indexOf(day.name);
+    // Map our UI index to DB index (0 is Sunday, 1 is Monday ...)
+    const dbDayOfWeek = (idx + 1) % 7;
     if (isDemoMode) {
         const newSched = [...schedule];
         newSched[idx].on = !newSched[idx].on;
@@ -699,13 +701,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (activeRole === 'venue' && venues.length > 0) {
       await supabase.from('venue_schedule').upsert({
         venue_id: venues[0].id,
-        day_of_week: dayOfWeek,
+        day_of_week: dbDayOfWeek,
         is_active: !day.on
       }, { onConflict: 'venue_id,day_of_week' });
     } else {
       await supabase.from('schedule_config').upsert({
         master_id: activeMaster?.id,
-        day_of_week: dayOfWeek,
+        day_of_week: dbDayOfWeek,
         is_active: !day.on
       }, { onConflict: 'master_id,day_of_week' });
     }
@@ -714,7 +716,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const updateScheduleTime = async (idx: number, startTime: string, endTime: string) => {
     const day = schedule[idx];
-    const dayOfWeek = DAYS.indexOf(day.name);
+    const dbDayOfWeek = (idx + 1) % 7;
     if (isDemoMode) {
         const newSched = [...schedule];
         newSched[idx].startTime = startTime;
@@ -726,14 +728,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (activeRole === 'venue' && venues.length > 0) {
       await supabase.from('venue_schedule').upsert({
         venue_id: venues[0].id,
-        day_of_week: dayOfWeek,
+        day_of_week: dbDayOfWeek,
         start_hour: startTime,
         end_hour: endTime
       }, { onConflict: 'venue_id,day_of_week' });
     } else {
       await supabase.from('schedule_config').upsert({
         master_id: activeMaster?.id,
-        day_of_week: dayOfWeek,
+        day_of_week: dbDayOfWeek,
         start_hour: startTime,
         end_hour: endTime
       }, { onConflict: 'master_id,day_of_week' });

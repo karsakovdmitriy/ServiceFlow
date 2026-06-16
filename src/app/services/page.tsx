@@ -266,7 +266,7 @@ export default function ServicesPage() {
 
       {/* Add/Edit Service Modal */}
       {(isAdding || editingId) && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[10000] flex items-center justify-center p-4 lg:-ml-[240px] w-screen h-screen">
           <div className="bg-surface rounded-3xl w-full max-w-md shadow-2xl animate-fade-up overflow-hidden border border-border">
             <div className="p-6 border-b border-border flex items-center justify-between">
               <h2 className="text-[16px] font-bold text-t1 tracking-tight">{editingId ? 'Редактировать услугу' : 'Новая услуга'}</h2>
@@ -351,7 +351,7 @@ export default function ServicesPage() {
 
       {/* Add/Edit Venue Modal */}
       {(isAddingVenue || editingVenueId) && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[10000] flex items-center justify-center p-4 lg:-ml-[240px] w-screen h-screen">
           <div className="bg-surface rounded-3xl w-full max-w-md shadow-2xl animate-fade-up overflow-hidden border border-border">
             <div className="p-6 border-b border-border flex items-center justify-between">
               <h2 className="text-[16px] font-bold text-t1 tracking-tight">{editingVenueId ? 'Редактировать площадку' : 'Новая площадка'}</h2>
