@@ -9,8 +9,7 @@ export default function ClientProfile() {
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
-    phone: '',
-    telegram_id: ''
+    phone: ''
   });
 
   useEffect(() => {
@@ -18,8 +17,7 @@ export default function ClientProfile() {
       setFormData({
         full_name: profile.full_name || '',
         email: profile.email || '',
-        phone: (profile as any).phone || '',
-        telegram_id: profile.telegram_id || ''
+        phone: (profile as any).phone || ''
       });
     }
   }, [profile]);
@@ -75,16 +73,6 @@ export default function ClientProfile() {
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="+7 (999) 000-00-00"
-                    className="w-full input-modern bg-bg-custom/50"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Telegram username</label>
-                  <input
-                    type="text"
-                    value={formData.telegram_id}
-                    onChange={(e) => setFormData({ ...formData, telegram_id: e.target.value })}
-                    placeholder="@username"
                     className="w-full input-modern bg-bg-custom/50"
                   />
                 </div>

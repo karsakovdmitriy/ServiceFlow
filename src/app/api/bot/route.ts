@@ -82,9 +82,9 @@ export async function POST(request: Request) {
                 });
 
                 // Notify master about message
-                const { data: profile } = await supabase.from('profiles').select('telegram_id').eq('id', client.owner_id).single();
-                if (profile?.telegram_id) {
-                    await sendTelegramMessage(profile.telegram_id, `💬 <b>Новое сообщение от ${escapeHtml(client.full_name)}:</b>\n\n${escapeHtml(text)}`);
+                const { data: master } = await supabase.from('masters').select('telegram_id').eq('user_id', client.owner_id).limit(1).single();
+                if (master?.telegram_id) {
+                    await sendTelegramMessage(master.telegram_id, `💬 <b>Новое сообщение от ${escapeHtml(client.full_name)}:</b>\n\n${escapeHtml(text)}`);
                 }
             }
          }
@@ -140,11 +140,12 @@ export async function POST(request: Request) {
              return NextResponse.json({ ok: true });
           }
 
-          const { error: pErr } = await supabase.from('profiles').update({ telegram_id: from.id.toString() }).eq('id', master.user_id);
-          const { error: mErr } = await supabase.from('masters').update({ telegram_id: from.id.toString() }).eq('id', actualMasterId);
+          // Update ALL master and venue records for this user to have this telegram_id
+          const { error: mErr } = await supabase.from('masters').update({ telegram_id: from.id.toString() }).eq('user_id', master.user_id);
+          const { error: vErr } = await supabase.from('venues').update({ telegram_id: from.id.toString() }).eq('owner_id', master.user_id);
 
-          if (pErr || mErr) {
-             console.error('Linking error:', pErr, mErr);
+          if (mErr || vErr) {
+             console.error('Linking error:', mErr, vErr);
              await sendTelegramMessage(chat.id, '❌ Произошла ошибка при привязке аккаунта. Пожалуйста, попробуйте позже.');
              return NextResponse.json({ ok: true });
           }
@@ -459,20 +460,17 @@ export async function POST(request: Request) {
                     [{ text: '📅 Предложить перенос', callback_data: `tr_rsch:${session.id}` }]
                   ];
 
-                  const { data: masterProfile } = await supabase.from('profiles').select('telegram_id').eq('id', master.user_id).single();
-
-                  if (masterProfile?.telegram_id) {
-                     await sendTelegramMessage(masterProfile.telegram_id, notificationMsg, { inline_keyboard: inlineKeyboard });
+                  if (master.telegram_id) {
+                     await sendTelegramMessage(master.telegram_id, notificationMsg, { inline_keyboard: inlineKeyboard });
                   }
 
                   // Notify Venue Owner if different
                   if (service.venue_id) {
-                    const { data: venue } = await supabase.from('venues').select('owner_id, name').eq('id', service.venue_id).single();
+                    const { data: venue } = await supabase.from('venues').select('owner_id, name, telegram_id').eq('id', service.venue_id).single();
                     if (venue && venue.owner_id !== master.user_id) {
-                      const { data: venueOwner } = await supabase.from('profiles').select('telegram_id').eq('id', venue.owner_id).single();
-                      if (venueOwner?.telegram_id) {
+                      if (venue.telegram_id) {
                         const venueMsg = `🏢 <b>Заявка на вашей площадке (${escapeHtml(venue.name)})</b>\n\n${notificationMsg}`;
-                        await sendTelegramMessage(venueOwner.telegram_id, venueMsg, { inline_keyboard: inlineKeyboard });
+                        await sendTelegramMessage(venue.telegram_id, venueMsg, { inline_keyboard: inlineKeyboard });
                       }
                     }
                   }
