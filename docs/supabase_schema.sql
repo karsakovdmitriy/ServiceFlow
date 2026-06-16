@@ -1,20 +1,15 @@
--- Database Schema for TrainerSpace (Idempotent Version)
+-- Database Schema for TrainerSpace (Architecturally Separated)
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Trainers profile
-CREATE TABLE IF NOT EXISTS trainers (
+-- User profiles (Can be Master, Client, or Venue Owner)
+CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
   full_name TEXT NOT NULL,
-  specialization TEXT,
-  avatar_url TEXT,
   email TEXT UNIQUE NOT NULL,
   phone TEXT,
-  slot_duration INTEGER DEFAULT 60,
-  telegram_bot_token TEXT,
-  telegram_id TEXT,
-  category TEXT, -- Sport, Beauty, Education, Medicine, etc.
+  avatar_url TEXT,
   is_master BOOLEAN DEFAULT FALSE,
   is_client BOOLEAN DEFAULT FALSE,
   is_venue BOOLEAN DEFAULT FALSE,
@@ -24,34 +19,51 @@ CREATE TABLE IF NOT EXISTS trainers (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Add onboarding columns if table already exists
--- Add missing columns if table already exists
-ALTER TABLE trainers ADD COLUMN IF NOT EXISTS category TEXT;
-ALTER TABLE trainers ADD COLUMN IF NOT EXISTS is_master BOOLEAN DEFAULT TRUE;
-ALTER TABLE trainers ADD COLUMN IF NOT EXISTS is_client BOOLEAN DEFAULT FALSE;
-ALTER TABLE trainers ADD COLUMN IF NOT EXISTS is_venue BOOLEAN DEFAULT FALSE;
-ALTER TABLE trainers ADD COLUMN IF NOT EXISTS onboarding_completed_master BOOLEAN DEFAULT FALSE;
-ALTER TABLE trainers ADD COLUMN IF NOT EXISTS onboarding_completed_client BOOLEAN DEFAULT FALSE;
-ALTER TABLE trainers ADD COLUMN IF NOT EXISTS onboarding_completed_venue BOOLEAN DEFAULT FALSE;
+-- Enable RLS for profiles
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
--- Enable RLS
-ALTER TABLE trainers ENABLE ROW LEVEL SECURITY;
-
--- Idempotent Policy Creation for trainers
 DO $$ BEGIN
-    DROP POLICY IF EXISTS "Trainers can view their own profile" ON trainers;
-    CREATE POLICY "Trainers can view their own profile" ON trainers FOR SELECT USING (auth.uid() = id);
+    DROP POLICY IF EXISTS "Users can view their own profile" ON profiles;
+    CREATE POLICY "Users can view their own profile" ON profiles FOR SELECT USING (auth.uid() = id);
 EXCEPTION WHEN others THEN NULL; END $$;
 
 DO $$ BEGIN
-    DROP POLICY IF EXISTS "Trainers can update their own profile" ON trainers;
-    CREATE POLICY "Trainers can update their own profile" ON trainers FOR UPDATE USING (auth.uid() = id);
+    DROP POLICY IF EXISTS "Users can update their own profile" ON profiles;
+    CREATE POLICY "Users can update their own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+EXCEPTION WHEN others THEN NULL; END $$;
+
+-- Masters (Entity that performs the service)
+-- Can be linked to a user profile or be a standalone entry created by a venue
+CREATE TABLE IF NOT EXISTS masters (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  full_name TEXT NOT NULL,
+  specialization TEXT,
+  avatar_url TEXT,
+  phone TEXT,
+  slot_duration INTEGER DEFAULT 60,
+  telegram_id TEXT,
+  telegram_bot_token TEXT,
+  category TEXT, -- Sport, Beauty, Education, Medicine, etc.
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE masters ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Masters can view their own record" ON masters;
+    CREATE POLICY "Masters can view their own record" ON masters FOR SELECT USING (auth.uid() = user_id);
+EXCEPTION WHEN others THEN NULL; END $$;
+
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can manage masters they created" ON masters;
+    CREATE POLICY "Users can manage masters they created" ON masters FOR ALL USING (auth.uid() = user_id);
 EXCEPTION WHEN others THEN NULL; END $$;
 
 -- Venues
 CREATE TABLE IF NOT EXISTS venues (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  trainer_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
+  owner_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   address TEXT,
   phone TEXT,
@@ -65,8 +77,8 @@ CREATE TABLE IF NOT EXISTS venues (
 ALTER TABLE venues ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-    DROP POLICY IF EXISTS "Trainers can manage their own venues" ON venues;
-    CREATE POLICY "Trainers can manage their own venues" ON venues FOR ALL USING (auth.uid() = trainer_id);
+    DROP POLICY IF EXISTS "Owners can manage their own venues" ON venues;
+    CREATE POLICY "Owners can manage their own venues" ON venues FOR ALL USING (auth.uid() = owner_id);
 EXCEPTION WHEN others THEN NULL; END $$;
 
 -- Venue Schedule Configuration
@@ -86,7 +98,7 @@ DO $$ BEGIN
     DROP POLICY IF EXISTS "Venue owners can manage their schedule" ON venue_schedule;
     CREATE POLICY "Venue owners can manage their schedule" ON venue_schedule FOR ALL USING (
       EXISTS (
-        SELECT 1 FROM venues WHERE id = venue_id AND trainer_id = auth.uid()
+        SELECT 1 FROM venues WHERE id = venue_id AND owner_id = auth.uid()
       )
     );
 EXCEPTION WHEN others THEN NULL; END $$;
@@ -94,9 +106,9 @@ EXCEPTION WHEN others THEN NULL; END $$;
 -- Services
 CREATE TABLE IF NOT EXISTS services (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  trainer_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
+  owner_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   venue_id UUID REFERENCES venues(id) ON DELETE SET NULL,
-  assigned_trainer_id UUID REFERENCES trainers(id) ON DELETE SET NULL,
+  master_id UUID REFERENCES masters(id) ON DELETE SET NULL,
   name TEXT NOT NULL,
   duration INTEGER NOT NULL,
   price NUMERIC(10, 2) NOT NULL,
@@ -104,22 +116,18 @@ CREATE TABLE IF NOT EXISTS services (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Add new columns if table already exists without them
-ALTER TABLE services ADD COLUMN IF NOT EXISTS venue_id UUID REFERENCES venues(id) ON DELETE SET NULL;
-ALTER TABLE services ADD COLUMN IF NOT EXISTS assigned_trainer_id UUID REFERENCES trainers(id) ON DELETE SET NULL;
-
 ALTER TABLE services ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-    DROP POLICY IF EXISTS "Trainers can manage their own services" ON services;
-    CREATE POLICY "Trainers can manage their own services" ON services FOR ALL USING (auth.uid() = trainer_id);
+    DROP POLICY IF EXISTS "Owners can manage their own services" ON services;
+    CREATE POLICY "Owners can manage their own services" ON services FOR ALL USING (auth.uid() = owner_id);
 EXCEPTION WHEN others THEN NULL; END $$;
 
 -- Clients
 CREATE TABLE IF NOT EXISTS clients (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  trainer_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES trainers(id) ON DELETE SET NULL,
+  owner_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
   full_name TEXT NOT NULL,
   email TEXT,
   phone TEXT,
@@ -128,30 +136,20 @@ CREATE TABLE IF NOT EXISTS clients (
   last_bot_state TEXT,
   last_session_id UUID,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  UNIQUE(trainer_id, telegram_id)
+  UNIQUE(owner_id, telegram_id)
 );
-
--- Ensure unique constraint exists if table was created without it
-DO $$ BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_constraint
-        WHERE conname = 'clients_trainer_id_telegram_id_key'
-    ) THEN
-        ALTER TABLE clients ADD CONSTRAINT clients_trainer_id_telegram_id_key UNIQUE (trainer_id, telegram_id);
-    END IF;
-END $$;
 
 ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-    DROP POLICY IF EXISTS "Trainers can manage their own clients" ON clients;
-    CREATE POLICY "Trainers can manage their own clients" ON clients FOR ALL USING (auth.uid() = trainer_id);
+    DROP POLICY IF EXISTS "Owners can manage their own clients" ON clients;
+    CREATE POLICY "Owners can manage their own clients" ON clients FOR ALL USING (auth.uid() = owner_id);
 EXCEPTION WHEN others THEN NULL; END $$;
 
 -- Sessions
 CREATE TABLE IF NOT EXISTS sessions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  trainer_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
+  master_id UUID REFERENCES masters(id) ON DELETE CASCADE,
   client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
   service_id UUID REFERENCES services(id) ON DELETE SET NULL,
   venue_id UUID REFERENCES venues(id) ON DELETE SET NULL,
@@ -161,38 +159,39 @@ CREATE TABLE IF NOT EXISTS sessions (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Add venue_id to sessions if table already exists without it
-ALTER TABLE sessions ADD COLUMN IF NOT EXISTS venue_id UUID REFERENCES venues(id) ON DELETE SET NULL;
-
 ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-    DROP POLICY IF EXISTS "Trainers can manage their own sessions" ON sessions;
-    CREATE POLICY "Trainers can manage their own sessions" ON sessions FOR ALL USING (auth.uid() = trainer_id);
+    DROP POLICY IF EXISTS "Masters can manage their sessions" ON sessions;
+    CREATE POLICY "Masters can manage their sessions" ON sessions FOR ALL USING (
+        EXISTS (SELECT 1 FROM masters WHERE id = master_id AND user_id = auth.uid())
+    );
 EXCEPTION WHEN others THEN NULL; END $$;
 
--- Schedule Configuration
+-- Schedule Configuration for Masters
 CREATE TABLE IF NOT EXISTS schedule_config (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  trainer_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
+  master_id UUID REFERENCES masters(id) ON DELETE CASCADE,
   day_of_week INTEGER NOT NULL,
   is_active BOOLEAN DEFAULT TRUE,
   start_hour TEXT DEFAULT '09:00',
   end_hour TEXT DEFAULT '20:00',
-  UNIQUE(trainer_id, day_of_week)
+  UNIQUE(master_id, day_of_week)
 );
 
 ALTER TABLE schedule_config ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-    DROP POLICY IF EXISTS "Trainers can manage their own schedule" ON schedule_config;
-    CREATE POLICY "Trainers can manage their own schedule" ON schedule_config FOR ALL USING (auth.uid() = trainer_id);
+    DROP POLICY IF EXISTS "Masters can manage their own schedule" ON schedule_config;
+    CREATE POLICY "Masters can manage their own schedule" ON schedule_config FOR ALL USING (
+        EXISTS (SELECT 1 FROM masters WHERE id = master_id AND user_id = auth.uid())
+    );
 EXCEPTION WHEN others THEN NULL; END $$;
 
--- Messages for trainer-client chat
+-- Messages
 CREATE TABLE IF NOT EXISTS messages (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  trainer_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
+  profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
   sender_type TEXT NOT NULL, -- 'trainer' or 'client'
   text TEXT NOT NULL,
@@ -203,14 +202,14 @@ CREATE TABLE IF NOT EXISTS messages (
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-    DROP POLICY IF EXISTS "Trainers can manage their own messages" ON messages;
-    CREATE POLICY "Trainers can manage their own messages" ON messages FOR ALL USING (auth.uid() = trainer_id);
+    DROP POLICY IF EXISTS "Users can manage their messages" ON messages;
+    CREATE POLICY "Users can manage their messages" ON messages FOR ALL USING (auth.uid() = profile_id);
 EXCEPTION WHEN others THEN NULL; END $$;
 
 -- Events / Activity Log
 CREATE TABLE IF NOT EXISTS events (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  trainer_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
+  profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   type TEXT NOT NULL,
   message TEXT NOT NULL,
   read BOOLEAN DEFAULT FALSE,
@@ -220,19 +219,19 @@ CREATE TABLE IF NOT EXISTS events (
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-    DROP POLICY IF EXISTS "Trainers can view their own events" ON events;
-    CREATE POLICY "Trainers can view their own events" ON events FOR SELECT USING (auth.uid() = trainer_id);
+    DROP POLICY IF EXISTS "Users can view their own events" ON events;
+    CREATE POLICY "Users can view their own events" ON events FOR SELECT USING (auth.uid() = profile_id);
 EXCEPTION WHEN others THEN NULL; END $$;
 
 DO $$ BEGIN
-    DROP POLICY IF EXISTS "Trainers can log their own events" ON events;
-    CREATE POLICY "Trainers can log their own events" ON events FOR INSERT WITH CHECK (auth.uid() = trainer_id);
+    DROP POLICY IF EXISTS "Users can log their own events" ON events;
+    CREATE POLICY "Users can log their own events" ON events FOR INSERT WITH CHECK (auth.uid() = profile_id);
 EXCEPTION WHEN others THEN NULL; END $$;
 
--- Blocked time slots
+-- Blocked time slots for Masters
 CREATE TABLE IF NOT EXISTS blocked_slots (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  trainer_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
+  master_id UUID REFERENCES masters(id) ON DELETE CASCADE,
   date DATE NOT NULL,
   start_hour TEXT,
   end_hour TEXT,
@@ -244,14 +243,16 @@ CREATE TABLE IF NOT EXISTS blocked_slots (
 ALTER TABLE blocked_slots ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-    DROP POLICY IF EXISTS "Trainers can manage their own blocked slots" ON blocked_slots;
-    CREATE POLICY "Trainers can manage their own blocked slots" ON blocked_slots FOR ALL USING (auth.uid() = trainer_id);
+    DROP POLICY IF EXISTS "Masters can manage their own blocked slots" ON blocked_slots;
+    CREATE POLICY "Masters can manage their own blocked slots" ON blocked_slots FOR ALL USING (
+        EXISTS (SELECT 1 FROM masters WHERE id = master_id AND user_id = auth.uid())
+    );
 EXCEPTION WHEN others THEN NULL; END $$;
 
 -- Reviews table
 CREATE TABLE IF NOT EXISTS reviews (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  trainer_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
+  master_id UUID REFERENCES masters(id) ON DELETE CASCADE,
   client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
   session_id UUID REFERENCES sessions(id) ON DELETE CASCADE UNIQUE,
   venue_id UUID REFERENCES venues(id) ON DELETE SET NULL,
@@ -260,21 +261,20 @@ CREATE TABLE IF NOT EXISTS reviews (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Add venue_id if table exists
-ALTER TABLE reviews ADD COLUMN IF NOT EXISTS venue_id UUID REFERENCES venues(id) ON DELETE SET NULL;
-
 ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-    DROP POLICY IF EXISTS "Trainers can view their own reviews" ON reviews;
-    CREATE POLICY "Trainers can view their own reviews" ON reviews FOR SELECT USING (auth.uid() = trainer_id);
+    DROP POLICY IF EXISTS "Masters can view their own reviews" ON reviews;
+    CREATE POLICY "Masters can view their own reviews" ON reviews FOR SELECT USING (
+        EXISTS (SELECT 1 FROM masters WHERE id = master_id AND user_id = auth.uid())
+    );
 EXCEPTION WHEN others THEN NULL; END $$;
 
 -- Partnerships
 CREATE TABLE IF NOT EXISTS partnerships (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
-  partner_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  partner_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   status TEXT DEFAULT 'pending', -- 'pending', 'accepted'
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(user_id, partner_id)
@@ -291,9 +291,9 @@ EXCEPTION WHEN others THEN NULL; END $$;
 CREATE TABLE IF NOT EXISTS venue_staff (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   venue_id UUID REFERENCES venues(id) ON DELETE CASCADE,
-  trainer_id UUID REFERENCES trainers(id) ON DELETE CASCADE,
+  master_id UUID REFERENCES masters(id) ON DELETE CASCADE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  UNIQUE(venue_id, trainer_id)
+  UNIQUE(venue_id, master_id)
 );
 
 ALTER TABLE venue_staff ENABLE ROW LEVEL SECURITY;
@@ -302,34 +302,25 @@ DO $$ BEGIN
     DROP POLICY IF EXISTS "Venue owners can manage staff" ON venue_staff;
     CREATE POLICY "Venue owners can manage staff" ON venue_staff FOR ALL USING (
       EXISTS (
-        SELECT 1 FROM venues WHERE id = venue_id AND trainer_id = auth.uid()
+        SELECT 1 FROM venues WHERE id = venue_id AND owner_id = auth.uid()
       )
     );
 EXCEPTION WHEN others THEN NULL; END $$;
 
 DO $$ BEGIN
-    DROP POLICY IF EXISTS "Staff can view their venues" ON venue_staff;
-    CREATE POLICY "Staff can view their venues" ON venue_staff FOR SELECT USING (trainer_id = auth.uid());
+    DROP POLICY IF EXISTS "Masters can view their venues" ON venue_staff;
+    CREATE POLICY "Masters can view their venues" ON venue_staff FOR SELECT USING (
+        EXISTS (SELECT 1 FROM masters WHERE id = master_id AND user_id = auth.uid())
+    );
 EXCEPTION WHEN others THEN NULL; END $$;
 
 -- Auth Trigger Function
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.trainers (id, full_name, email, is_master)
-  VALUES (new.id, COALESCE(new.raw_user_meta_data->>'full_name', 'Новый тренер'), new.email, false)
+  INSERT INTO public.profiles (id, full_name, email, is_master)
+  VALUES (new.id, COALESCE(new.raw_user_meta_data->>'full_name', 'Новый пользователь'), new.email, false)
   ON CONFLICT (id) DO NOTHING;
-
-  INSERT INTO public.schedule_config (trainer_id, day_of_week, start_hour, end_hour, is_active)
-  VALUES
-    (new.id, 1, '09:00', '20:00', true),
-    (new.id, 2, '09:00', '20:00', true),
-    (new.id, 3, '09:00', '20:00', true),
-    (new.id, 4, '09:00', '20:00', true),
-    (new.id, 5, '09:00', '20:00', true),
-    (new.id, 6, '10:00', '15:00', true),
-    (new.id, 0, '09:00', '18:00', false)
-  ON CONFLICT (trainer_id, day_of_week) DO NOTHING;
 
   RETURN new;
 END;
