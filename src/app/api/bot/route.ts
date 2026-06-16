@@ -525,13 +525,22 @@ async function getTimesKeyboard(masterId: string, serviceId: string, date: strin
   const dayOfWeek = new Date(date).getDay();
 
   // 1. Fetch master schedule
-  const { data: config } = await supabase.from('schedule_config')
+  let { data: config } = await supabase.from('schedule_config')
     .select('start_hour, end_hour, is_active')
     .eq('master_id', masterId)
     .eq('day_of_week', dayOfWeek)
-    .single();
+    .maybeSingle();
 
-  if (!config || !config.is_active) return [[{ text: 'В этот день нет записи', callback_data: 'none' }]];
+  if (!config) {
+    // Default schedule if not configured
+    config = {
+        start_hour: '09:00',
+        end_hour: '20:00',
+        is_active: dayOfWeek !== 0 // Sunday is off by default
+    };
+  }
+
+  if (!config.is_active) return [[{ text: 'В этот день нет записи', callback_data: 'none' }]];
 
   let start = parseInt(config.start_hour.split(':')[0]);
   let end = parseInt(config.end_hour.split(':')[0]);
