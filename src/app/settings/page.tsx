@@ -5,7 +5,7 @@ import { useStore } from '@/lib/store';
 import { IconDatabase, IconDatabaseOff, IconInfoCircle, IconShieldCheck, IconLock, IconBrandTelegram, IconPhoto, IconCheck } from '@tabler/icons-react';
 
 export default function SettingsPage() {
-  const { profile, activeMaster, updateProfile, loading: storeLoading, isDemoMode } = useStore();
+  const { profile, activeMaster, updateProfile, updateMaster, loading: storeLoading, isDemoMode } = useStore();
   const [formData, setFormData] = useState({
     full_name: '',
     specialization: '',
@@ -39,17 +39,32 @@ export default function SettingsPage() {
     setSaving(true);
     setMessage('');
 
-    const { error } = await updateProfile({
-      full_name: formData.full_name,
-      specialization: formData.specialization,
-      avatar_url: formData.avatar_url,
-      email: formData.email,
-      phone: formData.phone,
-      slot_duration: parseInt(formData.slot_duration),
-      category: formData.category
-    } as any) as any;
+    let error = null;
 
-    if (error) setMessage('Ошибка при сохранении: ' + error.message);
+    // 1. Update Master data if applicable
+    if (activeMaster) {
+      const { error: masterErr } = await updateMaster(activeMaster.id, {
+        full_name: formData.full_name,
+        specialization: formData.specialization,
+        avatar_url: formData.avatar_url,
+        phone: formData.phone,
+        slot_duration: parseInt(formData.slot_duration),
+        category: formData.category
+      });
+      if (masterErr) error = masterErr;
+    }
+
+    // 2. Update Profile data
+    if (!error) {
+      const { error: profileErr } = await updateProfile({
+        full_name: formData.full_name,
+        avatar_url: formData.avatar_url,
+        phone: formData.phone
+      });
+      if (profileErr) error = profileErr;
+    }
+
+    if (error) setMessage('Ошибка при сохранении: ' + (error.message || 'Неизвестная ошибка'));
     else {
         setMessage('Изменения успешно сохранены');
         setTimeout(() => setMessage(''), 3000);

@@ -42,7 +42,7 @@ export interface Master {
   category?: string;
   created_at: string;
 }
-export interface Message { id: string; profile_id: string; client_id: string; sender_type: 'trainer' | 'client'; text: string; read: boolean; created_at: string; }
+export interface Message { id: string; profile_id: string; client_id: string; sender_type: 'master' | 'client'; text: string; read: boolean; created_at: string; }
 export interface Event { id: string; profile_id: string; type: string; message: string; read: boolean; created_at: string; }
 export interface Review { id: string; master_id: string; rating: number; comment?: string; created_at: string; client_name?: string; }
 
@@ -269,8 +269,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const { data: mastersData } = await supabase.from('masters').select('*').eq('user_id', userId);
       if (mastersData) {
         setMasters(mastersData);
-        if (mastersData.length > 0 && !activeMaster) {
-          setActiveMaster(mastersData[0]);
+        // Find the "primary" master record for the current user
+        const primaryMaster = mastersData.find(m => m.user_id === userId) || mastersData[0];
+        if (primaryMaster && (!activeMaster || !mastersData.find(m => m.id === activeMaster.id))) {
+          setActiveMaster(primaryMaster);
         }
       }
 
@@ -754,7 +756,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     await supabase.from('messages').insert({
       profile_id: user.id,
       client_id: clientId,
-      sender_type: 'trainer',
+      sender_type: 'master',
       text
     });
 
@@ -946,11 +948,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (isDemoMode) {
       const updatedMasters = masters.map(m => m.id === id ? { ...m, ...master } : m);
       setMasters(updatedMasters);
-      saveDemoData({ masters: updatedMasters });
+      if (activeMaster?.id === id) setActiveMaster({ ...activeMaster, ...master });
+      saveDemoData({ masters: updatedMasters, activeMaster: activeMaster?.id === id ? { ...activeMaster, ...master } : activeMaster });
       return { error: null };
     }
     const { error } = await supabase.from('masters').update(master).eq('id', id);
-    if (!error) fetchData();
+    if (!error) {
+      if (activeMaster?.id === id) setActiveMaster({ ...activeMaster, ...master });
+      fetchData();
+    }
     return { error };
   };
 
