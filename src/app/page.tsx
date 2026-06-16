@@ -10,7 +10,8 @@ import {
   IconCalendar,
   IconCheck,
   IconX,
-  IconBulb
+  IconBulb,
+  IconBellRinging
 } from '@tabler/icons-react';
 import { useStore } from '@/lib/store';
 import MyBookings from './my-bookings/page';
@@ -18,12 +19,19 @@ import VenueDashboard from './venue/dashboard/page';
 import PortalModal from '@/components/PortalModal';
 
 export default function Dashboard() {
-  const { sessions, requests, completedSessions, approveRequest, rejectRequest, profile, events, activeRole } = useStore();
+  const { sessions, requests, completedSessions, approveRequest, rejectRequest, sendReminder, profile, events, activeRole } = useStore();
   const [rejectingId, setRejectingId] = React.useState<string | null>(null);
+  const [remindingId, setRemindingId] = React.useState<string | null>(null);
 
   const handleReject = (id: string, reschedule: boolean) => {
     rejectRequest(id, reschedule);
     setRejectingId(null);
+  };
+
+  const handleSendReminder = async (id: string) => {
+    setRemindingId(id);
+    await sendReminder(id);
+    setTimeout(() => setRemindingId(null), 2000);
   };
 
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
@@ -59,7 +67,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-surface p-6 rounded-r-xl border border-border-light shadow-sh-sm">
         {[
           { label: 'Доход', val: todayIncome.toLocaleString('ru-RU') + ' ₽', sub: 'По завершенным' },
-          { label: 'Сессии', val: sessions.length, sub: 'Сегодня активно' },
+          { label: 'Записи', val: sessions.length, sub: 'Активные' },
           { label: 'Клиенты', val: activeClients, sub: 'Активные' },
           { label: 'Заявки', val: pendingCount, sub: 'Ожидают', highlight: pendingCount > 0 },
         ].map((stat, i) => (
@@ -84,7 +92,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between mb-5">
                 <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider">Повестка дня</h2>
                 <div className="h-px bg-border flex-1 mx-4"></div>
-                <span className="text-[11px] font-bold text-t3">{todaySessions.length} записей</span>
+                <span className="text-[11px] font-bold text-t3">{todaySessions.length} сеансов</span>
             </div>
             <div className="space-y-1">
               {todaySessions.length === 0 && (
@@ -103,9 +111,23 @@ export default function Dashboard() {
                       <IconClock size={12} stroke={1.5} /> {session.time}
                     </div>
                   </div>
-                  <div className="flex items-center text-[11px] font-bold text-green-custom">
-                    <span className="status-dot bg-green-custom"></span>
-                    Подтверждено
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => handleSendReminder(session.id)}
+                      disabled={remindingId === session.id}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                        remindingId === session.id
+                          ? 'bg-green-50 text-green-custom'
+                          : 'bg-bg-custom text-t3 hover:text-accent hover:bg-accent/5'
+                      }`}
+                    >
+                      {remindingId === session.id ? <IconCheck size={14} /> : <IconBellRinging size={14} />}
+                      {remindingId === session.id ? 'Отправлено' : 'Напомнить'}
+                    </button>
+                    <div className="flex items-center text-[11px] font-bold text-green-custom">
+                        <span className="status-dot bg-green-custom"></span>
+                        Подтверждено
+                    </div>
                   </div>
                 </div>
               ))}

@@ -133,7 +133,7 @@ export default function BotPage() {
                 {/* Bubble 1 */}
                 <div className="bg-surface rounded-2xl rounded-bl-none p-4 mb-4 max-w-[90%] shadow-sm animate-fade-up border border-border/50">
                     <div className="text-[13px] text-t1 leading-relaxed">
-                        👋 Привет! Я помогу вам записаться к тренеру <strong>{activeMaster?.full_name || profile?.full_name || 'Алексей'}</strong>.
+                        👋 Привет! Я помогу вам записаться к мастеру <strong>{activeMaster?.full_name || profile?.full_name || 'Алексей'}</strong>.
                         <br/><br/>
                         На этой неделе есть <strong>12 свободных слотов</strong>.
                     </div>

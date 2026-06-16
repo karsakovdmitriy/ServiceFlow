@@ -111,7 +111,7 @@ export default function SettingsPage() {
                     <input
                       className="w-full input-modern bg-bg-custom/50"
                       type="text"
-                      placeholder="Фитнес-тренер"
+                      placeholder="Специалист"
                       value={formData.specialization}
                       onChange={e => setFormData({...formData, specialization: e.target.value})}
                     />
@@ -236,7 +236,7 @@ export default function SettingsPage() {
         <div className="lg:col-span-4 space-y-10">
           {!isDemoMode && (
             <section>
-                <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-4">Оповещения тренера</div>
+                <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-4">Оповещения мастера</div>
                 <div className="p-5 rounded-2xl bg-surface border border-border flex flex-col gap-4 shadow-sh-sm">
                     <div className="flex items-center gap-3">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${activeMaster?.telegram_id ? 'bg-green-light text-green-custom' : 'bg-accent-light text-accent'}`}>

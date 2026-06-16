@@ -278,7 +278,7 @@ export default function ServicesPage() {
                 <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Название</label>
                 <input
                   type="text"
-                  placeholder="Напр. Персональная тренировка"
+                  placeholder="Напр. Персональная консультация"
                   value={editingId ? editData.name : newData.name}
                   onChange={e => editingId ? setEditData({...editData, name: e.target.value}) : setNewData({...newData, name: e.target.value})}
                   className="w-full input-modern"
@@ -330,7 +330,7 @@ export default function ServicesPage() {
                     />
                 </div>
                 <div>
-                    <div className="text-[13.5px] font-bold text-t1 group-hover:text-accent transition-colors">Групповая тренировка</div>
+                    <div className="text-[13.5px] font-bold text-t1 group-hover:text-accent transition-colors">Групповая услуга</div>
                     <div className="text-[11px] text-t3 leading-relaxed mt-0.5">Позволяет нескольким клиентам записаться на один и тот же временной слот.</div>
                 </div>
               </label>

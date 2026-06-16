@@ -56,7 +56,7 @@ export default function InitialRoleSelection() {
           <div className="grid grid-cols-1 gap-4 mb-10">
             {[
               { id: 'master', label: 'Мастер', desc: 'Записываю клиентов и веду расписание', icon: <IconStethoscope size={24} /> },
-              { id: 'client', label: 'Клиент', desc: 'Записываюсь на тренировки и услуги', icon: <IconUser size={24} /> },
+              { id: 'client', label: 'Клиент', desc: 'Записываюсь на услуги и сеансы', icon: <IconUser size={24} /> },
               { id: 'venue', label: 'Площадка', desc: 'Управляю локацией и мастерами', icon: <IconBuildingStore size={24} /> }
             ].map(role => {
               const active = selectedRoles[role.id as keyof typeof selectedRoles];

@@ -59,9 +59,9 @@ const MOCK_VENUES = [
 ];
 
 const MOCK_SERVICES = [
-  { id: 's1', owner_id: 'demo-user', name: 'Персональная тренировка', duration: 60, price: 2500, is_group: false, venue_id: 'v1' },
-  { id: 's2', owner_id: 'demo-user', name: 'Сплит-тренировка', duration: 60, price: 3500, is_group: false, venue_id: 'v1' },
-  { id: 's3', owner_id: 'demo-user', name: 'Групповая тренировка', duration: 60, price: 1000, is_group: true, venue_id: 'v2' },
+  { id: 's1', owner_id: 'demo-user', name: 'Персональная услуга', duration: 60, price: 2500, is_group: false, venue_id: 'v1' },
+  { id: 's2', owner_id: 'demo-user', name: 'Сплит-услуга', duration: 60, price: 3500, is_group: false, venue_id: 'v1' },
+  { id: 's3', owner_id: 'demo-user', name: 'Групповая услуга', duration: 60, price: 1000, is_group: true, venue_id: 'v2' },
 ];
 
 const MOCK_SESSIONS = [
@@ -127,6 +127,7 @@ interface StoreContextType {
   addMaster: (master: Omit<Master, 'id' | 'created_at'>) => Promise<{ data: Master | null, error: any }>;
   updateMaster: (id: string, master: Partial<Master>) => Promise<{ error: any }>;
   removeMaster: (id: string) => Promise<void>;
+  sendReminder: (sessionId: string) => Promise<{ error: any }>;
   toggleDay: (idx: number) => Promise<void>;
   updateScheduleTime: (idx: number, startTime: string, endTime: string) => Promise<void>;
   removeService: (id: string) => Promise<void>;
@@ -1000,6 +1001,28 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
+  const sendReminder = async (sessionId: string) => {
+    if (isDemoMode) {
+      logEvent('system', 'Напоминание отправлено (Демо)');
+      return { error: null };
+    }
+    try {
+      const res = await fetch('/api/notify/reminder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        logEvent('system', 'Напоминание отправлено клиенту');
+        return { error: null };
+      }
+      return { error: new Error(data.message || 'Ошибка отправки') };
+    } catch (err: any) {
+      return { error: err };
+    }
+  };
+
   const removeMaster = async (id: string) => {
     if (isDemoMode) {
       const updatedMasters = masters.filter(m => m.id !== id);
@@ -1034,6 +1057,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     addSession, addService, updateService, addVenue, updateVenue, removeVenue, addBlock, removeBlock,
     addPartnership, removePartnership, addVenueStaff, addMasterByEmail, removeVenueStaff, getAllMasters,
     addMaster, updateMaster, removeMaster,
+    sendReminder,
     toggleDay, updateScheduleTime, removeService,
     refresh: fetchData
   };

@@ -18,7 +18,7 @@ export default function PartnersPage() {
 
   return (
     <div className="animate-fade-up max-w-[800px] mx-auto space-y-8">
-      <h1 className="text-2xl font-bold text-t1">Партнеры для тренировок</h1>
+      <h1 className="text-2xl font-bold text-t1">Ваши партнеры</h1>
       <p className="text-t2 text-[14px]">Добавляйте друзей, чтобы вместе записываться на групповые занятия и следить за прогрессом друг друга.</p>
 
       <section className="bg-surface p-6 rounded-xl border border-border-light shadow-sh-sm">

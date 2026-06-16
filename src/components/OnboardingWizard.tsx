@@ -67,7 +67,7 @@ export default function OnboardingWizard() {
           <p className="text-t3 text-sm mb-6">Расскажите, чем вы занимаетесь, чтобы клиенты могли вас найти.</p>
           <input
             type="text"
-            placeholder="Например: Силовой тренер, Визажист..."
+            placeholder="Например: Косметолог, Визажист..."
             className="w-full bg-bg-custom border border-border-light rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-accent outline-none transition-all"
             value={formData.specialization}
             onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}

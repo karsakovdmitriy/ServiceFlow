@@ -49,8 +49,8 @@ export async function POST(request: Request) {
       let message = '';
       let replyMarkup = undefined;
       if (status === 'completed') {
-        message = `💪 <b>Как прошла тренировка?</b>\n\n` +
-          `Надеемся, вам понравилось занятие с тренером <b>${(sessionData.master as any)?.full_name}</b>!\n\n` +
+        message = `💪 <b>Как все прошло?</b>\n\n` +
+          `Надеемся, вам понравилась услуга у специалиста <b>${(sessionData.master as any)?.full_name}</b>!\n\n` +
           `Будем рады вашему отзыву.`;
 
         replyMarkup = {
@@ -61,11 +61,11 @@ export async function POST(request: Request) {
         };
       } else {
         message = `✅ <b>Ваша запись подтверждена!</b>\n\n` +
-          `Тренер: <b>${(sessionData.master as any)?.full_name}</b>\n` +
+          `Мастер: <b>${(sessionData.master as any)?.full_name}</b>\n` +
           `Услуга: <b>${(sessionData.service as any)?.name}</b>${venueText}\n` +
           `Дата: <b>${dateStr}</b>\n` +
           `Время: <b>${timeStr}</b>\n\n` +
-          `Ждем вас на тренировке!`;
+          `Ждем вас!`;
       }
 
       await sendTelegramMessage(clientTelegramId, message, replyMarkup);
