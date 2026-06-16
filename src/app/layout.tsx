@@ -26,8 +26,6 @@ export default function RootLayout({
           <AuthProvider>
             <StoreProvider>
               <LayoutWrapper>
-                <InitialRoleSelection />
-                <OnboardingWizard />
                 {children}
               </LayoutWrapper>
             </StoreProvider>

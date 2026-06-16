@@ -21,7 +21,11 @@ import {
   IconUser,
   IconBuildingStore,
   IconFriends,
-  IconSearch
+  IconSearch,
+  IconFileText,
+  IconShieldLock,
+  IconScale,
+  IconFileCheck
 } from '@tabler/icons-react';
 import { useStore } from '@/lib/store';
 import { useAuth } from './AuthProvider';
@@ -35,8 +39,10 @@ const Sidebar = () => {
   const { profile, requests, activeRole, switchActiveRole, updateProfile } = useStore();
 
   const getNavItems = () => {
+    let items: any[] = [];
+
     if (activeRole === 'client') {
-      return [
+      items = [
         { label: 'Личный кабинет', type: 'group' },
         { label: 'Мои записи', icon: <IconCircleCheck size={18} stroke={1.5} />, href: '/my-bookings', id: 'my-bookings' },
         { label: 'Партнеры', icon: <IconFriends size={18} stroke={1.5} />, href: '/partners', id: 'partners' },
@@ -44,10 +50,8 @@ const Sidebar = () => {
         { label: 'Настройки', type: 'group' },
         { label: 'Мой профиль', icon: <IconSettings size={18} stroke={1.5} />, href: '/client/profile', id: 'client-profile' },
       ];
-    }
-
-    if (activeRole === 'venue') {
-      return [
+    } else if (activeRole === 'venue') {
+      items = [
         { label: 'Управление площадкой', type: 'group' },
         { label: 'Обзор', icon: <IconCircleCheck size={18} stroke={1.5} />, href: '/venue/dashboard', id: 'venue-dashboard' },
         { label: 'Заявки', icon: <IconCalendarEvent size={18} stroke={1.5} />, href: '/venue/requests', id: 'venue-requests' },
@@ -64,23 +68,32 @@ const Sidebar = () => {
         { label: 'Telegram-бот', icon: <IconBrandTelegram size={18} stroke={1.5} />, href: '/venue/bot', id: 'venue-bot' },
         { label: 'Профиль площадки', icon: <IconSettings size={18} stroke={1.5} />, href: '/venue/profile', id: 'venue-profile' },
       ];
+    } else {
+      items = [
+        { label: 'Рабочий стол', type: 'group' },
+        { label: 'Сегодня', icon: <IconCircleCheck size={18} stroke={1.5} />, href: '/', id: 'dashboard' },
+        { label: 'Заявки', icon: <IconCalendarEvent size={18} stroke={1.5} />, href: '/requests', id: 'requests', badge: requests.length > 0 ? requests.length : undefined },
+        { label: 'Расписание', icon: <IconCalendarWeek size={18} stroke={1.5} />, href: '/schedule', id: 'schedule' },
+
+        { label: 'Клиенты', type: 'group' },
+        { label: 'База клиентов', icon: <IconUsers size={18} stroke={1.5} />, href: '/clients', id: 'clients' },
+        { label: 'Доходы', icon: <IconChartBar size={18} stroke={1.5} />, href: '/analytics', id: 'analytics' },
+        { label: 'Отзывы', icon: <IconStar size={18} stroke={1.5} />, href: '/reviews', id: 'reviews' },
+
+        { label: 'Настройка', type: 'group' },
+        { label: 'Услуги и площадки', icon: <IconStethoscope size={18} stroke={1.5} />, href: '/services', id: 'services' },
+        { label: 'Telegram-бот', icon: <IconBrandTelegram size={18} stroke={1.5} />, href: '/bot', id: 'bot' },
+        { label: 'Профиль', icon: <IconSettings size={18} stroke={1.5} />, href: '/settings', id: 'settings' },
+      ];
     }
 
     return [
-      { label: 'Рабочий стол', type: 'group' },
-      { label: 'Сегодня', icon: <IconCircleCheck size={18} stroke={1.5} />, href: '/', id: 'dashboard' },
-      { label: 'Заявки', icon: <IconCalendarEvent size={18} stroke={1.5} />, href: '/requests', id: 'requests', badge: requests.length > 0 ? requests.length : undefined },
-      { label: 'Расписание', icon: <IconCalendarWeek size={18} stroke={1.5} />, href: '/schedule', id: 'schedule' },
-
-      { label: 'Клиенты', type: 'group' },
-      { label: 'База клиентов', icon: <IconUsers size={18} stroke={1.5} />, href: '/clients', id: 'clients' },
-      { label: 'Доходы', icon: <IconChartBar size={18} stroke={1.5} />, href: '/analytics', id: 'analytics' },
-      { label: 'Отзывы', icon: <IconStar size={18} stroke={1.5} />, href: '/reviews', id: 'reviews' },
-
-      { label: 'Настройка', type: 'group' },
-      { label: 'Услуги и площадки', icon: <IconStethoscope size={18} stroke={1.5} />, href: '/services', id: 'services' },
-      { label: 'Telegram-бот', icon: <IconBrandTelegram size={18} stroke={1.5} />, href: '/bot', id: 'bot' },
-      { label: 'Профиль', icon: <IconSettings size={18} stroke={1.5} />, href: '/settings', id: 'settings' },
+      ...items,
+      { label: 'Юридическая информация', type: 'group' },
+      { label: 'Условия', icon: <IconFileText size={18} stroke={1.5} />, href: '/legal/terms', id: 'legal-terms' },
+      { label: 'Приватность', icon: <IconShieldLock size={18} stroke={1.5} />, href: '/legal/privacy', id: 'legal-privacy' },
+      { label: 'Данные', icon: <IconFileCheck size={18} stroke={1.5} />, href: '/legal/data-consent', id: 'legal-data-consent' },
+      { label: 'Оферта', icon: <IconScale size={18} stroke={1.5} />, href: '/legal/offer', id: 'legal-offer' },
     ];
   };
 
