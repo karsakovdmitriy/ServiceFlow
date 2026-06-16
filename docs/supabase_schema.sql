@@ -426,6 +426,41 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Schedule Initialization Functions
+CREATE OR REPLACE FUNCTION public.initialize_master_schedule()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.schedule_config (master_id, day_of_week, is_active, start_hour, end_hour)
+  VALUES
+    (NEW.id, 1, TRUE, '09:00', '20:00'),
+    (NEW.id, 2, TRUE, '09:00', '20:00'),
+    (NEW.id, 3, TRUE, '09:00', '20:00'),
+    (NEW.id, 4, TRUE, '09:00', '20:00'),
+    (NEW.id, 5, TRUE, '09:00', '20:00'),
+    (NEW.id, 6, TRUE, '09:00', '18:00'),
+    (NEW.id, 0, FALSE, '09:00', '20:00')
+  ON CONFLICT (master_id, day_of_week) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.initialize_venue_schedule()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.venue_schedule (venue_id, day_of_week, is_active, start_hour, end_hour)
+  VALUES
+    (NEW.id, 1, TRUE, '09:00', '21:00'),
+    (NEW.id, 2, TRUE, '09:00', '21:00'),
+    (NEW.id, 3, TRUE, '09:00', '21:00'),
+    (NEW.id, 4, TRUE, '09:00', '21:00'),
+    (NEW.id, 5, TRUE, '09:00', '21:00'),
+    (NEW.id, 6, TRUE, '09:00', '21:00'),
+    (NEW.id, 0, TRUE, '09:00', '21:00')
+  ON CONFLICT (venue_id, day_of_week) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Auth Trigger Function
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
@@ -443,3 +478,15 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- Master Schedule Initialization Trigger
+DROP TRIGGER IF EXISTS on_master_created ON public.masters;
+CREATE TRIGGER on_master_created
+  AFTER INSERT ON public.masters
+  FOR EACH ROW EXECUTE FUNCTION public.initialize_master_schedule();
+
+-- Venue Schedule Initialization Trigger
+DROP TRIGGER IF EXISTS on_venue_created ON public.venues;
+CREATE TRIGGER on_venue_created
+  AFTER INSERT ON public.venues
+  FOR EACH ROW EXECUTE FUNCTION public.initialize_venue_schedule();

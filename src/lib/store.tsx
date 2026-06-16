@@ -719,7 +719,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       saveDemoData({ services: newServices });
       return;
     }
-    await supabase.from('services').insert(service);
+    const insertData: any = {
+      ...service,
+      owner_id: userId
+    };
+
+    if (activeRole === 'master' && activeMaster) {
+      insertData.master_id = activeMaster.id;
+    }
+
+    await supabase.from('services').insert(insertData);
     fetchData();
   };
 
@@ -811,7 +820,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return { error: null };
     }
     if (!userId) return { error: new Error('User ID not found') };
-    const { error } = await supabase.from('venues').insert(venue);
+    const { error } = await supabase.from('venues').insert({ ...venue, owner_id: userId });
     if (!error) fetchData();
     return { error };
   };
