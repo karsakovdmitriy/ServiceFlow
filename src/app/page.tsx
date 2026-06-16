@@ -15,9 +15,10 @@ import {
 import { useStore } from '@/lib/store';
 import MyBookings from './my-bookings/page';
 import VenueDashboard from './venue/dashboard/page';
+import PortalModal from '@/components/PortalModal';
 
 export default function Dashboard() {
-  const { sessions, requests, approveRequest, rejectRequest, profile, events, activeRole } = useStore();
+  const { sessions, requests, completedSessions, approveRequest, rejectRequest, profile, events, activeRole } = useStore();
   const [rejectingId, setRejectingId] = React.useState<string | null>(null);
 
   const handleReject = (id: string, reschedule: boolean) => {
@@ -31,6 +32,9 @@ export default function Dashboard() {
   }, [sessions, todayStr]);
 
   // Dynamic stats
+  const todayCompleted = completedSessions.filter(s => s.date === todayStr);
+  const todayIncome = todayCompleted.reduce((sum, s: any) => sum + (s.price || 0), 0);
+
   const activeClients = new Set([...sessions.map(s => s.name), ...requests.map(r => r.name)]).size;
   const pendingCount = requests.length;
 
@@ -54,8 +58,8 @@ export default function Dashboard() {
       {/* Metrics Section (Overview) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-surface p-6 rounded-r-xl border border-border-light shadow-sh-sm">
         {[
-          { label: 'Доход', val: (sessions.length * 2500).toLocaleString('ru-RU') + ' ₽', sub: 'За сегодня' },
-          { label: 'Сессии', val: sessions.length, sub: 'Всего' },
+          { label: 'Доход', val: todayIncome.toLocaleString('ru-RU') + ' ₽', sub: 'По завершенным' },
+          { label: 'Сессии', val: sessions.length, sub: 'Сегодня активно' },
           { label: 'Клиенты', val: activeClients, sub: 'Активные' },
           { label: 'Заявки', val: pendingCount, sub: 'Ожидают', highlight: pendingCount > 0 },
         ].map((stat, i) => (
@@ -237,20 +241,19 @@ export default function Dashboard() {
       </div>
 
       {/* Reject Modal */}
-      {rejectingId && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
+      <PortalModal isOpen={!!rejectingId} onClose={() => setRejectingId(null)}>
             <div className="bg-surface rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-fade-up border border-border">
                 <div className="text-[16px] font-bold text-t1 mb-2 tracking-tight">Отклонить заявку?</div>
                 <p className="text-[13px] text-t3 mb-6 leading-relaxed">Вы можете просто отклонить запись или предложить клиенту выбрать другое время в боте.</p>
                 <div className="flex flex-col gap-2">
                     <button
-                        onClick={() => handleReject(rejectingId, true)}
+                        onClick={() => handleReject(rejectingId!, true)}
                         className="w-full bg-accent text-white py-2.5 rounded-xl text-[13px] font-bold hover:bg-accent-hover transition-all"
                     >
                         Предложить перенос
                     </button>
                     <button
-                        onClick={() => handleReject(rejectingId, false)}
+                        onClick={() => handleReject(rejectingId!, false)}
                         className="w-full bg-bg-custom text-red-custom py-2.5 rounded-xl text-[13px] font-bold hover:bg-red-custom/10 transition-all"
                     >
                         Отклонить без переноса
@@ -263,8 +266,7 @@ export default function Dashboard() {
                     </button>
                 </div>
             </div>
-        </div>
-      )}
+      </PortalModal>
     </div>
   );
 }
