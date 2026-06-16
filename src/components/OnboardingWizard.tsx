@@ -7,7 +7,7 @@ import { IconChevronRight, IconStethoscope, IconUser, IconBuildingStore, IconChe
 
 export default function OnboardingWizard() {
   const pathname = usePathname();
-  const { profile, activeRole, updateProfile, loading } = useStore();
+  const { profile, activeRole, updateProfile, activeMaster, updateMaster, loading } = useStore();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     specialization: '',
@@ -19,12 +19,12 @@ export default function OnboardingWizard() {
     if (profile) {
       setFormData(prev => ({
         ...prev,
-        specialization: prev.specialization || (profile as any).specialization || '',
-        category: prev.category === 'Спорт' ? ((profile as any).category || 'Спорт') : prev.category,
+        specialization: prev.specialization || activeMaster?.specialization || '',
+        category: prev.category === 'Спорт' ? (activeMaster?.category || 'Спорт') : prev.category,
         full_name: prev.full_name || profile.full_name || '',
       }));
     }
-  }, [profile]);
+  }, [profile, activeMaster]);
 
   const onboardingField = `onboarding_completed_${activeRole}` as keyof typeof profile;
   const isCompleted = profile?.[onboardingField];
@@ -34,12 +34,28 @@ export default function OnboardingWizard() {
   if (loading || !profile || isCompleted || isLegalPage) return null;
 
   const handleComplete = async () => {
-    const { error } = await updateProfile({
-      ...formData,
-      [onboardingField]: true
-    });
+    let error = null;
+
+    if (activeRole === 'master' && activeMaster) {
+      const { error: masterErr } = await updateMaster(activeMaster.id, {
+        specialization: formData.specialization,
+        category: formData.category
+      });
+      error = masterErr;
+    }
+
+    if (!error) {
+      const profileUpdates: any = { [onboardingField]: true };
+      if (activeRole === 'client' && formData.full_name) {
+        profileUpdates.full_name = formData.full_name;
+      }
+      const { error: profileErr } = await updateProfile(profileUpdates);
+      error = profileErr;
+    }
+
     if (error) {
-      alert('Ошибка при сохранении профиля. Пожалуйста, попробуйте еще раз или проверьте консоль.');
+      console.error('Onboarding update error:', error);
+      alert('Ошибка при сохранении данных. Пожалуйста, попробуйте еще раз.');
     }
   };
 
