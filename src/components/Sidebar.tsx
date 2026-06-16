@@ -36,7 +36,7 @@ const Sidebar = () => {
   const { signOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
-  const { profile, requests, activeRole, switchActiveRole, updateProfile } = useStore();
+  const { profile, requests, activeRole, switchActiveRole, updateProfile, activeMaster } = useStore();
 
   const getNavItems = () => {
     let items: any[] = [];

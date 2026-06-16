@@ -215,20 +215,23 @@ export default function ClientsPage() {
                     {chatMessages.length === 0 && (
                         <div className="text-center text-t3 text-[12px] py-20 font-medium italic">История сообщений пуста.</div>
                     )}
-                    {chatMessages.map((m, i) => (
-                        <div key={i} className={`flex ${m.sender_type === 'trainer' || (m.sender_type as any) === 'master' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[85%] p-3 px-4 rounded-2xl text-[13.5px] leading-relaxed shadow-sm ${
-                                (m.sender_type === 'trainer' || (m.sender_type as any) === 'master')
-                                ? 'bg-accent text-white rounded-tr-none'
-                                : 'bg-bg-custom text-t1 border border-border rounded-tl-none'
-                            }`}>
-                                {m.text}
-                                <div className={`text-[9px] mt-1.5 font-bold uppercase tracking-wider ${(m.sender_type === 'trainer' || (m.sender_type as any) === 'master') ? 'text-white/60 text-right' : 'text-t3'}`}>
-                                    {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {chatMessages.map((m, i) => {
+                        const isMaster = m.sender_type === 'master' || (m.sender_type as any) === 'trainer';
+                        return (
+                            <div key={i} className={`flex ${isMaster ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`max-w-[85%] p-3 px-4 rounded-2xl text-[13.5px] leading-relaxed shadow-sm ${
+                                    isMaster
+                                    ? 'bg-accent text-white rounded-tr-none'
+                                    : 'bg-bg-custom text-t1 border border-border rounded-tl-none'
+                                }`}>
+                                    {m.text}
+                                    <div className={`text-[9px] mt-1.5 font-bold uppercase tracking-wider ${isMaster ? 'text-white/60 text-right' : 'text-t3'}`}>
+                                        {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 <div className="p-5 border-t border-border bg-bg-custom/30">
