@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { IconBarbell, IconMail, IconLock, IconUser, IconWindow } from '@tabler/icons-react';
 
@@ -9,6 +10,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -127,6 +129,24 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {isSignUp && (
+            <div className="flex items-start gap-3 p-1">
+              <input
+                id="terms"
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="mt-1 w-4 h-4 rounded border-border text-accent focus:ring-accent/20 cursor-pointer"
+              />
+              <label htmlFor="terms" className="text-[12px] text-t2 leading-snug cursor-pointer select-none">
+                Я согласен с <Link href="/legal/terms" className="text-accent hover:underline">Условиями использования</Link>,{' '}
+                <Link href="/legal/privacy" className="text-accent hover:underline">Политикой конфиденциальности</Link>,{' '}
+                <Link href="/legal/offer" className="text-accent hover:underline">Публичной офертой</Link> и даю{' '}
+                <Link href="/legal/data-consent" className="text-accent hover:underline">Согласие на обработку персональных данных</Link>
+              </label>
+            </div>
+          )}
+
           {error && (
             <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-[12px] font-medium animate-shake">
               {error}
@@ -135,7 +155,7 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (isSignUp && !acceptedTerms)}
             className="w-full bg-accent text-white font-bold py-3 rounded-xl shadow-lg shadow-accent/20 transition-all hover:bg-accent-hover hover:-translate-y-px active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
           >
             {loading ? 'Загрузка...' : isSignUp ? 'Создать аккаунт' : 'Войти'}
@@ -143,7 +163,7 @@ export default function LoginPage() {
         </form>
 
         <p className="text-center text-[12px] text-t3 mt-6">
-          Продолжая, вы соглашаетесь с условиями использования
+          <Link href="/legal/offer" className="hover:text-t2 transition-colors">Публичная оферта</Link>
         </p>
       </div>
     </div>

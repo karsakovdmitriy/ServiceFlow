@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { useStore } from '@/lib/store';
 import { IconChevronRight, IconStethoscope, IconUser, IconBuildingStore, IconCheck } from '@tabler/icons-react';
 
 export default function OnboardingWizard() {
+  const pathname = usePathname();
   const { profile, activeRole, updateProfile, loading } = useStore();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -27,7 +29,9 @@ export default function OnboardingWizard() {
   const onboardingField = `onboarding_completed_${activeRole}` as keyof typeof profile;
   const isCompleted = profile?.[onboardingField];
 
-  if (loading || !profile || isCompleted) return null;
+  const isLegalPage = pathname?.startsWith('/legal');
+
+  if (loading || !profile || isCompleted || isLegalPage) return null;
 
   const handleComplete = async () => {
     const { error } = await updateProfile({

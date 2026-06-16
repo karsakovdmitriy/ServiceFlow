@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { useStore } from '@/lib/store';
 import { IconStethoscope, IconUser, IconBuildingStore, IconCheck } from '@tabler/icons-react';
 
 export default function InitialRoleSelection() {
+  const pathname = usePathname();
   const { profile, updateProfile, loading, switchActiveRole } = useStore();
   const [selectedRoles, setSelectedRoles] = useState<{ master: boolean; client: boolean; venue: boolean }>({
     master: false,
@@ -14,7 +16,9 @@ export default function InitialRoleSelection() {
 
   const hasAnyRole = profile && (profile.is_master || profile.is_client || profile.is_venue);
 
-  if (loading || !profile || hasAnyRole) return null;
+  const isLegalPage = pathname?.startsWith('/legal');
+
+  if (loading || !profile || hasAnyRole || isLegalPage) return null;
 
   const handleSave = async () => {
     const rolesToEnable = {
