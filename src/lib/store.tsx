@@ -24,7 +24,6 @@ export interface Profile {
   onboarding_completed_master: boolean;
   onboarding_completed_client: boolean;
   onboarding_completed_venue: boolean;
-  telegram_id?: string;
   subscription_tier?: 'free' | 'pro' | 'business';
   subscription_status?: string;
   subscription_period_end?: string;
@@ -78,7 +77,7 @@ const MOCK_SCHEDULE = DAYS.map((name, i) => ({
   name,
   startTime: '09:00',
   endTime: '20:00',
-  on: i !== 0
+  on: i !== 6 // Sunday (last in DAYS) is off by default
 }));
 
 interface StoreContextType {
@@ -336,7 +335,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         if (schedData && schedData.length > 0) {
           const sorted = [...schedData].sort((a, b) => (a.day_of_week === 0 ? 7 : a.day_of_week) - (b.day_of_week === 0 ? 7 : b.day_of_week));
           setSchedule(sorted.map(s => ({
-            name: DAYS[s.day_of_week],
+            name: DAYS[(s.day_of_week + 6) % 7],
             startTime: s.start_hour?.slice(0, 5) || '09:00',
             endTime: s.end_hour?.slice(0, 5) || '20:00',
             on: s.is_active
@@ -462,7 +461,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             if (schedData && schedData.length > 0) {
               const sorted = [...schedData].sort((a, b) => (a.day_of_week === 0 ? 7 : a.day_of_week) - (b.day_of_week === 0 ? 7 : b.day_of_week));
               setSchedule(sorted.map(s => ({
-                name: DAYS[s.day_of_week],
+              name: DAYS[(s.day_of_week + 6) % 7],
                 startTime: s.start_hour?.slice(0, 5) || '09:00',
                 endTime: s.end_hour?.slice(0, 5) || '20:00',
                 on: s.is_active
@@ -518,8 +517,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       'full_name', 'email', 'phone', 'avatar_url',
       'is_master', 'is_client', 'is_venue',
       'onboarding_completed_master', 'onboarding_completed_client', 'onboarding_completed_venue',
-      'subscription_tier', 'subscription_status', 'subscription_period_end',
-      'telegram_id'
+      'subscription_tier', 'subscription_status', 'subscription_period_end'
     ];
 
     const filteredUpdate = Object.keys(updated)

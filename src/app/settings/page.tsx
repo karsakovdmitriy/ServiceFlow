@@ -239,15 +239,15 @@ export default function SettingsPage() {
                 <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-4">Оповещения тренера</div>
                 <div className="p-5 rounded-2xl bg-surface border border-border flex flex-col gap-4 shadow-sh-sm">
                     <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${profile?.telegram_id ? 'bg-green-light text-green-custom' : 'bg-accent-light text-accent'}`}>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${activeMaster?.telegram_id ? 'bg-green-light text-green-custom' : 'bg-accent-light text-accent'}`}>
                             <IconBrandTelegram size={22} stroke={1.5} />
                         </div>
                         <div>
                             <div className="text-[14px] font-bold text-t1 tracking-tight">
-                                {profile?.telegram_id ? 'Telegram подключен' : 'Привязать Telegram'}
+                                {activeMaster?.telegram_id ? 'Telegram подключен' : 'Привязать Telegram'}
                             </div>
                             <div className="text-[11px] text-t3 font-medium mt-0.5">
-                                {profile?.telegram_id ? 'Уведомления активны' : 'Получайте уведомления'}
+                                {activeMaster?.telegram_id ? 'Уведомления активны' : 'Получайте уведомления'}
                             </div>
                         </div>
                     </div>
@@ -257,7 +257,7 @@ export default function SettingsPage() {
                         rel="noopener noreferrer"
                         className="text-center text-[12px] font-bold py-2.5 bg-bg-custom text-t1 rounded-xl hover:bg-surface transition-all border border-border shadow-sh-sm"
                     >
-                        {profile?.telegram_id ? 'Переподключить' : 'Подключить бота'}
+                        {activeMaster?.telegram_id ? 'Переподключить' : 'Подключить бота'}
                     </a>
                 </div>
             </section>
