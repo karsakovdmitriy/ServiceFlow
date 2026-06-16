@@ -1,0 +1,20 @@
+
+> web@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+✓ Ready in 528ms
+
+○ Compiling / ...
+ GET / 200 in 6.2s (next.js: 5.6s, application-code: 563ms)
+ GET /services 200 in 1011ms (next.js: 868ms, application-code: 143ms)
+ GET /schedule 200 in 1930ms (next.js: 1835ms, application-code: 95ms)
+ GET / 200 in 68ms (next.js: 5ms, application-code: 63ms)
+ GET / 200 in 59ms (next.js: 4ms, application-code: 55ms)
+ GET /services 200 in 67ms (next.js: 4ms, application-code: 63ms)
+ GET /schedule 200 in 57ms (next.js: 3ms, application-code: 54ms)
+ GET / 200 in 65ms (next.js: 4ms, application-code: 60ms)
+ GET /services 200 in 76ms (next.js: 4ms, application-code: 71ms)
+ GET /schedule 200 in 65ms (next.js: 4ms, application-code: 61ms)

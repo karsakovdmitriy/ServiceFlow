@@ -340,6 +340,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             endTime: s.end_hour?.slice(0, 5) || '20:00',
             on: s.is_active
           })));
+        } else {
+          setSchedule(DAYS.map((name, i) => ({
+            name,
+            startTime: '09:00',
+            endTime: '20:00',
+            on: i !== 0
+          })));
         }
 
         const { data: blocksData } = await supabase.from('blocked_slots').select('*').eq('master_id', currentMasterId).order('date');
@@ -458,6 +465,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
                 startTime: s.start_hour?.slice(0, 5) || '09:00',
                 endTime: s.end_hour?.slice(0, 5) || '20:00',
                 on: s.is_active
+              })));
+            } else {
+              setSchedule(DAYS.map((name, i) => ({
+                name,
+                startTime: '09:00',
+                endTime: '20:00',
+                on: i !== 0
               })));
             }
           }
@@ -683,9 +697,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         return;
     }
     if (activeRole === 'venue' && venues.length > 0) {
-      await supabase.from('venue_schedule').update({ is_active: !day.on }).eq('venue_id', venues[0].id).eq('day_of_week', dayOfWeek);
+      await supabase.from('venue_schedule').upsert({
+        venue_id: venues[0].id,
+        day_of_week: dayOfWeek,
+        is_active: !day.on
+      }, { onConflict: 'venue_id,day_of_week' });
     } else {
-      await supabase.from('schedule_config').update({ is_active: !day.on }).eq('master_id', activeMaster?.id).eq('day_of_week', dayOfWeek);
+      await supabase.from('schedule_config').upsert({
+        master_id: activeMaster?.id,
+        day_of_week: dayOfWeek,
+        is_active: !day.on
+      }, { onConflict: 'master_id,day_of_week' });
     }
     fetchData();
   };
@@ -702,9 +724,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         return;
     }
     if (activeRole === 'venue' && venues.length > 0) {
-      await supabase.from('venue_schedule').update({ start_hour: startTime, end_hour: endTime }).eq('venue_id', venues[0].id).eq('day_of_week', dayOfWeek);
+      await supabase.from('venue_schedule').upsert({
+        venue_id: venues[0].id,
+        day_of_week: dayOfWeek,
+        start_hour: startTime,
+        end_hour: endTime
+      }, { onConflict: 'venue_id,day_of_week' });
     } else {
-      await supabase.from('schedule_config').update({ start_hour: startTime, end_hour: endTime }).eq('master_id', activeMaster?.id).eq('day_of_week', dayOfWeek);
+      await supabase.from('schedule_config').upsert({
+        master_id: activeMaster?.id,
+        day_of_week: dayOfWeek,
+        start_hour: startTime,
+        end_hour: endTime
+      }, { onConflict: 'master_id,day_of_week' });
     }
     fetchData();
   };
@@ -719,7 +751,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       saveDemoData({ services: newServices });
       return;
     }
-    await supabase.from('services').insert(service);
+    await supabase.from('services').insert({
+      ...service,
+      owner_id: userId,
+      master_id: service.master_id || activeMaster?.id
+    });
     fetchData();
   };
 
@@ -811,7 +847,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return { error: null };
     }
     if (!userId) return { error: new Error('User ID not found') };
-    const { error } = await supabase.from('venues').insert(venue);
+    const { error } = await supabase.from('venues').insert({
+      ...venue,
+      owner_id: userId
+    });
     if (!error) fetchData();
     return { error };
   };
