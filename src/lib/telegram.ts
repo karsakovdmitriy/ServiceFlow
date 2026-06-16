@@ -66,6 +66,10 @@ export function getBotUsername() {
     return process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'TrainerSpaceBot';
 }
 
+export function getMasterDeepLink(masterId: string) {
+    return `https://t.me/${getBotUsername()}?start=${masterId}`;
+}
+
 export function getTrainerDeepLink(trainerId: string) {
-    return `https://t.me/${getBotUsername()}?start=${trainerId}`;
+    return getMasterDeepLink(trainerId);
 }

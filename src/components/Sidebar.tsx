@@ -208,7 +208,7 @@ const Sidebar = () => {
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-[13px] font-semibold text-t1 truncate">{profile?.full_name?.split(' ')[0] || 'Загрузка...'}</div>
-            <div className="text-[11px] text-t3 truncate">{(profile as any)?.specialization || 'Профиль'}</div>
+            <div className="text-[11px] text-t3 truncate">{activeMaster?.specialization || 'Профиль'}</div>
           </div>
         </div>
         <button
