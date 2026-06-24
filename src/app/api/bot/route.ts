@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendTelegramMessage, answerCallbackQuery, escapeHtml } from '@/lib/telegram';
+import { MoyKlassClient } from '@/lib/moyklass';
 
 // Helper to get supabase client
 function getSupabase() {
@@ -468,6 +469,41 @@ export async function POST(request: Request) {
               });
 
               await sendTelegramMessage(chatId, `✅ <b>Заявка отправлена!</b>\n\nТренер получит уведомление и подтвердит вашу запись. Ожидайте сообщения.`);
+
+              // MoyKlass Sync
+              const { data: trainerProfile } = await supabase.from('trainers').select('moyklass_api_key, moyklass_filial_id, moyklass_enabled').eq('id', service.trainer_id).single();
+              if (trainerProfile?.moyklass_enabled && trainerProfile?.moyklass_api_key) {
+                try {
+                  const mk = new MoyKlassClient(trainerProfile.moyklass_api_key);
+                  const contact = from.username ? `@${from.username}` : (from.id.toString());
+
+                  let mkUser = await mk.findUserByContact(contact);
+                  if (!mkUser) {
+                    mkUser = await mk.createUser({
+                      name: clientData?.full_name || 'Клиент из Telegram',
+                      phone: from.id.toString() // Using TG ID as placeholder if no phone
+                    });
+                  }
+
+                  if (mkUser) {
+                    const lessons = await mk.getLessons({
+                      from: date,
+                      to: date,
+                      filialId: trainerProfile.moyklass_filial_id
+                    });
+
+                    // Match lesson by time (rough matching)
+                    const lesson = lessons.find((l: any) => l.date === date && l.beginTime?.startsWith(time));
+                    if (lesson) {
+                      await mk.createRecord(lesson.id, mkUser.id);
+                      console.log('MoyKlass: Record created for lesson', lesson.id);
+                    }
+                  }
+                } catch (mkErr) {
+                  console.error('MoyKlass Sync Error:', mkErr);
+                }
+              }
+
             } else {
               await sendTelegramMessage(chatId, '❌ Ошибка: Клиент не найден. Попробуйте перезапустить бот через ссылку тренера.');
             }

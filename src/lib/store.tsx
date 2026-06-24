@@ -28,6 +28,9 @@ export interface TrainerProfile {
   onboarding_completed_master: boolean;
   onboarding_completed_client: boolean;
   onboarding_completed_venue: boolean;
+  moyklass_api_key?: string;
+  moyklass_filial_id?: number;
+  moyklass_enabled?: boolean;
 }
 export interface Message { id: string; trainer_id: string; client_id: string; sender_type: 'trainer' | 'client'; text: string; read: boolean; created_at: string; }
 export interface Event { id: string; trainer_id: string; type: string; message: string; read: boolean; created_at: string; }
@@ -113,6 +116,7 @@ interface StoreContextType {
   updateScheduleTime: (idx: number, startTime: string, endTime: string) => Promise<void>;
   removeService: (id: string) => Promise<void>;
   refresh: () => Promise<void>;
+  testMoyKlassConnection: (apiKey: string) => Promise<{ success: boolean; message: string; filials?: any[] }>;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -858,6 +862,25 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return data || [];
   };
 
+  const testMoyKlassConnection = async (apiKey: string) => {
+    try {
+      const response = await fetch('/api/moyklass/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey })
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        return { success: false, message: data.message || 'Неверный API ключ' };
+      }
+
+      return { success: true, message: 'Соединение установлено', filials: data.filials };
+    } catch (err) {
+      return { success: false, message: 'Ошибка сети или API' };
+    }
+  };
+
   const switchActiveRole = (role: 'master' | 'client' | 'venue') => {
     setActiveRole(role);
     if (isDemoMode) {
@@ -880,7 +903,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     addSession, addService, updateService, addVenue, updateVenue, removeVenue, addBlock, removeBlock,
     addPartnership, removePartnership, addVenueStaff, removeVenueStaff, getAllMasters,
     toggleDay, updateScheduleTime, removeService,
-    refresh: fetchData
+    refresh: fetchData,
+    testMoyKlassConnection
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

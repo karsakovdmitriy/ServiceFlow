@@ -21,6 +21,9 @@ CREATE TABLE IF NOT EXISTS trainers (
   onboarding_completed_master BOOLEAN DEFAULT FALSE,
   onboarding_completed_client BOOLEAN DEFAULT FALSE,
   onboarding_completed_venue BOOLEAN DEFAULT FALSE,
+  moyklass_api_key TEXT,
+  moyklass_filial_id INTEGER,
+  moyklass_enabled BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -33,6 +36,9 @@ ALTER TABLE trainers ADD COLUMN IF NOT EXISTS is_venue BOOLEAN DEFAULT FALSE;
 ALTER TABLE trainers ADD COLUMN IF NOT EXISTS onboarding_completed_master BOOLEAN DEFAULT FALSE;
 ALTER TABLE trainers ADD COLUMN IF NOT EXISTS onboarding_completed_client BOOLEAN DEFAULT FALSE;
 ALTER TABLE trainers ADD COLUMN IF NOT EXISTS onboarding_completed_venue BOOLEAN DEFAULT FALSE;
+ALTER TABLE trainers ADD COLUMN IF NOT EXISTS moyklass_api_key TEXT;
+ALTER TABLE trainers ADD COLUMN IF NOT EXISTS moyklass_filial_id INTEGER;
+ALTER TABLE trainers ADD COLUMN IF NOT EXISTS moyklass_enabled BOOLEAN DEFAULT FALSE;
 
 -- Enable RLS
 ALTER TABLE trainers ENABLE ROW LEVEL SECURITY;
