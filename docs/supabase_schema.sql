@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS masters (
   phone TEXT,
   slot_duration INTEGER DEFAULT 60,
   telegram_id TEXT,
+  max_id TEXT,
   telegram_bot_token TEXT,
   category TEXT, -- Sport, Beauty, Education, Medicine, etc.
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -102,6 +103,7 @@ CREATE TABLE IF NOT EXISTS venues (
   phone TEXT,
   email TEXT,
   telegram_id TEXT,
+  max_id TEXT,
   description TEXT,
   telegram_bot_token TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -179,11 +181,13 @@ CREATE TABLE IF NOT EXISTS clients (
   email TEXT,
   phone TEXT,
   telegram_id TEXT,
+  max_id TEXT,
   is_active BOOLEAN DEFAULT TRUE,
   last_bot_state TEXT,
   last_session_id UUID,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  UNIQUE(owner_id, telegram_id)
+  UNIQUE(owner_id, telegram_id),
+  UNIQUE(owner_id, max_id)
 );
 
 ALTER TABLE clients ENABLE ROW LEVEL SECURITY;

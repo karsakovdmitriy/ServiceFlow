@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendTelegramMessage } from '@/lib/telegram';
+import { sendMaxMessage } from '@/lib/max';
 
 export async function POST(request: Request) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -23,7 +24,7 @@ export async function POST(request: Request) {
       .from('sessions')
       .select(`
         start_time,
-        client:clients!client_id(telegram_id, full_name),
+        client:clients!client_id(telegram_id, max_id, full_name),
         service:services!service_id(name),
         master:masters!master_id(full_name)
       `)
@@ -36,8 +37,9 @@ export async function POST(request: Request) {
     }
 
     const clientTelegramId = (sessionData.client as any)?.telegram_id;
+    const clientMaxId = (sessionData.client as any)?.max_id;
 
-    if (clientTelegramId) {
+    if (clientTelegramId || clientMaxId) {
       const date = new Date(sessionData.start_time);
       const dateStr = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
       const timeStr = sessionData.start_time.split('T')[1].slice(0, 5);
@@ -53,11 +55,16 @@ export async function POST(request: Request) {
         `• При отмене менее чем за 24 часа услуга считается оказанной или взимается комиссия.\n\n` +
         `Ждем вас!`;
 
-      await sendTelegramMessage(clientTelegramId, message);
+      if (clientTelegramId) {
+        await sendTelegramMessage(clientTelegramId, message);
+      }
+      if (clientMaxId) {
+        await sendMaxMessage(clientMaxId, message);
+      }
       return NextResponse.json({ ok: true });
     }
 
-    return NextResponse.json({ ok: false, message: 'No telegram ID' });
+    return NextResponse.json({ ok: false, message: 'No telegram or MAX ID' });
   } catch (error) {
     console.error('Error in notify reminder API:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

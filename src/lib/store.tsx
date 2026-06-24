@@ -4,9 +4,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from './supabase';
 
 // Types and Mock Data
-export interface Venue { id: string; owner_id: string; name: string; address?: string; phone?: string; email?: string; telegram_id?: string; description?: string; telegram_bot_token?: string; }
+export interface Venue { id: string; owner_id: string; name: string; address?: string; phone?: string; email?: string; telegram_id?: string; max_id?: string; description?: string; telegram_bot_token?: string; }
 export interface Service { id: string; owner_id: string; name: string; duration: number; price: number; is_group: boolean; venue_id?: string | null; master_id?: string | null; venue?: Venue; master?: Master; }
-export interface Client { id: string; owner_id: string; user_id?: string; full_name: string; email?: string; phone?: string; telegram_id?: string; is_active: boolean; created_at: string; }
+export interface Client { id: string; owner_id: string; user_id?: string; full_name: string; email?: string; phone?: string; telegram_id?: string; max_id?: string; is_active: boolean; created_at: string; }
 export interface Session { id: string; name: string; time: string; initials: string; bg?: string; color?: string; status: string; date: string; service?: string; serviceId?: string; clientId?: string; masterId?: string; }
 export interface ScheduleDay { name: string; startTime: string; endTime: string; on: boolean; }
 export interface BlockedSlot { id: string; master_id: string; date: string; startTime: string; endTime: string; allDay: boolean; }
@@ -37,6 +37,7 @@ export interface Master {
   phone?: string;
   slot_duration: number;
   telegram_id?: string;
+  max_id?: string;
   telegram_bot_token?: string;
   category?: string;
   created_at: string;
@@ -515,7 +516,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const updateProfile = async (updated: Partial<Profile>) => {
     // Explicitly allow only valid profile fields to prevent PGRST204 errors
     const allowedFields = [
-      'full_name', 'email', 'phone', 'avatar_url',
+      'full_name', 'email', 'phone', 'avatar_url', 'max_id',
       'is_master', 'is_client', 'is_venue',
       'onboarding_completed_master', 'onboarding_completed_client', 'onboarding_completed_venue',
       'subscription_tier', 'subscription_status', 'subscription_period_end'
@@ -798,12 +799,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       text
     });
 
-    const { data: client } = await supabase.from('clients').select('telegram_id').eq('id', clientId).single();
+    const { data: client } = await supabase.from('clients').select('telegram_id, max_id').eq('id', clientId).single();
     if (client?.telegram_id) {
       await fetch('/api/notify/custom', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chatId: client.telegram_id, message: `💬 <b>Сообщение:</b>\n\n${text}` })
+      });
+    }
+    if (client?.max_id) {
+      await fetch('/api/notify/custom', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chatId: client.max_id, message: `💬 <b>Сообщение:</b>\n\n${text}`, isMax: true })
       });
     }
   };

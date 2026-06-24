@@ -2,8 +2,9 @@
 
 import React from 'react';
 import { useStore } from '@/lib/store';
-import { IconBrandTelegram, IconCopy, IconChartBar, IconDeviceMobile, IconStarFilled, IconMessage2, IconShare, IconChevronDown, IconChevronUp, IconExternalLink, IconPrinter } from '@tabler/icons-react';
+import { IconBrandTelegram, IconCopy, IconChartBar, IconDeviceMobile, IconStarFilled, IconMessage2, IconShare, IconChevronDown, IconChevronUp, IconExternalLink, IconPrinter, IconMessageDots } from '@tabler/icons-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { getMasterMaxDeepLink, getMaxBotUsername } from '@/lib/max';
 
 export default function BotPage() {
   const { profile, activeMaster, isDemoMode, reviews, sessions, completedSessions } = useStore();
@@ -15,30 +16,56 @@ export default function BotPage() {
   const botLink = `https://t.me/${botUsername}?start=${activeMaster?.id || 'id'}`;
   const linkTgLink = `https://t.me/${botUsername}?start=link_${activeMaster?.id || 'id'}`;
 
+  const maxBotUsername = getMaxBotUsername();
+  const maxBotLink = getMasterMaxDeepLink(activeMaster?.id || 'id');
+
   return (
     <div className="animate-fade-up max-w-[1000px] mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         <div className="space-y-12">
           <section>
-            <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-4">Ссылка на запись</div>
-            <div className="space-y-4">
-              <p className="text-[13px] text-t2 leading-relaxed">
-                Отправьте эту ссылку вашим клиентам для записи онлайн через Telegram.
-              </p>
-              <div className="bg-surface border border-border rounded-2xl p-4 flex items-center justify-between gap-3 group shadow-sm">
-                <div className="flex items-center gap-2 text-[12px] font-bold text-accent truncate">
-                  <IconBrandTelegram size={18} stroke={2} className="shrink-0" />
-                  <span className="truncate">{botLink}</span>
+            <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-4">Ссылки на запись</div>
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <p className="text-[13px] text-t2 leading-relaxed">
+                  Запись онлайн через <strong>Telegram</strong>:
+                </p>
+                <div className="bg-surface border border-border rounded-2xl p-4 flex items-center justify-between gap-3 group shadow-sm">
+                  <div className="flex items-center gap-2 text-[12px] font-bold text-accent truncate">
+                    <IconBrandTelegram size={18} stroke={2} className="shrink-0" />
+                    <span className="truncate">{botLink}</span>
+                  </div>
+                  <button
+                    className="bg-accent text-white text-[11px] font-bold px-3 py-1.5 rounded-lg hover:bg-accent-hover transition-all flex items-center gap-1.5 active:scale-95"
+                    onClick={() => {
+                      navigator.clipboard.writeText(botLink);
+                      alert('Ссылка Telegram скопирована!');
+                    }}
+                  >
+                    <IconCopy size={14} stroke={2} /> Копировать
+                  </button>
                 </div>
-                <button
-                  className="bg-accent text-white text-[11px] font-bold px-3 py-1.5 rounded-lg hover:bg-accent-hover transition-all flex items-center gap-1.5 active:scale-95"
-                  onClick={() => {
-                    navigator.clipboard.writeText(botLink);
-                    alert('Ссылка скопирована!');
-                  }}
-                >
-                  <IconCopy size={14} stroke={2} /> Копировать
-                </button>
+              </div>
+
+              <div className="space-y-4">
+                <p className="text-[13px] text-t2 leading-relaxed">
+                  Запись онлайн через <strong>MAX Messenger</strong>:
+                </p>
+                <div className="bg-surface border border-border rounded-2xl p-4 flex items-center justify-between gap-3 group shadow-sm">
+                  <div className="flex items-center gap-2 text-[12px] font-bold text-[#0088cc] truncate">
+                    <IconMessageDots size={18} stroke={2} className="shrink-0" />
+                    <span className="truncate">{maxBotLink}</span>
+                  </div>
+                  <button
+                    className="bg-[#0088cc] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg hover:opacity-90 transition-all flex items-center gap-1.5 active:scale-95"
+                    onClick={() => {
+                      navigator.clipboard.writeText(maxBotLink);
+                      alert('Ссылка MAX скопирована!');
+                    }}
+                  >
+                    <IconCopy size={14} stroke={2} /> Копировать
+                  </button>
+                </div>
               </div>
             </div>
           </section>
@@ -75,7 +102,7 @@ export default function BotPage() {
                         <div className="p-4 bg-bg-custom rounded-2xl border border-border flex flex-col items-center gap-4">
                              <div className="bg-white p-3 rounded-xl border border-border shadow-sh-sm">
                                 <QRCodeSVG
-                                    value={botLink}
+                                    value={botLink} // Default to TG for QR, could toggle
                                     size={120}
                                     level="H"
                                     includeMargin={false}
