@@ -179,6 +179,10 @@ export class MoyKlassClient {
     return Array.isArray(response) ? response : (response.managers || []);
   }
 
+  async getManager(managerId: number) {
+    return this.request(`/company/managers/${managerId}`);
+  }
+
   async getClasses() {
     const response = await this.request('/company/classes');
     return Array.isArray(response) ? response : (response.classes || []);
