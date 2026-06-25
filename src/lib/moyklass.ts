@@ -18,7 +18,8 @@ export class MoyKlassClient {
     if (this.accessToken || this.useDirectAuth) return this.accessToken;
 
     try {
-      const response = await fetch(`${BASE_URL}/auth`, {
+      // Corrected endpoint from documentation: /company/auth/getToken
+      const response = await fetch(`${BASE_URL}/company/auth/getToken`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -28,9 +29,24 @@ export class MoyKlassClient {
       });
 
       if (response.status === 404) {
-        console.log('MoyKlass: /auth endpoint not found, switching to direct API key auth');
-        this.useDirectAuth = true;
-        return null;
+        console.warn('MoyKlass: /company/auth/getToken not found, trying legacy /auth');
+        // Attempt legacy auth as a last resort
+        const legacyResp = await fetch(`${BASE_URL}/auth`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ apiKey: this.apiKey })
+        });
+
+        if (legacyResp.status === 404) {
+          console.log('MoyKlass: No auth endpoint found, switching to direct API key auth');
+          this.useDirectAuth = true;
+          return null;
+        }
+
+        if (!legacyResp.ok) throw new Error(`Legacy Auth Failed: ${legacyResp.statusText}`);
+        const data = await legacyResp.json();
+        this.accessToken = data.accessToken;
+        return this.accessToken;
       }
 
       if (!response.ok) {
@@ -42,6 +58,8 @@ export class MoyKlassClient {
       this.accessToken = data.accessToken;
       return this.accessToken;
     } catch (err: any) {
+      console.error('MoyKlass Auth Error:', err.message);
+      // Fallback to direct auth if we're hitting 404s or other auth-related errors
       if (err.message?.includes('404') || err.message?.includes('Not Found')) {
           this.useDirectAuth = true;
           return null;
