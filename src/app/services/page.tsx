@@ -26,7 +26,7 @@ export default function ServicesPage() {
   const [newData, setNewData] = useState({ name: '', duration: 60, price: 1000, is_group: false, venue_id: '', moyklass_class_id: '', moyklass_room_id: '' });
   const [editData, setEditData] = useState<Partial<Service>>({});
 
-  const [newVenueData, setNewVenueData] = useState({ name: '', address: '' });
+  const [newVenueData, setNewVenueData] = useState({ name: '', address: '', moyklass_filial_id: '' });
   const [editVenueData, setEditVenueData] = useState<Partial<Venue>>({});
 
   const handleAdd = () => {
@@ -62,14 +62,21 @@ export default function ServicesPage() {
   };
 
   const handleAddVenue = () => {
-    addVenue(newVenueData as any);
-    setNewVenueData({ name: '', address: '' });
+    addVenue({
+        ...newVenueData,
+        moyklass_filial_id: newVenueData.moyklass_filial_id ? parseInt(newVenueData.moyklass_filial_id) : undefined
+    } as any);
+    setNewVenueData({ name: '', address: '', moyklass_filial_id: '' });
     setIsAddingVenue(false);
   };
 
   const handleUpdateVenue = () => {
     if (editingVenueId) {
-        updateVenue(editingVenueId, editVenueData);
+        const formattedData = {
+            ...editVenueData,
+            moyklass_filial_id: editVenueData.moyklass_filial_id ? parseInt(editVenueData.moyklass_filial_id as any) : undefined
+        };
+        updateVenue(editingVenueId, formattedData);
         setEditingVenueId(null);
     }
   };
@@ -292,6 +299,17 @@ export default function ServicesPage() {
                   placeholder="Напр. Персональная консультация"
                   value={editingId ? editData.name : newData.name}
                   onChange={e => editingId ? setEditData({...editData, name: e.target.value}) : setNewData({...newData, name: e.target.value})}
+                  className="w-full input-modern"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">ID Филиала (Мой Класс)</label>
+                <input
+                  type="number"
+                  placeholder="ID филиала из MoyKlass"
+                  value={editingVenueId ? (editVenueData.moyklass_filial_id || '') : newVenueData.moyklass_filial_id}
+                  onChange={e => editingVenueId ? setEditVenueData({...editVenueData, moyklass_filial_id: e.target.value as any}) : setNewVenueData({...newVenueData, moyklass_filial_id: e.target.value})}
                   className="w-full input-modern"
                 />
               </div>
