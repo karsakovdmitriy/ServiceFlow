@@ -138,6 +138,15 @@ interface StoreContextType {
   removeService: (id: string) => Promise<void>;
   refresh: () => Promise<void>;
   testMoyKlassConnection: (apiKey: string) => Promise<{ success: boolean; message: string; filials?: any[]; managers?: any[]; classes?: any[]; rooms?: any[] }>;
+  syncServicesFromMoyKlass: () => Promise<{ success: boolean; message: string; count: number }>;
+  syncVenuesFromMoyKlass: () => Promise<{ success: boolean; message: string; count: number }>;
+  syncMastersFromMoyKlass: () => Promise<{ success: boolean; message: string; count: number }>;
+  getIntegrationStatus: () => {
+    telegram: 'connected' | 'error' | 'disconnected';
+    max: 'connected' | 'error' | 'disconnected';
+    moyklass: 'connected' | 'error' | 'disconnected';
+    database: 'connected' | 'error' | 'disconnected';
+  };
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -1100,7 +1109,108 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     sendReminder,
     toggleDay, updateScheduleTime, removeService,
     refresh: fetchData,
-    testMoyKlassConnection
+    testMoyKlassConnection,
+    syncServicesFromMoyKlass: async () => {
+      if (!profile?.moyklass_enabled || !profile?.moyklass_api_key) return { success: false, message: 'Синхронизация MoyKlass не включена', count: 0 };
+      try {
+        const res = await fetch('/api/moyklass/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ apiKey: profile.moyklass_api_key })
+        });
+        const data = await res.json();
+        if (!data.success) return { success: false, message: data.message, count: 0 };
+
+        const classes = data.classes || [];
+        let count = 0;
+        for (const cls of classes) {
+          const exists = services.find(s => s.moyklass_class_id === cls.id);
+          if (!exists) {
+            await addService({
+              name: cls.name,
+              duration: 60,
+              price: 0,
+              is_group: true,
+              moyklass_class_id: cls.id
+            } as any);
+            count++;
+          }
+        }
+        fetchData();
+        return { success: true, message: `Синхронизировано ${count} услуг`, count };
+      } catch (e: any) {
+        return { success: false, message: e.message, count: 0 };
+      }
+    },
+    syncVenuesFromMoyKlass: async () => {
+      if (!profile?.moyklass_enabled || !profile?.moyklass_api_key) return { success: false, message: 'Синхронизация MoyKlass не включена', count: 0 };
+      try {
+        const res = await fetch('/api/moyklass/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ apiKey: profile.moyklass_api_key })
+        });
+        const data = await res.json();
+        if (!data.success) return { success: false, message: data.message, count: 0 };
+
+        const filials = data.filials || [];
+        let count = 0;
+        for (const fil of filials) {
+          const exists = venues.find(v => v.moyklass_filial_id === fil.id);
+          if (!exists) {
+            await addVenue({
+              name: fil.name,
+              address: '',
+              moyklass_filial_id: fil.id
+            } as any);
+            count++;
+          }
+        }
+        fetchData();
+        return { success: true, message: `Синхронизировано ${count} площадок`, count };
+      } catch (e: any) {
+        return { success: false, message: e.message, count: 0 };
+      }
+    },
+    syncMastersFromMoyKlass: async () => {
+      if (!profile?.moyklass_enabled || !profile?.moyklass_api_key) return { success: false, message: 'Синхронизация MoyKlass не включена', count: 0 };
+      try {
+        const res = await fetch('/api/moyklass/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ apiKey: profile.moyklass_api_key })
+        });
+        const data = await res.json();
+        if (!data.success) return { success: false, message: data.message, count: 0 };
+
+        const managers = data.managers || [];
+        let count = 0;
+        for (const man of managers) {
+          const exists = masters.find(m => m.moyklass_teacher_id === man.id);
+          if (!exists) {
+            await addMaster({
+              user_id: userId!,
+              full_name: man.name,
+              slot_duration: 60,
+              moyklass_teacher_id: man.id
+            } as any);
+            count++;
+          }
+        }
+        fetchData();
+        return { success: true, message: `Синхронизировано ${count} мастеров`, count };
+      } catch (e: any) {
+        return { success: false, message: e.message, count: 0 };
+      }
+    },
+    getIntegrationStatus: () => {
+      return {
+        telegram: (activeMaster?.telegram_id ? 'connected' : 'disconnected') as 'connected' | 'disconnected' | 'error',
+        max: (activeMaster?.max_id ? 'connected' : 'disconnected') as 'connected' | 'disconnected' | 'error',
+        moyklass: (!profile?.moyklass_enabled ? 'disconnected' : (profile?.moyklass_api_key ? 'connected' : 'error')) as 'connected' | 'disconnected' | 'error',
+        database: (isDemoMode ? 'error' : 'connected') as 'connected' | 'disconnected' | 'error'
+      };
+    }
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
