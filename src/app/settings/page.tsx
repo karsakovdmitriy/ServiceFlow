@@ -341,7 +341,7 @@ export default function SettingsPage() {
                                 className="flex-1 input-modern bg-surface"
                                 style={{ WebkitTextSecurity: 'disc' } as any}
                                 type="text"
-                                name="stable_mk_api_key"
+                                name="mk_secure_credential_field"
                                 placeholder="Ваш API-ключ"
                                 autoComplete="off"
                                 data-lpignore="true"

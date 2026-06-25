@@ -143,13 +143,13 @@ export class MoyKlassClient {
   }
 
   async createRecord(lessonId: number, userId: number, options: { statusId?: number } = {}) {
-    // MoyKlass API v1 has various variations of record creation endpoints across different account tiers/versions
+    // MoyKlass API v1 has variations of record creation endpoints.
+    // POST /company/records is the most common v1 endpoint.
     const attempts = [
         { endpoint: '/company/records', body: { userId, lessonId, ...options } },
         { endpoint: `/company/lessons/${lessonId}/records`, body: { userId, ...options } },
         { endpoint: '/company/lessons/records', body: { userId, lessonId, ...options } },
-        { endpoint: '/company/lesson-records', body: { userId, lessonId, ...options } },
-        { endpoint: `/lessons/${lessonId}/records`, body: { userId, ...options } }
+        { endpoint: '/company/lesson-records', body: { userId, lessonId, ...options } }
     ];
 
     let lastError: any;
@@ -164,12 +164,10 @@ export class MoyKlassClient {
             return res;
         } catch (e: any) {
             lastError = e;
-            if (e.message?.includes('404')) {
-                console.log(`MoyKlass: Endpoint ${attempt.endpoint} not found (404).`);
-                continue;
-            }
-            console.error(`MoyKlass: Error at ${attempt.endpoint}: ${e.message}`);
-            throw e;
+            // If we get 404, the endpoint might be wrong for this company, try next.
+            // If we get 400 or other errors, it might be a data issue, but we still try other endpoints just in case.
+            console.log(`MoyKlass: Attempt at ${attempt.endpoint} failed: ${e.message}`);
+            continue;
         }
     }
     throw lastError;
