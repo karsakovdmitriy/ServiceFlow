@@ -137,7 +137,7 @@ interface StoreContextType {
   updateScheduleTime: (idx: number, startTime: string, endTime: string) => Promise<void>;
   removeService: (id: string) => Promise<void>;
   refresh: () => Promise<void>;
-  testMoyKlassConnection: (apiKey: string) => Promise<{ success: boolean; message: string; filials?: any[] }>;
+  testMoyKlassConnection: (apiKey: string) => Promise<{ success: boolean; message: string; filials?: any[]; managers?: any[]; classes?: any[]; rooms?: any[] }>;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -999,7 +999,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         return { success: false, message: data.message || 'Неверный API ключ' };
       }
 
-      return { success: true, message: 'Соединение установлено', filials: data.filials };
+      return {
+        success: true,
+        message: 'Соединение установлено',
+        filials: data.filials,
+        managers: data.managers,
+        classes: data.classes,
+        rooms: data.rooms
+      };
     } catch (err) {
       return { success: false, message: 'Ошибка сети или API' };
     }

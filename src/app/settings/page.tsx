@@ -22,6 +22,7 @@ export default function SettingsPage() {
 
   const [mkTesting, setMkTesting] = useState(false);
   const [mkFilials, setMkFilials] = useState<any[]>([]);
+  const [mkManagers, setMkManagers] = useState<any[]>([]);
 
   const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'TrainerSpaceBot';
   const linkTgLink = `https://t.me/${botUsername}?start=link_${activeMaster?.id || 'id'}`;
@@ -52,6 +53,7 @@ export default function SettingsPage() {
     const res = await testMoyKlassConnection(formData.moyklass_api_key);
     if (res.success) {
       setMkFilials(res.filials || []);
+      setMkManagers(res.managers || []);
       setMessage('MoyKlass: Соединение успешно');
     } else {
       setMessage('MoyKlass: ' + res.message);
@@ -264,17 +266,6 @@ export default function SettingsPage() {
                   {formData.moyklass_enabled && (
                     <div className="space-y-4 animate-fade-up">
                       <div>
-                        <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">ID Преподавателя (Мой Класс)</label>
-                        <input
-                          className="w-full input-modern bg-bg-custom/50"
-                          type="number"
-                          placeholder="ID преподавателя из MoyKlass"
-                          value={formData.moyklass_teacher_id}
-                          onChange={e => setFormData({...formData, moyklass_teacher_id: e.target.value})}
-                        />
-                      </div>
-
-                      <div>
                         <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">API Ключ</label>
                         <div className="flex gap-2">
                           <input
@@ -289,14 +280,40 @@ export default function SettingsPage() {
                             disabled={mkTesting || !formData.moyklass_api_key}
                             className="px-4 bg-bg-custom border border-border rounded-xl text-[12px] font-bold hover:bg-surface transition-all flex items-center gap-2"
                           >
-                            {mkTesting ? <IconLoader2 size={16} className="animate-spin" /> : 'Проверить'}
+                            {mkTesting ? <IconLoader2 size={16} className="animate-spin" /> : 'Загрузить данные'}
                           </button>
                         </div>
                       </div>
 
+                      {(mkManagers.length > 0 || formData.moyklass_teacher_id) && (
+                        <div>
+                          <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Сотрудник (Мой Класс)</label>
+                          {mkManagers.length > 0 ? (
+                            <select
+                              className="w-full input-modern bg-bg-custom/50 appearance-none"
+                              value={formData.moyklass_teacher_id}
+                              onChange={e => setFormData({...formData, moyklass_teacher_id: e.target.value})}
+                            >
+                              <option value="">Выберите сотрудника...</option>
+                              {mkManagers.map(m => (
+                                <option key={m.id} value={m.id}>{m.name}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              className="w-full input-modern bg-bg-custom/50"
+                              type="number"
+                              placeholder="ID преподавателя"
+                              value={formData.moyklass_teacher_id}
+                              onChange={e => setFormData({...formData, moyklass_teacher_id: e.target.value})}
+                            />
+                          )}
+                        </div>
+                      )}
+
                       {(mkFilials.length > 0 || formData.moyklass_filial_id) && (
                         <div>
-                          <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Филиал (ID)</label>
+                          <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Филиал по умолчанию (Мой Класс)</label>
                           {mkFilials.length > 0 ? (
                             <select
                               className="w-full input-modern bg-bg-custom/50 appearance-none"

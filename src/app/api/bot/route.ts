@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendTelegramMessage, answerCallbackQuery, escapeHtml } from '@/lib/telegram';
-import { MoyKlassClient } from '@/lib/moyklass';
 
 // Helper to get supabase client
 function getSupabase() {
@@ -503,95 +502,6 @@ export async function POST(request: Request) {
                   });
 
                   await sendTelegramMessage(chatId, `✅ <b>Заявка отправлена!</b>\n\nМастер получит уведомление и подтвердит вашу запись. Ожидайте сообщения.`);
-
-                  // MoyKlass Sync - Fetch credentials from profile linked to master
-                  const { data: masterData } = await supabase
-                    .from('masters')
-                    .select('user_id, moyklass_teacher_id')
-                    .eq('id', service.master_id)
-                    .single();
-
-                  if (masterData?.user_id) {
-                    const { data: profile } = await supabase
-                      .from('profiles')
-                      .select('moyklass_api_key, moyklass_filial_id, moyklass_enabled')
-                      .eq('id', masterData.user_id)
-                      .single();
-
-                    if (profile?.moyklass_enabled && profile?.moyklass_api_key) {
-                      try {
-                        const mk = new MoyKlassClient(profile.moyklass_api_key, masterData.user_id);
-                        const contact = from.username ? `@${from.username}` : (from.id.toString());
-
-                        let mkUser = await mk.findUserByContact(contact);
-                        if (!mkUser) {
-                          mkUser = await mk.createUser({
-                            name: clientData?.full_name || 'Клиент из Telegram',
-                            phone: from.id.toString() // Using TG ID as placeholder if no phone
-                          });
-                        }
-
-                        if (mkUser) {
-                          // Save moyklass_id if not already present
-                          if (!currentMoyKlassId) {
-                            await supabase.from('clients').update({ moyklass_id: mkUser.id }).eq('id', client.id);
-                          }
-
-                          // Fetch service mapping details including venue filial ID
-                          const { data: fullService } = await supabase
-                            .from('services')
-                            .select(`
-                                duration,
-                                moyklass_class_id,
-                                moyklass_room_id,
-                                venue:venues!venue_id(moyklass_filial_id)
-                            `)
-                            .eq('id', serviceId)
-                            .single();
-
-                          const activeFilialId = (fullService?.venue as any)?.moyklass_filial_id || profile.moyklass_filial_id;
-
-                          const lessons = await mk.getLessons({
-                            from: date,
-                            to: date,
-                            filialId: activeFilialId
-                          });
-
-                          // Match lesson by time (rough matching)
-                          let lesson = lessons.find((l: any) => l.date === date && l.beginTime?.startsWith(time));
-
-                          if (!lesson && fullService?.moyklass_class_id) {
-                              // Try to create lesson if it doesn't exist
-                              const endTime = new Date(`${date}T${time}:00`);
-                              endTime.setMinutes(endTime.getMinutes() + (fullService.duration || 60));
-                              const endTimeStr = endTime.toTimeString().slice(0, 5);
-
-                              try {
-                                  lesson = await mk.createLesson({
-                                      date,
-                                      beginTime: time,
-                                      endTime: endTimeStr,
-                                      filialId: activeFilialId!,
-                                      roomId: fullService.moyklass_room_id!,
-                                      classId: fullService.moyklass_class_id!,
-                                      teacherIds: masterData.moyklass_teacher_id ? [masterData.moyklass_teacher_id] : []
-                                  });
-                                  console.log('MoyKlass: Created new lesson', lesson.id);
-                              } catch (createErr) {
-                                  console.error('MoyKlass: Failed to create lesson:', createErr);
-                              }
-                          }
-
-                          if (lesson) {
-                            await mk.createRecord(lesson.id, mkUser.id);
-                            console.log('MoyKlass: Record created for lesson', lesson.id, 'user', mkUser.id);
-                          }
-                        }
-                      } catch (mkErr) {
-                        console.error('MoyKlass Sync Error:', mkErr);
-                      }
-                    }
-                  }
                 } else {
                   await sendTelegramMessage(chatId, '❌ Ошибка: Клиент не найден. Попробуйте перезапустить бот через ссылку мастера.');
                 }
