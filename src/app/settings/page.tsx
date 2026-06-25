@@ -334,17 +334,19 @@ export default function SettingsPage() {
                             <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">API Ключ</label>
                             <div className="flex gap-2">
                               {/* Hidden inputs to trick password managers */}
-                              <input type="text" style={{display: 'none'}} tabIndex={-1} autoComplete="off" />
-                              <input type="password" style={{display: 'none'}} tabIndex={-1} autoComplete="off" />
+                              <input type="text" style={{display: 'none'}} tabIndex={-1} autoComplete="off" aria-hidden="true" />
+                              <input type="password" style={{display: 'none'}} tabIndex={-1} autoComplete="off" aria-hidden="true" />
 
                               <input
                                 className="flex-1 input-modern bg-surface"
                                 style={{ WebkitTextSecurity: 'disc' } as any}
                                 type="text"
-                                name="moyklass_api_key_secure_input"
+                                name="stable_mk_api_key"
                                 placeholder="Ваш API-ключ"
-                                autoComplete="new-password"
+                                autoComplete="off"
                                 data-lpignore="true"
+                                readOnly
+                                onFocus={(e) => e.target.removeAttribute('readonly')}
                                 value={formData.moyklass_api_key}
                                 onChange={e => setFormData({...formData, moyklass_api_key: e.target.value})}
                               />

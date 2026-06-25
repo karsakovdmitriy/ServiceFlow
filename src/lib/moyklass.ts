@@ -143,10 +143,36 @@ export class MoyKlassClient {
   }
 
   async createRecord(lessonId: number, userId: number, options: { statusId?: number } = {}) {
-    return this.request(`/company/lessons/${lessonId}/records`, {
-      method: 'POST',
-      body: JSON.stringify({ userId, ...options })
-    });
+    // MoyKlass API v1 has various variations of record creation endpoints across different account tiers/versions
+    const attempts = [
+        { endpoint: '/company/records', body: { userId, lessonId, ...options } },
+        { endpoint: `/company/lessons/${lessonId}/records`, body: { userId, ...options } },
+        { endpoint: '/company/lessons/records', body: { userId, lessonId, ...options } },
+        { endpoint: '/company/lesson-records', body: { userId, lessonId, ...options } },
+        { endpoint: `/lessons/${lessonId}/records`, body: { userId, ...options } }
+    ];
+
+    let lastError: any;
+    for (const attempt of attempts) {
+        try {
+            console.log(`MoyKlass: Attempting record creation at ${attempt.endpoint}...`);
+            const res = await this.request(attempt.endpoint, {
+                method: 'POST',
+                body: JSON.stringify(attempt.body)
+            });
+            console.log(`MoyKlass: Record creation successful at ${attempt.endpoint}`);
+            return res;
+        } catch (e: any) {
+            lastError = e;
+            if (e.message?.includes('404')) {
+                console.log(`MoyKlass: Endpoint ${attempt.endpoint} not found (404).`);
+                continue;
+            }
+            console.error(`MoyKlass: Error at ${attempt.endpoint}: ${e.message}`);
+            throw e;
+        }
+    }
+    throw lastError;
   }
 
   async createLesson(lessonData: {
