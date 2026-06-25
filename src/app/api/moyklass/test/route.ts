@@ -11,11 +11,32 @@ export async function POST(request: Request) {
 
     const client = new MoyKlassClient(trimmedKey);
 
-    // Attempt to get filials to verify connectivity and key
-    const filials = await client.getFilials();
-    console.log(`MoyKlass Test: Success, found ${filials?.length || 0} filials`);
+    // Attempt to get mapping data to verify connectivity and key
+    const [filials, managers, teachers, classes, rooms] = await Promise.all([
+      client.getFilials(),
+      client.getManagers(),
+      client.getTeachers(),
+      client.getClasses(),
+      client.getRooms()
+    ]);
 
-    return NextResponse.json({ success: true, filials });
+    // Combine managers and teachers as MoyKlass uses both for different purposes
+    const allStaff = [...managers];
+    teachers.forEach((t: any) => {
+        if (!allStaff.find(s => s.id === t.id)) {
+            allStaff.push(t);
+        }
+    });
+
+    console.log(`MoyKlass Test: Success. Filials: ${filials?.length}, Staff: ${allStaff.length}, Classes: ${classes?.length}, Rooms: ${rooms?.length}`);
+
+    return NextResponse.json({
+      success: true,
+      filials,
+      managers: allStaff,
+      classes,
+      rooms
+    });
   } catch (error: any) {
     console.error('MoyKlass Test Connection Error:', error.message);
     return NextResponse.json({

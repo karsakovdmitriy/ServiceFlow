@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendTelegramMessage } from '@/lib/telegram';
 import { sendMaxMessage } from '@/lib/max';
+import { MoyKlassClient } from '@/lib/moyklass';
 
 export async function POST(request: Request) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -39,6 +40,14 @@ export async function POST(request: Request) {
 
     const clientTelegramId = (sessionData.client as any)?.telegram_id;
     const clientMaxId = (sessionData.client as any)?.max_id;
+
+      if (status === 'confirmed') {
+        try {
+          await syncToMoyKlass(supabase, sessionId);
+        } catch (mkErr) {
+          console.error('MoyKlass Sync Error:', mkErr);
+        }
+      }
 
     if (clientTelegramId || clientMaxId) {
       const date = new Date(sessionData.start_time);
@@ -83,5 +92,95 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error in notify API:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+async function syncToMoyKlass(supabase: any, sessionId: string) {
+  const { data: session } = await supabase
+    .from('sessions')
+    .select(`
+      start_time,
+      end_time,
+      master_id,
+      client_id,
+      service_id,
+      client:clients!client_id(id, full_name, email, phone, telegram_id, moyklass_id),
+      service:services!service_id(id, name, duration, moyklass_class_id, moyklass_room_id, venue:venues!venue_id(moyklass_filial_id)),
+      master:masters!master_id(user_id, moyklass_teacher_id)
+    `)
+    .eq('id', sessionId)
+    .single();
+
+  if (!session || !session.master?.user_id) return;
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('moyklass_api_key, moyklass_filial_id, moyklass_enabled')
+    .eq('id', session.master.user_id)
+    .single();
+
+  if (!profile?.moyklass_enabled || !profile?.moyklass_api_key) return;
+
+  const mk = new MoyKlassClient(profile.moyklass_api_key, session.master.user_id);
+  const client = session.client;
+  const service = session.service;
+
+  // 1. Find or create user
+  let mkUserId = client.moyklass_id;
+  if (!mkUserId) {
+    const contact = client.phone || client.email || client.telegram_id;
+    if (contact) {
+      const mkUser = await mk.findUserByContact(contact);
+      if (mkUser) {
+        mkUserId = mkUser.id;
+      }
+    }
+
+    if (!mkUserId) {
+      const newUser = await mk.createUser({
+        name: client.full_name,
+        email: client.email,
+        phone: client.phone
+      });
+      mkUserId = newUser.id;
+    }
+
+    if (mkUserId) {
+      await supabase.from('clients').update({ moyklass_id: mkUserId }).eq('id', client.id);
+    }
+  }
+
+  if (!mkUserId) return;
+
+  // 2. Find or create lesson
+  const date = session.start_time.split('T')[0];
+  const beginTime = session.start_time.split('T')[1].slice(0, 5);
+  const activeFilialId = service?.venue?.moyklass_filial_id || profile.moyklass_filial_id;
+
+  if (!activeFilialId) return;
+
+  const lessons = await mk.getLessons({ from: date, to: date, filialId: activeFilialId });
+  let lesson = lessons.find((l: any) => l.date === date && l.beginTime?.startsWith(beginTime));
+
+  if (!lesson && service?.moyklass_class_id) {
+    const endTimeStr = session.end_time.split('T')[1].slice(0, 5);
+    try {
+      lesson = await mk.createLesson({
+        date,
+        beginTime,
+        endTime: endTimeStr,
+        filialId: activeFilialId,
+        roomId: service.moyklass_room_id!,
+        classId: service.moyklass_class_id!,
+        teacherIds: session.master.moyklass_teacher_id ? [session.master.moyklass_teacher_id] : []
+      });
+    } catch (e) {
+      console.error('Failed to create lesson in MoyKlass:', e);
+    }
+  }
+
+  // 3. Create record
+  if (lesson) {
+    await mk.createRecord(lesson.id, mkUserId);
   }
 }

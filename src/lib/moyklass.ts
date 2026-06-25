@@ -170,6 +170,27 @@ export class MoyKlassClient {
   }
 
   async getFilials() {
-    return this.request('/company/filials');
+    const response = await this.request('/company/filials');
+    return Array.isArray(response) ? response : (response.filials || []);
+  }
+
+  async getManagers() {
+    const response = await this.request('/company/managers');
+    return Array.isArray(response) ? response : (response.managers || []);
+  }
+
+  async getTeachers() {
+    const response = await this.request('/company/teachers');
+    return Array.isArray(response) ? response : (response.teachers || []);
+  }
+
+  async getClasses() {
+    const response = await this.request('/company/classes');
+    return Array.isArray(response) ? response : (response.classes || []);
+  }
+
+  async getRooms() {
+    const response = await this.request('/company/rooms');
+    return Array.isArray(response) ? response : (response.rooms || []);
   }
 }

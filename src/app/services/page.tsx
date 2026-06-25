@@ -7,6 +7,7 @@ import PortalModal from '@/components/PortalModal';
 
 export default function ServicesPage() {
   const {
+    profile,
     services,
     venues,
     addService,
@@ -28,6 +29,38 @@ export default function ServicesPage() {
 
   const [newVenueData, setNewVenueData] = useState({ name: '', address: '', moyklass_filial_id: '' });
   const [editVenueData, setEditVenueData] = useState<Partial<Venue>>({});
+
+  const [mkData, setMkData] = useState<{ filials: any[], classes: any[], rooms: any[] }>({ filials: [], classes: [], rooms: [] });
+  const [loadingMk, setLoadingMk] = useState(false);
+
+  React.useEffect(() => {
+    if (profile?.moyklass_enabled && profile?.moyklass_api_key) {
+        loadMoyKlassData();
+    }
+  }, [profile]);
+
+  const loadMoyKlassData = async () => {
+    setLoadingMk(true);
+    try {
+        const res = await fetch('/api/moyklass/test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ apiKey: profile?.moyklass_api_key })
+        });
+        const data = await res.json();
+        if (data.success) {
+            setMkData({
+                filials: data.filials || [],
+                classes: data.classes || [],
+                rooms: data.rooms || []
+            });
+        }
+    } catch (e) {
+        console.error('Failed to load MoyKlass mapping data:', e);
+    } finally {
+        setLoadingMk(false);
+    }
+  };
 
   const handleAdd = () => {
     addService({
@@ -303,17 +336,6 @@ export default function ServicesPage() {
                 />
               </div>
 
-              <div>
-                <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">ID Филиала (Мой Класс)</label>
-                <input
-                  type="number"
-                  placeholder="ID филиала из MoyKlass"
-                  value={editingVenueId ? (editVenueData.moyklass_filial_id || '') : newVenueData.moyklass_filial_id}
-                  onChange={e => editingVenueId ? setEditVenueData({...editVenueData, moyklass_filial_id: e.target.value as any}) : setNewVenueData({...newVenueData, moyklass_filial_id: e.target.value})}
-                  className="w-full input-modern"
-                />
-              </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Длительность</label>
@@ -335,28 +357,56 @@ export default function ServicesPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">ID Группы (MK)</label>
-                  <input
-                    type="number"
-                    placeholder="Class ID"
-                    value={editingId ? editData.moyklass_class_id : newData.moyklass_class_id}
-                    onChange={e => editingId ? setEditData({...editData, moyklass_class_id: e.target.value as any}) : setNewData({...newData, moyklass_class_id: e.target.value})}
-                    className="w-full input-modern"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">ID Аудитории (MK)</label>
-                  <input
-                    type="number"
-                    placeholder="Room ID"
-                    value={editingId ? editData.moyklass_room_id : newData.moyklass_room_id}
-                    onChange={e => editingId ? setEditData({...editData, moyklass_room_id: e.target.value as any}) : setNewData({...newData, moyklass_room_id: e.target.value})}
-                    className="w-full input-modern"
-                  />
-                </div>
-              </div>
+              {profile?.moyklass_enabled && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Группа (Мой Класс)</label>
+                      {mkData.classes.length > 0 ? (
+                        <select
+                          className="w-full input-modern appearance-none"
+                          value={editingId ? editData.moyklass_class_id : newData.moyklass_class_id}
+                          onChange={e => editingId ? setEditData({...editData, moyklass_class_id: e.target.value as any}) : setNewData({...newData, moyklass_class_id: e.target.value})}
+                        >
+                          <option value="">Выберите группу...</option>
+                          {mkData.classes.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="number"
+                          placeholder="ID группы"
+                          value={editingId ? editData.moyklass_class_id : newData.moyklass_class_id}
+                          onChange={e => editingId ? setEditData({...editData, moyklass_class_id: e.target.value as any}) : setNewData({...newData, moyklass_class_id: e.target.value})}
+                          className="w-full input-modern"
+                        />
+                      )}
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Аудитория (Мой Класс)</label>
+                      {mkData.rooms.length > 0 ? (
+                        <select
+                          className="w-full input-modern appearance-none"
+                          value={editingId ? editData.moyklass_room_id : newData.moyklass_room_id}
+                          onChange={e => editingId ? setEditData({...editData, moyklass_room_id: e.target.value as any}) : setNewData({...newData, moyklass_room_id: e.target.value})}
+                        >
+                          <option value="">Выберите зал...</option>
+                          {mkData.rooms.map(r => (
+                            <option key={r.id} value={r.id}>{r.name}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="number"
+                          placeholder="ID зала"
+                          value={editingId ? editData.moyklass_room_id : newData.moyklass_room_id}
+                          onChange={e => editingId ? setEditData({...editData, moyklass_room_id: e.target.value as any}) : setNewData({...newData, moyklass_room_id: e.target.value})}
+                          className="w-full input-modern"
+                        />
+                      )}
+                    </div>
+                  </div>
+              )}
 
               <div>
                 <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Площадка</label>
@@ -430,6 +480,32 @@ export default function ServicesPage() {
                   className="w-full input-modern"
                 />
               </div>
+
+              {profile?.moyklass_enabled && (
+                  <div>
+                    <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Филиал (Мой Класс)</label>
+                    {mkData.filials.length > 0 ? (
+                        <select
+                            className="w-full input-modern appearance-none"
+                            value={editingVenueId ? (editVenueData.moyklass_filial_id || '') : newVenueData.moyklass_filial_id}
+                            onChange={e => editingVenueId ? setEditVenueData({...editVenueData, moyklass_filial_id: e.target.value as any}) : setNewVenueData({...newVenueData, moyklass_filial_id: e.target.value})}
+                        >
+                            <option value="">Выберите филиал...</option>
+                            {mkData.filials.map(f => (
+                                <option key={f.id} value={f.id}>{f.name}</option>
+                            ))}
+                        </select>
+                    ) : (
+                        <input
+                            type="number"
+                            placeholder="ID филиала из MoyKlass"
+                            value={editingVenueId ? (editVenueData.moyklass_filial_id || '') : newVenueData.moyklass_filial_id}
+                            onChange={e => editingVenueId ? setEditVenueData({...editVenueData, moyklass_filial_id: e.target.value as any}) : setNewVenueData({...newVenueData, moyklass_filial_id: e.target.value})}
+                            className="w-full input-modern"
+                        />
+                    )}
+                  </div>
+              )}
             </div>
 
             <div className="p-6 bg-bg-custom border-t border-border flex gap-3">
