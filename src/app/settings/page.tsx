@@ -247,22 +247,23 @@ export default function SettingsPage() {
               {/* Integrations Dashboard */}
               <section className="pt-8 border-t border-border">
                 <div className="flex items-center gap-4 mb-6">
-                  <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider">Интеграции</h2>
+                  <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider">Интеграции и сервисы</h2>
                   <div className="h-px bg-border flex-1"></div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+                <div className="flex flex-wrap items-center gap-6 mb-8">
                   {[
-                    { id: 'telegram', label: 'Telegram', icon: <IconBrandTelegram size={28} />, status: getIntegrationStatus().telegram },
-                    { id: 'max', label: 'MAX', icon: <IconMessages size={28} />, status: getIntegrationStatus().max },
-                    { id: 'moyklass', label: 'Мой Класс', icon: <IconRefresh size={28} />, status: getIntegrationStatus().moyklass },
-                    { id: 'database', label: 'База данных', icon: <IconDatabase size={28} />, status: getIntegrationStatus().database }
+                    { id: 'telegram', label: 'Telegram', icon: <IconBrandTelegram size={24} />, status: getIntegrationStatus().telegram },
+                    { id: 'max', label: 'MAX', icon: <IconMessages size={24} />, status: getIntegrationStatus().max },
+                    { id: 'moyklass', label: 'Мой Класс', icon: <IconRefresh size={24} />, status: getIntegrationStatus().moyklass },
+                    { id: 'database', label: 'База данных', icon: <IconDatabase size={24} />, status: getIntegrationStatus().database }
                   ].map(integration => (
                     <button
                       key={integration.id}
                       onClick={() => setActivePanel(activePanel === integration.id ? null : integration.id)}
-                      className={`p-6 rounded-3xl border transition-all flex flex-col items-center justify-center gap-3 group relative shadow-sh-sm hover:shadow-sh-md active:scale-95 ${
-                        activePanel === integration.id ? 'ring-2 ring-accent' : ''
+                      title={integration.label}
+                      className={`w-14 h-14 rounded-2xl border transition-all flex items-center justify-center group relative shadow-sh-sm hover:shadow-sh-md active:scale-95 ${
+                        activePanel === integration.id ? 'ring-2 ring-accent border-accent' : ''
                       } ${
                         integration.status === 'connected' ? 'bg-green-50 border-green-200 text-green-600' :
                         integration.status === 'error' ? 'bg-red-50 border-red-200 text-red-600' :
@@ -272,10 +273,9 @@ export default function SettingsPage() {
                       <div className={`transition-transform duration-300 ${activePanel === integration.id ? 'scale-110' : 'group-hover:scale-105'}`}>
                         {integration.icon}
                       </div>
-                      <span className="text-[11px] font-bold uppercase tracking-[0.1em]">{integration.label}</span>
 
                       {/* Status Dot */}
-                      <div className={`absolute top-4 right-4 w-2.5 h-2.5 rounded-full border-2 border-white shadow-sm ${
+                      <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white shadow-sm ${
                         integration.status === 'connected' ? 'bg-green-500' :
                         integration.status === 'error' ? 'bg-red-500' :
                         'bg-slate-300'

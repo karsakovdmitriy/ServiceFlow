@@ -286,11 +286,13 @@ export async function POST(request: Request) {
 
            // Trigger client notification
            const notifyUrl = `${url.origin}/api/notify`;
+           console.log(`Bot: Triggering notification for session ${sessionId} confirmed`);
            fetch(notifyUrl, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ sessionId, status: 'confirmed' })
-           }).catch(e => console.error('Notify error from bot:', e));
+           }).then(r => console.log(`Bot: Notify response status ${r.status}`))
+             .catch(e => console.error('Notify error from bot:', e));
 
         } else if (action === 'tr_rejt') {
            const [sessionId] = params;
