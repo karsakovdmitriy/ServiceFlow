@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useStore } from '@/lib/store';
-import { IconDatabase, IconDatabaseOff, IconInfoCircle, IconShieldCheck, IconLock, IconBrandTelegram, IconPhoto, IconCheck } from '@tabler/icons-react';
+import { IconDatabase, IconDatabaseOff, IconInfoCircle, IconShieldCheck, IconLock, IconBrandTelegram, IconPhoto, IconCheck, IconExternalLink, IconLoader2 } from '@tabler/icons-react';
 
 export default function SettingsPage() {
+  const { profile, trainerId, updateProfile, loading: storeLoading, isDemoMode, testMoyKlassConnection } = useStore();
   const { profile, activeMaster, updateProfile, updateMaster, loading: storeLoading, isDemoMode } = useStore();
   const [formData, setFormData] = useState({
     full_name: '',
@@ -13,8 +14,14 @@ export default function SettingsPage() {
     email: '',
     phone: '',
     slot_duration: '60',
-    category: 'Спорт'
+    category: 'Спорт',
+    moyklass_api_key: '',
+    moyklass_filial_id: '',
+    moyklass_enabled: false
   });
+
+  const [mkTesting, setMkTesting] = useState(false);
+  const [mkFilials, setMkFilials] = useState<any[]>([]);
 
   const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'TrainerSpaceBot';
   const linkTgLink = `https://t.me/${botUsername}?start=link_${activeMaster?.id || 'id'}`;
@@ -28,6 +35,12 @@ export default function SettingsPage() {
         specialization: activeMaster?.specialization || '',
         avatar_url: activeMaster?.avatar_url || profile.avatar_url || '',
         email: profile.email || '',
+        phone: (profile as any).phone || '',
+        slot_duration: String(profile.slot_duration || 60),
+        category: (profile as any).category || 'Спорт',
+        moyklass_api_key: profile.moyklass_api_key || '',
+        moyklass_filial_id: String(profile.moyklass_filial_id || ''),
+        moyklass_enabled: profile.moyklass_enabled || false
         phone: activeMaster?.phone || profile.phone || '',
         slot_duration: String(activeMaster?.slot_duration || 60),
         category: activeMaster?.category || 'Спорт'
@@ -35,10 +48,35 @@ export default function SettingsPage() {
     }
   }, [profile, activeMaster]);
 
+  const handleTestMoyKlass = async () => {
+    if (!formData.moyklass_api_key) return;
+    setMkTesting(true);
+    const res = await testMoyKlassConnection(formData.moyklass_api_key);
+    if (res.success) {
+      setMkFilials(res.filials || []);
+      setMessage('MoyKlass: Соединение успешно');
+    } else {
+      setMessage('MoyKlass: ' + res.message);
+    }
+    setMkTesting(false);
+  };
+
   const handleSave = async () => {
     setSaving(true);
     setMessage('');
 
+    const { error } = await updateProfile({
+      full_name: formData.full_name,
+      specialization: formData.specialization,
+      avatar_url: formData.avatar_url,
+      email: formData.email,
+      phone: formData.phone,
+      slot_duration: parseInt(formData.slot_duration),
+      category: formData.category,
+      moyklass_api_key: formData.moyklass_api_key,
+      moyklass_filial_id: formData.moyklass_filial_id ? parseInt(formData.moyklass_filial_id) : null,
+      moyklass_enabled: formData.moyklass_enabled
+    } as any) as any;
     let error = null;
 
     // 1. Update Master data if applicable
@@ -212,6 +250,78 @@ export default function SettingsPage() {
                     </select>
                   </div>
               </div>
+
+              <section className="pt-8 border-t border-border">
+                <div className="flex items-center gap-4 mb-6">
+                  <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider">Интеграция MoyKlass</h2>
+                  <div className="h-px bg-border flex-1"></div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between p-4 bg-bg-custom rounded-2xl border border-border">
+                    <div className="space-y-1">
+                      <div className="text-[13px] font-bold text-t1">Активировать синхронизацию</div>
+                      <div className="text-[11px] text-t3 font-medium">Автоматически записывать клиентов в MoyKlass</div>
+                    </div>
+                    <button
+                      onClick={() => setFormData({...formData, moyklass_enabled: !formData.moyklass_enabled})}
+                      className={`w-12 h-6 rounded-full relative transition-all ${formData.moyklass_enabled ? 'bg-green-custom' : 'bg-border'}`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${formData.moyklass_enabled ? 'left-7' : 'left-1'}`}></div>
+                    </button>
+                  </div>
+
+                  {formData.moyklass_enabled && (
+                    <div className="space-y-4 animate-fade-up">
+                      <div>
+                        <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">API Ключ</label>
+                        <div className="flex gap-2">
+                          <input
+                            className="flex-1 input-modern bg-bg-custom/50"
+                            type="password"
+                            placeholder="Ваш API-ключ из настроек MoyKlass"
+                            value={formData.moyklass_api_key}
+                            onChange={e => setFormData({...formData, moyklass_api_key: e.target.value})}
+                          />
+                          <button
+                            onClick={handleTestMoyKlass}
+                            disabled={mkTesting || !formData.moyklass_api_key}
+                            className="px-4 bg-bg-custom border border-border rounded-xl text-[12px] font-bold hover:bg-surface transition-all flex items-center gap-2"
+                          >
+                            {mkTesting ? <IconLoader2 size={16} className="animate-spin" /> : 'Проверить'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {(mkFilials.length > 0 || formData.moyklass_filial_id) && (
+                        <div>
+                          <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Филиал (ID)</label>
+                          {mkFilials.length > 0 ? (
+                            <select
+                              className="w-full input-modern bg-bg-custom/50 appearance-none"
+                              value={formData.moyklass_filial_id}
+                              onChange={e => setFormData({...formData, moyklass_filial_id: e.target.value})}
+                            >
+                              <option value="">Выберите филиал...</option>
+                              {mkFilials.map(f => (
+                                <option key={f.id} value={f.id}>{f.name}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              className="w-full input-modern bg-bg-custom/50"
+                              type="number"
+                              placeholder="ID филиала"
+                              value={formData.moyklass_filial_id}
+                              onChange={e => setFormData({...formData, moyklass_filial_id: e.target.value})}
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </section>
 
               <div className="pt-6 flex items-center justify-between">
                 {message && (

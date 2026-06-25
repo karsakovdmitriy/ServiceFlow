@@ -16,6 +16,24 @@ CREATE TABLE IF NOT EXISTS profiles (
   onboarding_completed_master BOOLEAN DEFAULT FALSE,
   onboarding_completed_client BOOLEAN DEFAULT FALSE,
   onboarding_completed_venue BOOLEAN DEFAULT FALSE,
+  moyklass_api_key TEXT,
+  moyklass_filial_id INTEGER,
+  moyklass_enabled BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Add onboarding columns if table already exists
+-- Add missing columns if table already exists
+ALTER TABLE trainers ADD COLUMN IF NOT EXISTS category TEXT;
+ALTER TABLE trainers ADD COLUMN IF NOT EXISTS is_master BOOLEAN DEFAULT TRUE;
+ALTER TABLE trainers ADD COLUMN IF NOT EXISTS is_client BOOLEAN DEFAULT FALSE;
+ALTER TABLE trainers ADD COLUMN IF NOT EXISTS is_venue BOOLEAN DEFAULT FALSE;
+ALTER TABLE trainers ADD COLUMN IF NOT EXISTS onboarding_completed_master BOOLEAN DEFAULT FALSE;
+ALTER TABLE trainers ADD COLUMN IF NOT EXISTS onboarding_completed_client BOOLEAN DEFAULT FALSE;
+ALTER TABLE trainers ADD COLUMN IF NOT EXISTS onboarding_completed_venue BOOLEAN DEFAULT FALSE;
+ALTER TABLE trainers ADD COLUMN IF NOT EXISTS moyklass_api_key TEXT;
+ALTER TABLE trainers ADD COLUMN IF NOT EXISTS moyklass_filial_id INTEGER;
+ALTER TABLE trainers ADD COLUMN IF NOT EXISTS moyklass_enabled BOOLEAN DEFAULT FALSE;
   subscription_tier TEXT DEFAULT 'free', -- 'free', 'pro', 'business'
   subscription_status TEXT DEFAULT 'active',
   subscription_period_end TIMESTAMP WITH TIME ZONE,
