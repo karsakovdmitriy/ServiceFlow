@@ -210,9 +210,11 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
   const activeFilialId = serviceFilialId || venueFilialId || profile.moyklass_filial_id;
 
   if (!activeFilialId) {
-    console.error(`MoyKlass: Filial ID missing for sync of session ${sessionId}`);
+    console.error(`MoyKlass: Filial ID missing for sync of session ${sessionId}. checked: service(${serviceFilialId}), venue(${venueFilialId}), profile(${profile.moyklass_filial_id})`);
     return;
   }
+
+  console.log(`MoyKlass: Using Filial ID ${activeFilialId} for lesson lookup/creation`);
 
   const lessons = await mk.getLessons({ from: date, to: date, filialId: activeFilialId });
   let lesson = lessons.find((l: any) => l.date === date && l.beginTime?.startsWith(beginTime));

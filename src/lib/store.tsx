@@ -1126,12 +1126,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         for (const cls of classes) {
           const exists = services.find(s => s.moyklass_class_id === cls.id);
           if (!exists) {
+            // Pick the first filial ID associated with this class if available
+            const filialId = cls.filialIds && cls.filialIds.length > 0 ? cls.filialIds[0] : null;
+
             await addService({
               name: cls.name,
               duration: 60,
               price: 0,
               is_group: true,
-              moyklass_class_id: cls.id
+              moyklass_class_id: cls.id,
+              moyklass_filial_id: filialId
             } as any);
             count++;
           }
