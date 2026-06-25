@@ -2,10 +2,20 @@
 
 import React, { useState, useEffect } from 'react';
 import { useStore } from '@/lib/store';
-import { IconDatabase, IconDatabaseOff, IconInfoCircle, IconShieldCheck, IconLock, IconBrandTelegram, IconPhoto, IconCheck, IconExternalLink, IconLoader2 } from '@tabler/icons-react';
+import {
+  IconDatabase, IconDatabaseOff, IconInfoCircle, IconShieldCheck, IconLock,
+  IconBrandTelegram, IconPhoto, IconCheck, IconExternalLink, IconLoader2,
+  IconMessages, IconChevronDown, IconChevronUp, IconRefresh, IconBuildingSkyscraper,
+  IconUsers, IconStethoscope
+} from '@tabler/icons-react';
 
 export default function SettingsPage() {
-  const { profile, activeMaster, updateProfile, updateMaster, loading: storeLoading, isDemoMode, testMoyKlassConnection } = useStore();
+  const {
+    profile, activeMaster, updateProfile, updateMaster, loading: storeLoading, isDemoMode,
+    testMoyKlassConnection, activeRole,
+    syncServicesFromMoyKlass, syncVenuesFromMoyKlass, syncMastersFromMoyKlass,
+    getIntegrationStatus
+  } = useStore();
   const [formData, setFormData] = useState({
     full_name: '',
     specialization: '',
@@ -23,6 +33,9 @@ export default function SettingsPage() {
   const [mkTesting, setMkTesting] = useState(false);
   const [mkFilials, setMkFilials] = useState<any[]>([]);
   const [mkManagers, setMkManagers] = useState<any[]>([]);
+
+  const [activePanel, setActivePanel] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState<string | null>(null);
 
   const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'TrainerSpaceBot';
   const linkTgLink = `https://t.me/${botUsername}?start=link_${activeMaster?.id || 'id'}`;
@@ -229,113 +242,243 @@ export default function SettingsPage() {
                       value={formData.email}
                     />
                   </div>
-                  <div className="hidden">
-                    <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Длительность слота</label>
-                    <select
-                      className="w-full input-modern appearance-none"
-                      value={formData.slot_duration}
-                      onChange={e => setFormData({...formData, slot_duration: e.target.value})}
-                    >
-                      <option value="60">60 минут</option>
-                      <option value="45">45 минут</option>
-                      <option value="90">90 минут</option>
-                    </select>
-                  </div>
               </div>
 
+              {/* Integrations Dashboard */}
               <section className="pt-8 border-t border-border">
                 <div className="flex items-center gap-4 mb-6">
-                  <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider">Интеграция MoyKlass</h2>
+                  <h2 className="text-[14px] font-bold text-t1 uppercase tracking-wider">Интеграции</h2>
                   <div className="h-px bg-border flex-1"></div>
                 </div>
 
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between p-4 bg-bg-custom rounded-2xl border border-border">
-                    <div className="space-y-1">
-                      <div className="text-[13px] font-bold text-t1">Активировать синхронизацию</div>
-                      <div className="text-[11px] text-t3 font-medium">Автоматически записывать клиентов в MoyKlass</div>
-                    </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+                  {[
+                    { id: 'telegram', label: 'Telegram', icon: <IconBrandTelegram size={28} />, status: getIntegrationStatus().telegram },
+                    { id: 'max', label: 'MAX', icon: <IconMessages size={28} />, status: getIntegrationStatus().max },
+                    { id: 'moyklass', label: 'Мой Класс', icon: <IconRefresh size={28} />, status: getIntegrationStatus().moyklass },
+                    { id: 'database', label: 'База данных', icon: <IconDatabase size={28} />, status: getIntegrationStatus().database }
+                  ].map(integration => (
                     <button
-                      onClick={() => setFormData({...formData, moyklass_enabled: !formData.moyklass_enabled})}
-                      className={`w-12 h-6 rounded-full relative transition-all ${formData.moyklass_enabled ? 'bg-green-custom' : 'bg-border'}`}
+                      key={integration.id}
+                      onClick={() => setActivePanel(activePanel === integration.id ? null : integration.id)}
+                      className={`p-6 rounded-3xl border transition-all flex flex-col items-center justify-center gap-3 group relative shadow-sh-sm hover:shadow-sh-md active:scale-95 ${
+                        activePanel === integration.id ? 'ring-2 ring-accent' : ''
+                      } ${
+                        integration.status === 'connected' ? 'bg-green-50 border-green-200 text-green-600' :
+                        integration.status === 'error' ? 'bg-red-50 border-red-200 text-red-600' :
+                        'bg-slate-50 border-slate-200 text-slate-400 opacity-60 grayscale'
+                      }`}
                     >
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${formData.moyklass_enabled ? 'left-7' : 'left-1'}`}></div>
-                    </button>
-                  </div>
+                      <div className={`transition-transform duration-300 ${activePanel === integration.id ? 'scale-110' : 'group-hover:scale-105'}`}>
+                        {integration.icon}
+                      </div>
+                      <span className="text-[11px] font-bold uppercase tracking-[0.1em]">{integration.label}</span>
 
-                  {formData.moyklass_enabled && (
-                    <div className="space-y-4 animate-fade-up">
-                      <div>
-                        <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">API Ключ</label>
-                        <div className="flex gap-2">
-                          <input
-                            className="flex-1 input-modern bg-bg-custom/50"
-                            type="password"
-                            placeholder="Ваш API-ключ из настроек MoyKlass"
-                            value={formData.moyklass_api_key}
-                            onChange={e => setFormData({...formData, moyklass_api_key: e.target.value})}
-                          />
-                          <button
-                            onClick={handleTestMoyKlass}
-                            disabled={mkTesting || !formData.moyklass_api_key}
-                            className="px-4 bg-bg-custom border border-border rounded-xl text-[12px] font-bold hover:bg-surface transition-all flex items-center gap-2"
-                          >
-                            {mkTesting ? <IconLoader2 size={16} className="animate-spin" /> : 'Загрузить данные'}
-                          </button>
-                        </div>
+                      {/* Status Dot */}
+                      <div className={`absolute top-4 right-4 w-2.5 h-2.5 rounded-full border-2 border-white shadow-sm ${
+                        integration.status === 'connected' ? 'bg-green-500' :
+                        integration.status === 'error' ? 'bg-red-500' :
+                        'bg-slate-300'
+                      }`}></div>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Collapsible Panels */}
+                <div className="space-y-4">
+                  {activePanel === 'telegram' && (
+                    <div className="p-6 bg-bg-custom rounded-2xl border border-border animate-fade-up">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-[13px] font-bold text-t1 uppercase tracking-wider flex items-center gap-2">
+                          <IconBrandTelegram size={18} /> Telegram Бот
+                        </h3>
+                        <button onClick={() => setActivePanel(null)}><IconChevronUp size={18} /></button>
+                      </div>
+                      <p className="text-[12px] text-t3 mb-4">Подключите Telegram бота для получения мгновенных уведомлений о новых заявках.</p>
+                      <a
+                        href={linkTgLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-6 py-2.5 bg-accent text-white rounded-xl text-[12px] font-bold hover:bg-accent-hover transition-all"
+                      >
+                        {activeMaster?.telegram_id ? 'Переподключить' : 'Подключить'}
+                      </a>
+                    </div>
+                  )}
+
+                  {activePanel === 'moyklass' && (
+                    <div className="p-6 bg-bg-custom rounded-2xl border border-border animate-fade-up space-y-6">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-[13px] font-bold text-t1 uppercase tracking-wider flex items-center gap-2">
+                          <IconRefresh size={18} /> MoyKlass CRM
+                        </h3>
+                        <button onClick={() => setActivePanel(null)}><IconChevronUp size={18} /></button>
                       </div>
 
-                      {(mkManagers.length > 0 || formData.moyklass_teacher_id) && (
-                        <div>
-                          <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Сотрудник (Мой Класс)</label>
-                          {mkManagers.length > 0 ? (
-                            <select
-                              className="w-full input-modern bg-bg-custom/50 appearance-none"
-                              value={formData.moyklass_teacher_id}
-                              onChange={e => setFormData({...formData, moyklass_teacher_id: e.target.value})}
-                            >
-                              <option value="">Выберите сотрудника...</option>
-                              {mkManagers.map(m => (
-                                <option key={m.id} value={m.id}>{m.name}</option>
-                              ))}
-                            </select>
-                          ) : (
-                            <input
-                              className="w-full input-modern bg-bg-custom/50"
-                              type="number"
-                              placeholder="ID преподавателя"
-                              value={formData.moyklass_teacher_id}
-                              onChange={e => setFormData({...formData, moyklass_teacher_id: e.target.value})}
-                            />
-                          )}
+                      <div className="flex items-center justify-between p-4 bg-surface rounded-xl border border-border">
+                        <div className="space-y-1">
+                          <div className="text-[13px] font-bold text-t1">Синхронизация</div>
+                          <div className="text-[11px] text-t3 font-medium">Автоматическая запись клиентов в CRM</div>
                         </div>
-                      )}
+                        <button
+                          onClick={() => setFormData({...formData, moyklass_enabled: !formData.moyklass_enabled})}
+                          className={`w-12 h-6 rounded-full relative transition-all ${formData.moyklass_enabled ? 'bg-green-custom' : 'bg-border'}`}
+                        >
+                          <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${formData.moyklass_enabled ? 'left-7' : 'left-1'}`}></div>
+                        </button>
+                      </div>
 
-                      {(mkFilials.length > 0 || formData.moyklass_filial_id) && (
-                        <div>
-                          <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Филиал по умолчанию (Мой Класс)</label>
-                          {mkFilials.length > 0 ? (
-                            <select
-                              className="w-full input-modern bg-bg-custom/50 appearance-none"
-                              value={formData.moyklass_filial_id}
-                              onChange={e => setFormData({...formData, moyklass_filial_id: e.target.value})}
-                            >
-                              <option value="">Выберите филиал...</option>
-                              {mkFilials.map(f => (
-                                <option key={f.id} value={f.id}>{f.name}</option>
-                              ))}
-                            </select>
-                          ) : (
-                            <input
-                              className="w-full input-modern bg-bg-custom/50"
-                              type="number"
-                              placeholder="ID филиала"
-                              value={formData.moyklass_filial_id}
-                              onChange={e => setFormData({...formData, moyklass_filial_id: e.target.value})}
-                            />
-                          )}
+                      {formData.moyklass_enabled && (
+                        <div className="space-y-6">
+                          <div>
+                            <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">API Ключ</label>
+                            <div className="flex gap-2">
+                              <input
+                                className="flex-1 input-modern bg-surface"
+                                type="password"
+                                placeholder="Ваш API-ключ"
+                                value={formData.moyklass_api_key}
+                                onChange={e => setFormData({...formData, moyklass_api_key: e.target.value})}
+                              />
+                              <button
+                                onClick={handleTestMoyKlass}
+                                disabled={mkTesting || !formData.moyklass_api_key}
+                                className="px-4 bg-surface border border-border rounded-xl text-[12px] font-bold hover:bg-bg-custom transition-all"
+                              >
+                                {mkTesting ? <IconLoader2 size={16} className="animate-spin" /> : 'Загрузить данные'}
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {activeRole === 'master' && (mkManagers.length > 0 || formData.moyklass_teacher_id) && (
+                              <div>
+                                <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Сотрудник</label>
+                                <select
+                                  className="w-full input-modern bg-surface appearance-none"
+                                  value={formData.moyklass_teacher_id}
+                                  onChange={e => setFormData({...formData, moyklass_teacher_id: e.target.value})}
+                                >
+                                  <option value="">Выберите...</option>
+                                  {mkManagers.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                                </select>
+                              </div>
+                            )}
+
+                            {activeRole === 'venue' && (mkFilials.length > 0 || formData.moyklass_filial_id) && (
+                              <div>
+                                <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Филиал</label>
+                                <select
+                                  className="w-full input-modern bg-surface appearance-none"
+                                  value={formData.moyklass_filial_id}
+                                  onChange={e => setFormData({...formData, moyklass_filial_id: e.target.value})}
+                                >
+                                  <option value="">Выберите...</option>
+                                  {mkFilials.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                                </select>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="pt-4 border-t border-border">
+                            <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-4">Ручная синхронизация</label>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <button
+                                onClick={async () => {
+                                  setSyncing('services');
+                                  const res = await syncServicesFromMoyKlass();
+                                  setMessage(res.message);
+                                  setSyncing(null);
+                                }}
+                                disabled={!!syncing}
+                                className="flex items-center justify-center gap-2 py-2.5 bg-surface border border-border rounded-xl text-[11px] font-bold hover:bg-bg-custom transition-all"
+                              >
+                                {syncing === 'services' ? <IconLoader2 size={14} className="animate-spin" /> : <IconStethoscope size={14} />} Услуги
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  setSyncing('venues');
+                                  const res = await syncVenuesFromMoyKlass();
+                                  setMessage(res.message);
+                                  setSyncing(null);
+                                }}
+                                disabled={!!syncing}
+                                className="flex items-center justify-center gap-2 py-2.5 bg-surface border border-border rounded-xl text-[11px] font-bold hover:bg-bg-custom transition-all"
+                              >
+                                {syncing === 'venues' ? <IconLoader2 size={14} className="animate-spin" /> : <IconBuildingSkyscraper size={14} />} Площадки
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  setSyncing('masters');
+                                  const res = await syncMastersFromMoyKlass();
+                                  setMessage(res.message);
+                                  setSyncing(null);
+                                }}
+                                disabled={!!syncing}
+                                className="flex items-center justify-center gap-2 py-2.5 bg-surface border border-border rounded-xl text-[11px] font-bold hover:bg-bg-custom transition-all"
+                              >
+                                {syncing === 'masters' ? <IconLoader2 size={14} className="animate-spin" /> : <IconUsers size={14} />} Мастера
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {activePanel === 'max' && (
+                    <div className="p-6 bg-bg-custom rounded-2xl border border-border animate-fade-up space-y-6">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-[13px] font-bold text-t1 uppercase tracking-wider flex items-center gap-2">
+                          <IconMessages size={18} /> MAX Messenger
+                        </h3>
+                        <button onClick={() => setActivePanel(null)}><IconChevronUp size={18} /></button>
+                      </div>
+                      <p className="text-[12px] text-t3">Интеграция с платформой MAX для автоматизации клиентского сервиса.</p>
+
+                      <div>
+                        <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">MAX ID</label>
+                        <input
+                          className="w-full input-modern bg-surface"
+                          type="text"
+                          placeholder="Ваш ID в MAX"
+                          value={activeMaster?.max_id || ''}
+                          readOnly
+                        />
+                      </div>
+
+                      <a
+                        href={`https://max.com/link_${activeMaster?.id}`} // Placeholder link
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-6 py-2.5 bg-accent text-white rounded-xl text-[12px] font-bold hover:bg-accent-hover transition-all"
+                      >
+                        {activeMaster?.max_id ? 'Изменить привязку' : 'Подключить MAX'}
+                      </a>
+                    </div>
+                  )}
+
+                  {activePanel === 'database' && (
+                    <div className="p-6 bg-bg-custom rounded-2xl border border-border animate-fade-up">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-[13px] font-bold text-t1 uppercase tracking-wider flex items-center gap-2">
+                          <IconDatabase size={18} /> База данных
+                        </h3>
+                        <button onClick={() => setActivePanel(null)}><IconChevronUp size={18} /></button>
+                      </div>
+                      <div className={`p-4 rounded-xl border ${isDemoMode ? 'bg-red-light border-red-custom/20' : 'bg-green-light border-green-custom/20'}`}>
+                        <div className="flex items-center gap-3">
+                          {isDemoMode ? <IconDatabaseOff className="text-red-custom" /> : <IconDatabase className="text-green-custom" />}
+                          <div>
+                            <div className={`text-[13px] font-bold ${isDemoMode ? 'text-red-custom' : 'text-green-custom'}`}>
+                              {isDemoMode ? 'Локальный режим' : 'Облачная синхронизация'}
+                            </div>
+                            <div className="text-[11px] text-t3 mt-0.5">
+                              {isDemoMode ? 'Ваши данные хранятся только в этом браузере.' : 'Ваши данные надежно сохранены в Supabase.'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -362,57 +505,7 @@ export default function SettingsPage() {
 
         {/* Sidebar Info */}
         <div className="lg:col-span-4 space-y-10">
-          {!isDemoMode && (
-            <section>
-                <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-4">Оповещения мастера</div>
-                <div className="p-5 rounded-2xl bg-surface border border-border flex flex-col gap-4 shadow-sh-sm">
-                    <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${activeMaster?.telegram_id ? 'bg-green-light text-green-custom' : 'bg-accent-light text-accent'}`}>
-                            <IconBrandTelegram size={22} stroke={1.5} />
-                        </div>
-                        <div>
-                            <div className="text-[14px] font-bold text-t1 tracking-tight">
-                                {activeMaster?.telegram_id ? 'Telegram подключен' : 'Привязать Telegram'}
-                            </div>
-                            <div className="text-[11px] text-t3 font-medium mt-0.5">
-                                {activeMaster?.telegram_id ? 'Уведомления активны' : 'Получайте уведомления'}
-                            </div>
-                        </div>
-                    </div>
-                    <a
-                        href={linkTgLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-center text-[12px] font-bold py-2.5 bg-bg-custom text-t1 rounded-xl hover:bg-surface transition-all border border-border shadow-sh-sm"
-                    >
-                        {activeMaster?.telegram_id ? 'Переподключить' : 'Подключить бота'}
-                    </a>
-                </div>
-            </section>
-          )}
-
-          <section>
-            <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-4">Статус системы</div>
-            <div className={`p-6 rounded-3xl border ${isDemoMode ? 'border-amber-100 bg-amber-50/20' : 'border-green-100 bg-green-50/20'}`}>
-              <div className="flex items-start gap-4">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isDemoMode ? 'bg-amber-100 text-amber-600' : 'bg-green-100 text-green-600'}`}>
-                   {isDemoMode ? <IconDatabaseOff size={20} stroke={1.5} /> : <IconDatabase size={20} stroke={1.5} />}
-                </div>
-                <div className="min-w-0">
-                  <div className={`text-[14px] font-bold tracking-tight ${isDemoMode ? 'text-amber-800' : 'text-green-800'}`}>
-                    {isDemoMode ? 'Локальный режим' : 'Облако активно'}
-                  </div>
-                  <p className="text-[12px] text-t3 font-medium mt-1 leading-relaxed">
-                    {isDemoMode
-                      ? 'Данные сохраняются в браузере. Настройте Supabase для синхронизации.'
-                      : 'Ваш профиль и записи надежно защищены и синхронизированы.'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-  <section className="p-6 rounded-3xl bg-surface border border-border shadow-sh-sm">
+          <section className="p-6 rounded-3xl bg-surface border border-border shadow-sh-sm">
              <div className="flex items-center gap-3 text-accent mb-4">
                 <IconShieldCheck size={20} stroke={1.5} />
                 <h4 className="text-[13px] font-bold uppercase tracking-wider">Мои роли</h4>

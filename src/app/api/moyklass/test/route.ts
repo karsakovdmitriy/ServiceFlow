@@ -12,28 +12,19 @@ export async function POST(request: Request) {
     const client = new MoyKlassClient(trimmedKey);
 
     // Attempt to get mapping data to verify connectivity and key
-    const [filials, managers, teachers, classes, rooms] = await Promise.all([
+    const [filials, managers, classes, rooms] = await Promise.all([
       client.getFilials(),
       client.getManagers(),
-      client.getTeachers(),
       client.getClasses(),
       client.getRooms()
     ]);
 
-    // Combine managers and teachers as MoyKlass uses both for different purposes
-    const allStaff = [...managers];
-    teachers.forEach((t: any) => {
-        if (!allStaff.find(s => s.id === t.id)) {
-            allStaff.push(t);
-        }
-    });
-
-    console.log(`MoyKlass Test: Success. Filials: ${filials?.length}, Staff: ${allStaff.length}, Classes: ${classes?.length}, Rooms: ${rooms?.length}`);
+    console.log(`MoyKlass Test: Success. Filials: ${filials?.length}, Staff: ${managers?.length}, Classes: ${classes?.length}, Rooms: ${rooms?.length}`);
 
     return NextResponse.json({
       success: true,
       filials,
-      managers: allStaff,
+      managers,
       classes,
       rooms
     });
