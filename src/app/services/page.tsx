@@ -23,7 +23,7 @@ export default function ServicesPage() {
   const [isAddingVenue, setIsAddingVenue] = useState(false);
   const [editingVenueId, setEditingVenueId] = useState<string | null>(null);
 
-  const [newData, setNewData] = useState({ name: '', duration: 60, price: 1000, is_group: false, venue_id: '' });
+  const [newData, setNewData] = useState({ name: '', duration: 60, price: 1000, is_group: false, venue_id: '', moyklass_class_id: '', moyklass_room_id: '' });
   const [editData, setEditData] = useState<Partial<Service>>({});
 
   const [newVenueData, setNewVenueData] = useState({ name: '', address: '' });
@@ -32,20 +32,31 @@ export default function ServicesPage() {
   const handleAdd = () => {
     addService({
       ...newData,
-      venue_id: newData.venue_id || null
+      venue_id: newData.venue_id || null,
+      moyklass_class_id: newData.moyklass_class_id ? parseInt(newData.moyklass_class_id) : undefined,
+      moyklass_room_id: newData.moyklass_room_id ? parseInt(newData.moyklass_room_id) : undefined
     } as any);
-    setNewData({ name: '', duration: 60, price: 1000, is_group: false, venue_id: '' });
+    setNewData({ name: '', duration: 60, price: 1000, is_group: false, venue_id: '', moyklass_class_id: '', moyklass_room_id: '' });
     setIsAdding(false);
   };
 
   const startEdit = (service: Service) => {
     setEditingId(service.id);
-    setEditData(service);
+    setEditData({
+        ...service,
+        moyklass_class_id: service.moyklass_class_id ? (service.moyklass_class_id as any) : '',
+        moyklass_room_id: service.moyklass_room_id ? (service.moyklass_room_id as any) : ''
+    });
   };
 
   const handleUpdate = () => {
     if (editingId) {
-      updateService(editingId, editData);
+      const formattedData = {
+          ...editData,
+          moyklass_class_id: editData.moyklass_class_id ? parseInt(editData.moyklass_class_id as any) : undefined,
+          moyklass_room_id: editData.moyklass_room_id ? parseInt(editData.moyklass_room_id as any) : undefined
+      };
+      updateService(editingId, formattedData);
       setEditingId(null);
     }
   };
@@ -301,6 +312,29 @@ export default function ServicesPage() {
                     type="number"
                     value={editingId ? editData.price : newData.price}
                     onChange={e => editingId ? setEditData({...editData, price: parseInt(e.target.value)}) : setNewData({...newData, price: parseInt(e.target.value)})}
+                    className="w-full input-modern"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">ID Группы (MK)</label>
+                  <input
+                    type="number"
+                    placeholder="Class ID"
+                    value={editingId ? editData.moyklass_class_id : newData.moyklass_class_id}
+                    onChange={e => editingId ? setEditData({...editData, moyklass_class_id: e.target.value as any}) : setNewData({...newData, moyklass_class_id: e.target.value})}
+                    className="w-full input-modern"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">ID Аудитории (MK)</label>
+                  <input
+                    type="number"
+                    placeholder="Room ID"
+                    value={editingId ? editData.moyklass_room_id : newData.moyklass_room_id}
+                    onChange={e => editingId ? setEditData({...editData, moyklass_room_id: e.target.value as any}) : setNewData({...newData, moyklass_room_id: e.target.value})}
                     className="w-full input-modern"
                   />
                 </div>
