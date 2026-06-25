@@ -335,7 +335,8 @@ export default function SettingsPage() {
                             <div className="flex gap-2">
                               <input
                                 className="flex-1 input-modern bg-surface"
-                                type="password"
+                                style={{ WebkitTextSecurity: 'disc' } as any}
+                                type="text"
                                 placeholder="Ваш API-ключ"
                                 autoComplete="off"
                                 data-lpignore="true"

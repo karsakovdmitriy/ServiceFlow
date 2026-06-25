@@ -392,7 +392,17 @@ export default function ServicesPage() {
                         <select
                           className="w-full input-modern appearance-none"
                           value={editingId ? editData.moyklass_class_id : newData.moyklass_class_id}
-                          onChange={e => editingId ? setEditData({...editData, moyklass_class_id: e.target.value as any}) : setNewData({...newData, moyklass_class_id: e.target.value})}
+                          onChange={e => {
+                            const val = e.target.value;
+                            const cls = mkData.classes.find(c => c.id.toString() === val);
+                            const filialId = cls?.filialIds?.[0] || '';
+
+                            if (editingId) {
+                                setEditData({...editData, moyklass_class_id: val as any, moyklass_filial_id: filialId});
+                            } else {
+                                setNewData({...newData, moyklass_class_id: val, moyklass_filial_id: filialId});
+                            }
+                          }}
                         >
                           <option value="">Выберите группу...</option>
                           {mkData.classes.map(c => (
