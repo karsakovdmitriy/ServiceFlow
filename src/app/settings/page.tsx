@@ -14,6 +14,7 @@ export default function SettingsPage() {
     phone: '',
     slot_duration: '60',
     category: 'Спорт',
+    moyklass_teacher_id: '',
     moyklass_api_key: '',
     moyklass_filial_id: '',
     moyklass_enabled: false
@@ -37,6 +38,7 @@ export default function SettingsPage() {
         phone: activeMaster?.phone || profile.phone || '',
         slot_duration: String(activeMaster?.slot_duration || 60),
         category: activeMaster?.category || 'Спорт',
+        moyklass_teacher_id: String(activeMaster?.moyklass_teacher_id || ''),
         moyklass_api_key: profile.moyklass_api_key || '',
         moyklass_filial_id: String(profile.moyklass_filial_id || ''),
         moyklass_enabled: profile.moyklass_enabled || false
@@ -71,7 +73,8 @@ export default function SettingsPage() {
         avatar_url: formData.avatar_url,
         phone: formData.phone,
         slot_duration: parseInt(formData.slot_duration),
-        category: formData.category
+        category: formData.category,
+        moyklass_teacher_id: formData.moyklass_teacher_id ? parseInt(formData.moyklass_teacher_id) : undefined
       });
       if (masterErr) error = masterErr;
     }
@@ -260,6 +263,17 @@ export default function SettingsPage() {
 
                   {formData.moyklass_enabled && (
                     <div className="space-y-4 animate-fade-up">
+                      <div>
+                        <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">ID Преподавателя (Мой Класс)</label>
+                        <input
+                          className="w-full input-modern bg-bg-custom/50"
+                          type="number"
+                          placeholder="ID преподавателя из MoyKlass"
+                          value={formData.moyklass_teacher_id}
+                          onChange={e => setFormData({...formData, moyklass_teacher_id: e.target.value})}
+                        />
+                      </div>
+
                       <div>
                         <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">API Ключ</label>
                         <div className="flex gap-2">

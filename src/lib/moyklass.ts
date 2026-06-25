@@ -149,6 +149,21 @@ export class MoyKlassClient {
     });
   }
 
+  async createLesson(lessonData: {
+    date: string;
+    beginTime: string;
+    endTime: string;
+    filialId: number;
+    roomId: number;
+    classId: number;
+    teacherIds?: number[];
+  }) {
+    return this.request('/company/lessons', {
+      method: 'POST',
+      body: JSON.stringify(lessonData)
+    });
+  }
+
   // Utility
   async getCompany() {
     return this.request('/company');

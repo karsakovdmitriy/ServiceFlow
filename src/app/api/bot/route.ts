@@ -507,7 +507,7 @@ export async function POST(request: Request) {
                   // MoyKlass Sync - Fetch credentials from profile linked to master
                   const { data: masterData } = await supabase
                     .from('masters')
-                    .select('user_id')
+                    .select('user_id, moyklass_teacher_id')
                     .eq('id', service.master_id)
                     .single();
 
@@ -537,6 +537,9 @@ export async function POST(request: Request) {
                             await supabase.from('clients').update({ moyklass_id: mkUser.id }).eq('id', client.id);
                           }
 
+                          // Fetch service mapping details
+                          const { data: fullService } = await supabase.from('services').select('moyklass_class_id, moyklass_room_id, duration').eq('id', serviceId).single();
+
                           const lessons = await mk.getLessons({
                             from: date,
                             to: date,
@@ -544,7 +547,30 @@ export async function POST(request: Request) {
                           });
 
                           // Match lesson by time (rough matching)
-                          const lesson = lessons.find((l: any) => l.date === date && l.beginTime?.startsWith(time));
+                          let lesson = lessons.find((l: any) => l.date === date && l.beginTime?.startsWith(time));
+
+                          if (!lesson && fullService?.moyklass_class_id) {
+                              // Try to create lesson if it doesn't exist
+                              const endTime = new Date(`${date}T${time}:00`);
+                              endTime.setMinutes(endTime.getMinutes() + (fullService.duration || 60));
+                              const endTimeStr = endTime.toTimeString().slice(0, 5);
+
+                              try {
+                                  lesson = await mk.createLesson({
+                                      date,
+                                      beginTime: time,
+                                      endTime: endTimeStr,
+                                      filialId: profile.moyklass_filial_id!,
+                                      roomId: fullService.moyklass_room_id!,
+                                      classId: fullService.moyklass_class_id!,
+                                      teacherIds: masterData.moyklass_teacher_id ? [masterData.moyklass_teacher_id] : []
+                                  });
+                                  console.log('MoyKlass: Created new lesson', lesson.id);
+                              } catch (createErr) {
+                                  console.error('MoyKlass: Failed to create lesson:', createErr);
+                              }
+                          }
+
                           if (lesson) {
                             await mk.createRecord(lesson.id, mkUser.id);
                             console.log('MoyKlass: Record created for lesson', lesson.id, 'user', mkUser.id);

@@ -5,7 +5,7 @@ import { supabase } from './supabase';
 
 // Types and Mock Data
 export interface Venue { id: string; owner_id: string; name: string; address?: string; phone?: string; email?: string; telegram_id?: string; max_id?: string; description?: string; telegram_bot_token?: string; }
-export interface Service { id: string; owner_id: string; name: string; duration: number; price: number; is_group: boolean; venue_id?: string | null; master_id?: string | null; venue?: Venue; master?: Master; }
+export interface Service { id: string; owner_id: string; name: string; duration: number; price: number; is_group: boolean; venue_id?: string | null; master_id?: string | null; moyklass_class_id?: number; moyklass_room_id?: number; venue?: Venue; master?: Master; }
 export interface Client { id: string; owner_id: string; user_id?: string; full_name: string; email?: string; phone?: string; telegram_id?: string; max_id?: string; is_active: boolean; created_at: string; }
 export interface Session { id: string; name: string; time: string; initials: string; bg?: string; color?: string; status: string; date: string; service?: string; serviceId?: string; clientId?: string; masterId?: string; }
 export interface ScheduleDay { name: string; startTime: string; endTime: string; on: boolean; }
@@ -43,6 +43,7 @@ export interface Master {
   max_id?: string;
   telegram_bot_token?: string;
   category?: string;
+  moyklass_teacher_id?: number;
   created_at: string;
 }
 export interface Message { id: string; profile_id: string; client_id: string; sender_type: 'master' | 'client'; text: string; read: boolean; created_at: string; }

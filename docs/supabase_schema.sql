@@ -91,6 +91,7 @@ CREATE TABLE IF NOT EXISTS masters (
   max_id TEXT,
   telegram_bot_token TEXT,
   category TEXT, -- Sport, Beauty, Education, Medicine, etc.
+  moyklass_teacher_id INTEGER,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -103,6 +104,7 @@ ALTER TABLE masters ADD COLUMN IF NOT EXISTS telegram_id TEXT;
 ALTER TABLE masters ADD COLUMN IF NOT EXISTS max_id TEXT;
 ALTER TABLE masters ADD COLUMN IF NOT EXISTS telegram_bot_token TEXT;
 ALTER TABLE masters ADD COLUMN IF NOT EXISTS category TEXT;
+ALTER TABLE masters ADD COLUMN IF NOT EXISTS moyklass_teacher_id INTEGER;
 
 ALTER TABLE masters ENABLE ROW LEVEL SECURITY;
 
@@ -193,6 +195,8 @@ CREATE TABLE IF NOT EXISTS services (
   duration INTEGER NOT NULL,
   price NUMERIC(10, 2) NOT NULL,
   is_group BOOLEAN DEFAULT FALSE,
+  moyklass_class_id INTEGER,
+  moyklass_room_id INTEGER,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -200,6 +204,8 @@ CREATE TABLE IF NOT EXISTS services (
 ALTER TABLE services ADD COLUMN IF NOT EXISTS venue_id UUID REFERENCES venues(id) ON DELETE SET NULL;
 ALTER TABLE services ADD COLUMN IF NOT EXISTS master_id UUID REFERENCES masters(id) ON DELETE SET NULL;
 ALTER TABLE services ADD COLUMN IF NOT EXISTS is_group BOOLEAN DEFAULT FALSE;
+ALTER TABLE services ADD COLUMN IF NOT EXISTS moyklass_class_id INTEGER;
+ALTER TABLE services ADD COLUMN IF NOT EXISTS moyklass_room_id INTEGER;
 
 ALTER TABLE services ENABLE ROW LEVEL SECURITY;
 
