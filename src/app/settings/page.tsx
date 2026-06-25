@@ -337,6 +337,7 @@ export default function SettingsPage() {
                                 className="flex-1 input-modern bg-surface"
                                 type="password"
                                 placeholder="Ваш API-ключ"
+                                autoComplete="new-password"
                                 value={formData.moyklass_api_key}
                                 onChange={e => setFormData({...formData, moyklass_api_key: e.target.value})}
                               />

@@ -549,3 +549,5 @@ DO $$ BEGIN
     DROP POLICY IF EXISTS "System can insert logs" ON integration_logs;
     CREATE POLICY "System can insert logs" ON integration_logs FOR INSERT WITH CHECK (true);
 EXCEPTION WHEN others THEN NULL; END $$;
+
+ALTER TABLE services ADD COLUMN IF NOT EXISTS moyklass_filial_id INTEGER;

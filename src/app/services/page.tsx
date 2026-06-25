@@ -24,7 +24,7 @@ export default function ServicesPage() {
   const [isAddingVenue, setIsAddingVenue] = useState(false);
   const [editingVenueId, setEditingVenueId] = useState<string | null>(null);
 
-  const [newData, setNewData] = useState({ name: '', duration: 60, price: 1000, is_group: false, venue_id: '', moyklass_class_id: '', moyklass_room_id: '' });
+  const [newData, setNewData] = useState({ name: '', duration: 60, price: 1000, is_group: false, venue_id: '', moyklass_class_id: '', moyklass_room_id: '', moyklass_filial_id: '' });
   const [editData, setEditData] = useState<Partial<Service>>({});
 
   const [newVenueData, setNewVenueData] = useState({ name: '', address: '', moyklass_filial_id: '' });
@@ -67,9 +67,10 @@ export default function ServicesPage() {
       ...newData,
       venue_id: newData.venue_id || null,
       moyklass_class_id: newData.moyklass_class_id ? parseInt(newData.moyklass_class_id) : undefined,
-      moyklass_room_id: newData.moyklass_room_id ? parseInt(newData.moyklass_room_id) : undefined
+      moyklass_room_id: newData.moyklass_room_id ? parseInt(newData.moyklass_room_id) : undefined,
+      moyklass_filial_id: newData.moyklass_filial_id ? parseInt(newData.moyklass_filial_id) : undefined
     } as any);
-    setNewData({ name: '', duration: 60, price: 1000, is_group: false, venue_id: '', moyklass_class_id: '', moyklass_room_id: '' });
+    setNewData({ name: '', duration: 60, price: 1000, is_group: false, venue_id: '', moyklass_class_id: '', moyklass_room_id: '', moyklass_filial_id: '' });
     setIsAdding(false);
   };
 
@@ -78,7 +79,8 @@ export default function ServicesPage() {
     setEditData({
         ...service,
         moyklass_class_id: service.moyklass_class_id ? (service.moyklass_class_id as any) : '',
-        moyklass_room_id: service.moyklass_room_id ? (service.moyklass_room_id as any) : ''
+        moyklass_room_id: service.moyklass_room_id ? (service.moyklass_room_id as any) : '',
+        moyklass_filial_id: service.moyklass_filial_id ? (service.moyklass_filial_id as any) : ''
     });
   };
 
@@ -87,7 +89,8 @@ export default function ServicesPage() {
       const formattedData = {
           ...editData,
           moyklass_class_id: editData.moyklass_class_id ? parseInt(editData.moyklass_class_id as any) : undefined,
-          moyklass_room_id: editData.moyklass_room_id ? parseInt(editData.moyklass_room_id as any) : undefined
+          moyklass_room_id: editData.moyklass_room_id ? parseInt(editData.moyklass_room_id as any) : undefined,
+          moyklass_filial_id: editData.moyklass_filial_id ? parseInt(editData.moyklass_filial_id as any) : undefined
       };
       updateService(editingId, formattedData);
       setEditingId(null);
@@ -358,6 +361,30 @@ export default function ServicesPage() {
               </div>
 
               {profile?.moyklass_enabled && (
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Филиал (Мой Класс)</label>
+                      {mkData.filials.length > 0 ? (
+                        <select
+                          className="w-full input-modern appearance-none"
+                          value={editingId ? editData.moyklass_filial_id : newData.moyklass_filial_id}
+                          onChange={e => editingId ? setEditData({...editData, moyklass_filial_id: e.target.value as any}) : setNewData({...newData, moyklass_filial_id: e.target.value})}
+                        >
+                          <option value="">Выберите филиал...</option>
+                          {mkData.filials.map(f => (
+                            <option key={f.id} value={f.id}>{f.name}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="number"
+                          placeholder="ID филиала"
+                          value={editingId ? editData.moyklass_filial_id : newData.moyklass_filial_id}
+                          onChange={e => editingId ? setEditData({...editData, moyklass_filial_id: e.target.value as any}) : setNewData({...newData, moyklass_filial_id: e.target.value})}
+                          className="w-full input-modern"
+                        />
+                      )}
+                    </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Группа (Мой Класс)</label>
@@ -405,6 +432,7 @@ export default function ServicesPage() {
                         />
                       )}
                     </div>
+                  </div>
                   </div>
               )}
 
