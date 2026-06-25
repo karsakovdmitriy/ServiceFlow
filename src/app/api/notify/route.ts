@@ -267,22 +267,14 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
       filialId: activeFilialId,
       roomId: service.moyklass_room_id!,
       classId: service.moyklass_class_id!,
-      teacherIds: teacherIds,
-      userId: mkUserId, // MoyKlass v1 supports creating record simultaneously
-      lessonRecord: {
-        free: false,
-        paid: true,
-        test: false
-      }
+      teacherIds: teacherIds
     };
 
     console.log(`MoyKlass: Creating lesson with payload:`, JSON.stringify(lessonPayload));
 
     try {
       lesson = await mk.createLesson(lessonPayload);
-      console.log(`MoyKlass: Lesson and record created successfully with ID ${lesson.id}`);
-      // Return early as record is already created by createLesson in this case
-      return;
+      console.log(`MoyKlass: Lesson created successfully with ID ${lesson.id}`);
     } catch (e: any) {
       console.error('Failed to create lesson in MoyKlass:', e);
       // Fallback: Try without teacher if it failed due to incorrect teacherIds
@@ -290,9 +282,7 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
           console.log('MoyKlass: Retrying lesson creation without teacherIds...');
           try {
               lesson = await mk.createLesson({ ...lessonPayload, teacherIds: [] });
-              console.log(`MoyKlass: Lesson and record created (fallback) with ID ${lesson.id}`);
-              // Also return early here
-              return;
+              console.log(`MoyKlass: Lesson created (fallback) with ID ${lesson.id}`);
           } catch (e2) {
               console.error('MoyKlass: Fallback lesson creation failed:', e2);
           }
@@ -300,14 +290,14 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
     }
   }
 
-  // 3. Create record (only if lesson was FOUND, not CREATED above)
+  // 3. Create record
   if (lesson) {
-    console.log(`MoyKlass: Attempting to create record for FOUND lesson ${lesson.id} and user ${mkUserId}`);
+    console.log(`MoyKlass: Attempting to create record for lesson ${lesson.id} and user ${mkUserId}`);
     try {
       const record = await mk.createRecord(lesson.id, mkUserId);
-      console.log(`MoyKlass: Record created successfully for existing lesson: ${JSON.stringify(record)}`);
+      console.log(`MoyKlass: Record created successfully: ${JSON.stringify(record)}`);
     } catch (e) {
-      console.error(`MoyKlass: Failed to create record for existing lesson:`, e);
+      console.error(`MoyKlass: Failed to create record:`, e);
     }
   } else {
     console.warn(`MoyKlass: Skipping record creation as no lesson was found or created`);
