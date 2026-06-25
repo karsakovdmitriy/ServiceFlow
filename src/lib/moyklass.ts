@@ -8,80 +8,50 @@ export interface MoyKlassConfig {
 export class MoyKlassClient {
   private apiKey: string;
   private accessToken: string | null = null;
-  private useDirectAuth: boolean = false;
 
   constructor(apiKey: string) {
-    this.apiKey = apiKey;
+    // Trim to avoid whitespace issues common during copy-paste
+    this.apiKey = apiKey?.trim() || '';
   }
 
-  private async getAccessToken(): Promise<string | null> {
-    if (this.accessToken || this.useDirectAuth) return this.accessToken;
+  private async getAccessToken(): Promise<string> {
+    if (this.accessToken) return this.accessToken;
 
-    try {
-      // Corrected endpoint from documentation: /company/auth/getToken
-      const response = await fetch(`${BASE_URL}/company/auth/getToken`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ apiKey: this.apiKey })
-      });
+    const response = await fetch(`${BASE_URL}/company/auth/getToken`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'TrainerSpace/1.0'
+      },
+      body: JSON.stringify({ apiKey: this.apiKey })
+    });
 
-      if (response.status === 404) {
-        console.warn('MoyKlass: /company/auth/getToken not found, trying legacy /auth');
-        // Attempt legacy auth as a last resort
-        const legacyResp = await fetch(`${BASE_URL}/auth`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ apiKey: this.apiKey })
-        });
-
-        if (legacyResp.status === 404) {
-          console.log('MoyKlass: No auth endpoint found, switching to direct API key auth');
-          this.useDirectAuth = true;
-          return null;
-        }
-
-        if (!legacyResp.ok) throw new Error(`Legacy Auth Failed: ${legacyResp.statusText}`);
-        const data = await legacyResp.json();
-        this.accessToken = data.accessToken;
-        return this.accessToken;
-      }
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({ message: response.statusText }));
-        throw new Error(`MoyKlass Auth Failed: ${error.message || response.statusText}`);
-      }
-
-      const data = await response.json();
-      this.accessToken = data.accessToken;
-      return this.accessToken;
-    } catch (err: any) {
-      console.error('MoyKlass Auth Error:', err.message);
-      // Fallback to direct auth if we're hitting 404s or other auth-related errors
-      if (err.message?.includes('404') || err.message?.includes('Not Found')) {
-          this.useDirectAuth = true;
-          return null;
-      }
-      throw err;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const message = errorData.message || response.statusText;
+      throw new Error(`MoyKlass Auth Failed (${response.status}): ${message}`);
     }
+
+    const data = await response.json();
+    if (!data.accessToken) {
+      throw new Error('MoyKlass Auth Response: No accessToken received');
+    }
+
+    this.accessToken = data.accessToken;
+    return this.accessToken!;
   }
 
   private async request(endpoint: string, options: RequestInit = {}) {
-    await this.getAccessToken();
+    const token = await this.getAccessToken();
 
     const headers: Record<string, string> = {
       ...options.headers as any,
       'Content-Type': 'application/json',
-      'Accept': 'application/json'
+      'Accept': 'application/json',
+      'User-Agent': 'TrainerSpace/1.0',
+      'x-access-token': token
     };
-
-    if (this.useDirectAuth) {
-      headers['x-api-key'] = this.apiKey;
-    } else if (this.accessToken) {
-      headers['x-access-token'] = this.accessToken;
-    }
 
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       ...options,
@@ -90,7 +60,7 @@ export class MoyKlassClient {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: response.statusText }));
-      throw new Error(`MoyKlass API Error: ${error.message || response.statusText}`);
+      throw new Error(`MoyKlass API Error (${response.status}): ${error.message || response.statusText}`);
     }
 
     return response.json();
