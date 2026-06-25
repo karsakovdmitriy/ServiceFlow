@@ -1001,6 +1001,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       return { success: false, message: 'Ошибка сети или API' };
     }
+  };
+
   const addMaster = async (master: Omit<Master, 'id' | 'created_at'>) => {
     if (isDemoMode) {
       const newMaster: Master = { ...master, id: Math.random().toString(), created_at: new Date().toISOString() };

@@ -498,45 +498,41 @@ export async function POST(request: Request) {
                     message: `Новая заявка от ${clientFullName}`
                   });
 
-              await sendTelegramMessage(chatId, `✅ <b>Заявка отправлена!</b>\n\nТренер получит уведомление и подтвердит вашу запись. Ожидайте сообщения.`);
+                  await sendTelegramMessage(chatId, `✅ <b>Заявка отправлена!</b>\n\nМастер получит уведомление и подтвердит вашу запись. Ожидайте сообщения.`);
 
-              // MoyKlass Sync
-              const { data: trainerProfile } = await supabase.from('trainers').select('moyklass_api_key, moyklass_filial_id, moyklass_enabled').eq('id', service.trainer_id).single();
-              if (trainerProfile?.moyklass_enabled && trainerProfile?.moyklass_api_key) {
-                try {
-                  const mk = new MoyKlassClient(trainerProfile.moyklass_api_key);
-                  const contact = from.username ? `@${from.username}` : (from.id.toString());
+                  // MoyKlass Sync
+                  const { data: masterProfile } = await supabase.from('masters').select('moyklass_api_key, moyklass_filial_id, moyklass_enabled').eq('id', service.master_id).single();
+                  if (masterProfile?.moyklass_enabled && masterProfile?.moyklass_api_key) {
+                    try {
+                      const mk = new MoyKlassClient(masterProfile.moyklass_api_key);
+                      const contact = from.username ? `@${from.username}` : (from.id.toString());
 
-                  let mkUser = await mk.findUserByContact(contact);
-                  if (!mkUser) {
-                    mkUser = await mk.createUser({
-                      name: clientData?.full_name || 'Клиент из Telegram',
-                      phone: from.id.toString() // Using TG ID as placeholder if no phone
-                    });
-                  }
+                      let mkUser = await mk.findUserByContact(contact);
+                      if (!mkUser) {
+                        mkUser = await mk.createUser({
+                          name: clientData?.full_name || 'Клиент из Telegram',
+                          phone: from.id.toString() // Using TG ID as placeholder if no phone
+                        });
+                      }
 
-                  if (mkUser) {
-                    const lessons = await mk.getLessons({
-                      from: date,
-                      to: date,
-                      filialId: trainerProfile.moyklass_filial_id
-                    });
+                      if (mkUser) {
+                        const lessons = await mk.getLessons({
+                          from: date,
+                          to: date,
+                          filialId: masterProfile.moyklass_filial_id
+                        });
 
-                    // Match lesson by time (rough matching)
-                    const lesson = lessons.find((l: any) => l.date === date && l.beginTime?.startsWith(time));
-                    if (lesson) {
-                      await mk.createRecord(lesson.id, mkUser.id);
-                      console.log('MoyKlass: Record created for lesson', lesson.id);
+                        // Match lesson by time (rough matching)
+                        const lesson = lessons.find((l: any) => l.date === date && l.beginTime?.startsWith(time));
+                        if (lesson) {
+                          await mk.createRecord(lesson.id, mkUser.id);
+                          console.log('MoyKlass: Record created for lesson', lesson.id);
+                        }
+                      }
+                    } catch (mkErr) {
+                      console.error('MoyKlass Sync Error:', mkErr);
                     }
                   }
-                } catch (mkErr) {
-                  console.error('MoyKlass Sync Error:', mkErr);
-                }
-              }
-
-            } else {
-              await sendTelegramMessage(chatId, '❌ Ошибка: Клиент не найден. Попробуйте перезапустить бот через ссылку тренера.');
-                  await sendTelegramMessage(chatId, `✅ <b>Заявка отправлена!</b>\n\nМастер получит уведомление и подтвердит вашу запись. Ожидайте сообщения.`);
                 } else {
                   await sendTelegramMessage(chatId, '❌ Ошибка: Клиент не найден. Попробуйте перезапустить бот через ссылку мастера.');
                 }
