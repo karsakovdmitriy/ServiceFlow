@@ -97,50 +97,82 @@ export async function POST(request: Request) {
 
 async function syncToMoyKlass(supabase: any, sessionId: string) {
   console.log(`MoyKlass: Starting sync for session ${sessionId}`);
-  const { data: session } = await supabase
+
+  // 1. Fetch basic session info
+  const { data: session, error: sessErr } = await supabase
     .from('sessions')
-    .select(`
-      start_time,
-      end_time,
-      master_id,
-      client_id,
-      service_id,
-      client:clients!client_id(id, full_name, email, phone, telegram_id, moyklass_id),
-      service:services!service_id(id, name, duration, moyklass_class_id, moyklass_room_id, moyklass_filial_id, venue:venues!venue_id(moyklass_filial_id)),
-      master:masters!master_id(user_id, moyklass_teacher_id)
-    `)
+    .select('start_time, end_time, master_id, client_id, service_id, venue_id')
     .eq('id', sessionId)
     .single();
 
-  if (!session) {
-    console.warn(`MoyKlass: Session ${sessionId} not found for sync`);
+  if (sessErr || !session) {
+    console.error(`MoyKlass: Session ${sessionId} not found or error:`, sessErr);
     return;
   }
 
-  if (!session.master?.user_id) {
-    console.warn(`MoyKlass: Master or User ID missing for session ${sessionId}`);
+  // 2. Fetch master info
+  const { data: master, error: masterErr } = await supabase
+    .from('masters')
+    .select('user_id, moyklass_teacher_id')
+    .eq('id', session.master_id)
+    .single();
+
+  if (masterErr || !master?.user_id) {
+    console.error(`MoyKlass: Master ${session.master_id} not found for sync:`, masterErr);
     return;
   }
 
+  // 3. Fetch profile and check integration status
   const { data: profile } = await supabase
     .from('profiles')
     .select('moyklass_api_key, moyklass_filial_id, moyklass_enabled')
-    .eq('id', session.master.user_id)
+    .eq('id', master.user_id)
     .single();
 
-  if (!profile?.moyklass_enabled) {
-    console.log(`MoyKlass: Integration disabled for user ${session.master.user_id}`);
+  if (!profile?.moyklass_enabled || !profile?.moyklass_api_key) {
+    console.log(`MoyKlass: Integration disabled or API key missing for user ${master.user_id}`);
     return;
   }
 
-  if (!profile?.moyklass_api_key) {
-    console.error(`MoyKlass: API Key missing for user ${session.master.user_id}`);
+  // 4. Fetch client info
+  const { data: client, error: clientErr } = await supabase
+    .from('clients')
+    .select('id, full_name, email, phone, telegram_id, moyklass_id')
+    .eq('id', session.client_id)
+    .single();
+
+  if (clientErr || !client) {
+    console.error(`MoyKlass: Client ${session.client_id} not found:`, clientErr);
     return;
   }
 
-  const mk = new MoyKlassClient(profile.moyklass_api_key, session.master.user_id);
-  const client = session.client;
-  const service = session.service;
+  // 5. Fetch service info (safely, column by column if needed)
+  const { data: service, error: svcErr } = await supabase
+    .from('services')
+    .select('id, name, duration, moyklass_class_id, moyklass_room_id')
+    .eq('id', session.service_id)
+    .single();
+
+  if (svcErr || !service) {
+    console.error(`MoyKlass: Service ${session.service_id} not found:`, svcErr);
+    return;
+  }
+
+  // Try fetching moyklass_filial_id from service separately to avoid failing the whole query if column missing
+  let serviceFilialId = null;
+  try {
+    const { data: svcExtra } = await supabase.from('services').select('moyklass_filial_id').eq('id', service.id).single();
+    serviceFilialId = svcExtra?.moyklass_filial_id;
+  } catch (e) {}
+
+  // 6. Fetch venue info
+  let venueFilialId = null;
+  if (session.venue_id) {
+    const { data: venue } = await supabase.from('venues').select('moyklass_filial_id').eq('id', session.venue_id).single();
+    venueFilialId = venue?.moyklass_filial_id;
+  }
+
+  const mk = new MoyKlassClient(profile.moyklass_api_key, master.user_id);
 
   // 1. Find or create user
   let mkUserId = client.moyklass_id;
@@ -175,7 +207,7 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
   // 2. Find or create lesson
   const date = session.start_time.split('T')[0];
   const beginTime = session.start_time.split('T')[1].slice(0, 5);
-  const activeFilialId = service?.moyklass_filial_id || service?.venue?.moyklass_filial_id || profile.moyklass_filial_id;
+  const activeFilialId = serviceFilialId || venueFilialId || profile.moyklass_filial_id;
 
   if (!activeFilialId) {
     console.error(`MoyKlass: Filial ID missing for sync of session ${sessionId}`);
@@ -195,7 +227,7 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
         filialId: activeFilialId,
         roomId: service.moyklass_room_id!,
         classId: service.moyklass_class_id!,
-        teacherIds: session.master.moyklass_teacher_id ? [session.master.moyklass_teacher_id] : []
+        teacherIds: master.moyklass_teacher_id ? [master.moyklass_teacher_id] : []
       });
     } catch (e) {
       console.error('Failed to create lesson in MoyKlass:', e);
