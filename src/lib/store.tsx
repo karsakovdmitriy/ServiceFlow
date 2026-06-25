@@ -523,6 +523,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       'full_name', 'email', 'phone', 'avatar_url', 'max_id',
       'is_master', 'is_client', 'is_venue',
       'onboarding_completed_master', 'onboarding_completed_client', 'onboarding_completed_venue',
+      'moyklass_api_key', 'moyklass_filial_id', 'moyklass_enabled',
       'subscription_tier', 'subscription_status', 'subscription_period_end'
     ];
 
