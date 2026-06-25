@@ -21,7 +21,7 @@ export class MoyKlassClient {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'User-Agent': 'TrainerSpace/1.0'
+        'User-Agent': 'ServiceFlow/1.0'
       },
       body: JSON.stringify({ apiKey: this.apiKey })
     });
@@ -48,7 +48,7 @@ export class MoyKlassClient {
       ...options.headers as any,
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'User-Agent': 'TrainerSpace/1.0',
+      'User-Agent': 'ServiceFlow/1.0',
       'x-access-token': token
     };
 
@@ -74,12 +74,12 @@ export class MoyKlassClient {
 
   // Clients (Users)
   async findUserByContact(contact: string) {
-    const users = await this.request(`/users?search=${encodeURIComponent(contact)}`);
+    const users = await this.request(`/company/users?search=${encodeURIComponent(contact)}`);
     return users.length > 0 ? users[0] : null;
   }
 
   async createUser(userData: { name: string; email?: string; phone?: string }) {
-    return this.request('/users', {
+    return this.request('/company/users', {
       method: 'POST',
       body: JSON.stringify(userData)
     });
@@ -88,11 +88,11 @@ export class MoyKlassClient {
   // Lessons and Records
   async getLessons(params: { from: string; to: string; filialId?: number }) {
     const query = new URLSearchParams(params as any).toString();
-    return this.request(`/lessons?${query}`);
+    return this.request(`/company/lessons?${query}`);
   }
 
   async createRecord(lessonId: number, userId: number, options: { statusId?: number } = {}) {
-    return this.request(`/lessons/${lessonId}/records`, {
+    return this.request(`/company/lessons/${lessonId}/records`, {
       method: 'POST',
       body: JSON.stringify({ userId, ...options })
     });
@@ -104,22 +104,6 @@ export class MoyKlassClient {
   }
 
   async getFilials() {
-    try {
-      // Try direct filials endpoint first
-      return await this.request('/filials');
-    } catch (err: any) {
-      if (err.message?.includes('404')) {
-        console.log('MoyKlass: /filials not found, trying /company fallback');
-        // Some MoyKlass API setups return filials as part of the company info
-        const company = await this.getCompany();
-        if (company && company.filials) return company.filials;
-
-        // If still not found, try alternative filials path common in some systems
-        try {
-            return await this.request('/company/filials');
-        } catch (e) {}
-      }
-      throw err;
-    }
+    return this.request('/company/filials');
   }
 }
