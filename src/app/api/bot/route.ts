@@ -43,7 +43,7 @@ export async function POST(request: Request) {
 
       // Handle direct messages to master and Review comments
       if (text) {
-         const { data: client } = await supabase.from('clients').select('id, owner_id, full_name, last_bot_state, last_session_id').eq('telegram_id', from.id.toString()).limit(1).single();
+         const { data: client } = await supabase.from('clients').select('id, owner_id, full_name, last_bot_state, last_session_id, moyklass_id').eq('telegram_id', from.id.toString()).limit(1).single();
 
          if (client) {
             if (client.last_bot_state === 'waiting_for_comment' && client.last_session_id) {
@@ -434,6 +434,10 @@ export async function POST(request: Request) {
                   .single();
 
                 if (client) {
+                  // Fetch additional fields if needed (client object might be from a different select if we are in book flow)
+                  const { data: fullClient } = await supabase.from('clients').select('id, moyklass_id').eq('id', client.id).single();
+                  const currentMoyKlassId = fullClient?.moyklass_id;
+
                   const startTime = `${date}T${time}:00`;
                   const end = new Date(`${date}T${time}:00`);
                   end.setMinutes(end.getMinutes() + service.duration);
@@ -516,7 +520,7 @@ export async function POST(request: Request) {
 
                     if (profile?.moyklass_enabled && profile?.moyklass_api_key) {
                       try {
-                        const mk = new MoyKlassClient(profile.moyklass_api_key);
+                        const mk = new MoyKlassClient(profile.moyklass_api_key, masterData.user_id);
                         const contact = from.username ? `@${from.username}` : (from.id.toString());
 
                         let mkUser = await mk.findUserByContact(contact);
@@ -528,6 +532,11 @@ export async function POST(request: Request) {
                         }
 
                         if (mkUser) {
+                          // Save moyklass_id if not already present
+                          if (!currentMoyKlassId) {
+                            await supabase.from('clients').update({ moyklass_id: mkUser.id }).eq('id', client.id);
+                          }
+
                           const lessons = await mk.getLessons({
                             from: date,
                             to: date,
@@ -538,7 +547,7 @@ export async function POST(request: Request) {
                           const lesson = lessons.find((l: any) => l.date === date && l.beginTime?.startsWith(time));
                           if (lesson) {
                             await mk.createRecord(lesson.id, mkUser.id);
-                            console.log('MoyKlass: Record created for lesson', lesson.id);
+                            console.log('MoyKlass: Record created for lesson', lesson.id, 'user', mkUser.id);
                           }
                         }
                       } catch (mkErr) {

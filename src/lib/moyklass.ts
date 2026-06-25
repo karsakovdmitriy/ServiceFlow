@@ -1,3 +1,5 @@
+import { createClient } from '@supabase/supabase-js';
+
 const BASE_URL = 'https://api.moyklass.com/v1';
 
 export interface MoyKlassConfig {
@@ -8,37 +10,69 @@ export interface MoyKlassConfig {
 export class MoyKlassClient {
   private apiKey: string;
   private accessToken: string | null = null;
+  private profileId: string | null = null;
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, profileId: string | null = null) {
     this.apiKey = apiKey?.trim() || '';
+    this.profileId = profileId;
   }
 
   private async getAccessToken(): Promise<string> {
     if (this.accessToken) return this.accessToken;
 
-    const response = await fetch(`${BASE_URL}/company/auth/getToken`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'User-Agent': 'ServiceFlow/1.0'
-      },
-      body: JSON.stringify({ apiKey: this.apiKey })
-    });
+    // TZ says POST /auth, but the image showed /company/auth/getToken.
+    // We'll try both, prioritizing the one from the image as it's likely more current.
+    const endpoints = ['/company/auth/getToken', '/auth'];
+    let lastError: any;
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const message = errorData.message || response.statusText;
-      throw new Error(`MoyKlass Auth Failed (${response.status}): ${message}`);
+    for (const endpoint of endpoints) {
+        try {
+            const response = await fetch(`${BASE_URL}${endpoint}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'User-Agent': 'ServiceFlow/1.0'
+                },
+                body: JSON.stringify({ apiKey: this.apiKey })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.accessToken) {
+                    this.accessToken = data.accessToken;
+                    return this.accessToken!;
+                }
+            }
+        } catch (e) {
+            lastError = e;
+        }
     }
 
-    const data = await response.json();
-    if (!data.accessToken) {
-      throw new Error('MoyKlass Auth Response: No accessToken received');
-    }
+    throw new Error(`MoyKlass Auth Failed: ${lastError?.message || 'Unable to obtain accessToken'}`);
+  }
 
-    this.accessToken = data.accessToken;
-    return this.accessToken!;
+  private async logRequest(method: string, endpoint: string, body: any, response: any, status: number, success: boolean) {
+    if (!this.profileId) return;
+
+    try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        await supabase.from('integration_logs').insert({
+            profile_id: this.profileId,
+            entity_type: 'moyklass',
+            method,
+            endpoint,
+            request_body: body ? JSON.stringify(body) : null,
+            response_body: response ? JSON.stringify(response) : null,
+            status_code: status,
+            success
+        });
+    } catch (e) {
+        console.error('Logging to Supabase failed:', e);
+    }
   }
 
   private async request(endpoint: string, options: RequestInit = {}) {
@@ -53,23 +87,36 @@ export class MoyKlassClient {
     };
 
     const url = `${BASE_URL}${endpoint}`;
-    const response = await fetch(url, {
-      ...options,
-      headers
-    });
+    let responseData: any;
+    let status = 0;
+    let success = false;
 
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => '');
-      let errorMessage = response.statusText;
-      try {
-        const errorJson = JSON.parse(errorText);
-        errorMessage = errorJson.message || errorMessage;
-      } catch (e) {}
+    try {
+        const response = await fetch(url, {
+            ...options,
+            headers
+        });
 
-      throw new Error(`MoyKlass API Error (${response.status}) on ${endpoint}: ${errorMessage}`);
+        status = response.status;
+        const text = await response.text();
+        try {
+            responseData = JSON.parse(text);
+        } catch (e) {
+            responseData = text;
+        }
+
+        if (!response.ok) {
+            throw new Error(`MoyKlass API Error (${status}) on ${endpoint}: ${responseData?.message || response.statusText}`);
+        }
+
+        success = true;
+        return responseData;
+    } catch (error: any) {
+        responseData = responseData || { message: error.message };
+        throw error;
+    } finally {
+        await this.logRequest(options.method || 'GET', endpoint, options.body ? JSON.parse(options.body as string) : null, responseData, status, success);
     }
-
-    return response.json();
   }
 
   // Clients (Users)

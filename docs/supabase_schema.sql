@@ -228,6 +228,7 @@ CREATE TABLE IF NOT EXISTS clients (
   is_active BOOLEAN DEFAULT TRUE,
   last_bot_state TEXT,
   last_session_id UUID,
+  moyklass_id INTEGER,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(owner_id, telegram_id),
   UNIQUE(owner_id, max_id)
@@ -241,6 +242,7 @@ ALTER TABLE clients ADD COLUMN IF NOT EXISTS telegram_id TEXT;
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS max_id TEXT;
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS last_bot_state TEXT;
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS last_session_id UUID;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS moyklass_id INTEGER;
 
 ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
 
@@ -347,6 +349,27 @@ EXCEPTION WHEN others THEN NULL; END $$;
 DO $$ BEGIN
     DROP POLICY IF EXISTS "Users can log their own events" ON events;
     CREATE POLICY "Users can log their own events" ON events FOR INSERT WITH CHECK (auth.uid() = profile_id);
+EXCEPTION WHEN others THEN NULL; END $$;
+
+-- Integration Logs
+CREATE TABLE IF NOT EXISTS integration_logs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  entity_type TEXT, -- 'moyklass', 'max', 'telegram'
+  method TEXT,
+  endpoint TEXT,
+  request_body TEXT,
+  response_body TEXT,
+  status_code INTEGER,
+  success BOOLEAN,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE integration_logs ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can view their own logs" ON integration_logs;
+    CREATE POLICY "Users can view their own logs" ON integration_logs FOR SELECT USING (auth.uid() = profile_id);
 EXCEPTION WHEN others THEN NULL; END $$;
 
 -- Blocked time slots for Masters
