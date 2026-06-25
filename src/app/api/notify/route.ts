@@ -207,7 +207,24 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
   // 2. Find or create lesson
   const date = session.start_time.split('T')[0];
   const beginTime = session.start_time.split('T')[1].slice(0, 5);
-  const activeFilialId = serviceFilialId || venueFilialId || profile.moyklass_filial_id;
+
+  let activeFilialId = serviceFilialId || venueFilialId || profile.moyklass_filial_id;
+
+  // Robust Filial Check: If we have a classId, verify its branch to avoid "class belongs to another branch"
+  if (service?.moyklass_class_id) {
+    try {
+      const mkClass = await mk.getClass(service.moyklass_class_id);
+      if (mkClass && mkClass.filialIds && mkClass.filialIds.length > 0) {
+        // If current activeFilialId is not in the class's filials, override it
+        if (!activeFilialId || !mkClass.filialIds.includes(activeFilialId)) {
+          activeFilialId = mkClass.filialIds[0];
+          console.log(`MoyKlass: Filial ID overridden to ${activeFilialId} based on class ${service.moyklass_class_id} branches`);
+        }
+      }
+    } catch (e) {
+      console.warn(`MoyKlass: Failed to verify class ${service.moyklass_class_id} branch:`, e);
+    }
+  }
 
   if (!activeFilialId) {
     console.error(`MoyKlass: Filial ID missing for sync of session ${sessionId}. checked: service(${serviceFilialId}), venue(${venueFilialId}), profile(${profile.moyklass_filial_id})`);
