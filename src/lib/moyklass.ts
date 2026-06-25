@@ -22,7 +22,7 @@ export class MoyKlassClient {
 
     // TZ says POST /auth, but the image showed /company/auth/getToken.
     // We'll try both, prioritizing the one from the image as it's likely more current.
-    const endpoints = ['/company/auth/getToken', '/auth'];
+    const endpoints = ['/company/auth/getToken', '/auth', '/company/auth'];
     let lastError: any;
 
     for (const endpoint of endpoints) {
@@ -76,22 +76,22 @@ export class MoyKlassClient {
   }
 
   private async request(endpoint: string, options: RequestInit = {}) {
-    const token = await this.getAccessToken();
-
-    const headers: Record<string, string> = {
-      ...options.headers as any,
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'User-Agent': 'ServiceFlow/1.0',
-      'x-access-token': token
-    };
-
-    const url = `${BASE_URL}${endpoint}`;
     let responseData: any;
     let status = 0;
     let success = false;
 
     try {
+        const token = await this.getAccessToken();
+
+        const headers: Record<string, string> = {
+          ...options.headers as any,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'ServiceFlow/1.0',
+          'x-access-token': token
+        };
+
+        const url = `${BASE_URL}${endpoint}`;
         const response = await fetch(url, {
             ...options,
             headers

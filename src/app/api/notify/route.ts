@@ -96,6 +96,7 @@ export async function POST(request: Request) {
 }
 
 async function syncToMoyKlass(supabase: any, sessionId: string) {
+  console.log(`MoyKlass: Starting sync for session ${sessionId}`);
   const { data: session } = await supabase
     .from('sessions')
     .select(`
@@ -111,7 +112,15 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
     .eq('id', sessionId)
     .single();
 
-  if (!session || !session.master?.user_id) return;
+  if (!session) {
+    console.warn(`MoyKlass: Session ${sessionId} not found for sync`);
+    return;
+  }
+
+  if (!session.master?.user_id) {
+    console.warn(`MoyKlass: Master or User ID missing for session ${sessionId}`);
+    return;
+  }
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -119,7 +128,15 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
     .eq('id', session.master.user_id)
     .single();
 
-  if (!profile?.moyklass_enabled || !profile?.moyklass_api_key) return;
+  if (!profile?.moyklass_enabled) {
+    console.log(`MoyKlass: Integration disabled for user ${session.master.user_id}`);
+    return;
+  }
+
+  if (!profile?.moyklass_api_key) {
+    console.error(`MoyKlass: API Key missing for user ${session.master.user_id}`);
+    return;
+  }
 
   const mk = new MoyKlassClient(profile.moyklass_api_key, session.master.user_id);
   const client = session.client;
@@ -150,14 +167,20 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
     }
   }
 
-  if (!mkUserId) return;
+  if (!mkUserId) {
+    console.error(`MoyKlass: Could not find or create user for client ${client.id}`);
+    return;
+  }
 
   // 2. Find or create lesson
   const date = session.start_time.split('T')[0];
   const beginTime = session.start_time.split('T')[1].slice(0, 5);
   const activeFilialId = service?.venue?.moyklass_filial_id || profile.moyklass_filial_id;
 
-  if (!activeFilialId) return;
+  if (!activeFilialId) {
+    console.error(`MoyKlass: Filial ID missing for sync of session ${sessionId}`);
+    return;
+  }
 
   const lessons = await mk.getLessons({ from: date, to: date, filialId: activeFilialId });
   let lesson = lessons.find((l: any) => l.date === date && l.beginTime?.startsWith(beginTime));

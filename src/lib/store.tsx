@@ -1000,7 +1000,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const response = await fetch('/api/moyklass/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey })
+        body: JSON.stringify({ apiKey, profileId: userId })
       });
 
       const data = await response.json();
