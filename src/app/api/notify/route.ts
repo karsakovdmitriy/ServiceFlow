@@ -242,6 +242,24 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
 
   if (!lesson && service?.moyklass_class_id) {
     const endTimeStr = session.end_time.split('T')[1].slice(0, 5);
+
+    // Robust Teacher Check: Verify if teacher belongs to the branch
+    let teacherIds: number[] = [];
+    if (master.moyklass_teacher_id) {
+        try {
+            const manager = await mk.getManager(master.moyklass_teacher_id);
+            const managerFilials = manager.filialIds || (manager.filialId ? [manager.filialId] : []);
+            if (managerFilials.includes(activeFilialId)) {
+                teacherIds = [master.moyklass_teacher_id];
+            } else {
+                console.warn(`MoyKlass: Teacher ${master.moyklass_teacher_id} does not belong to branch ${activeFilialId}. Manager branches: ${managerFilials.join(',')}. Syncing without teacher.`);
+            }
+        } catch (e) {
+            console.warn(`MoyKlass: Could not verify teacher ${master.moyklass_teacher_id} branches. Proceeding with caution.`);
+            teacherIds = [master.moyklass_teacher_id];
+        }
+    }
+
     const lessonPayload = {
       date,
       beginTime,
@@ -249,7 +267,7 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
       filialId: activeFilialId,
       roomId: service.moyklass_room_id!,
       classId: service.moyklass_class_id!,
-      teacherIds: master.moyklass_teacher_id ? [master.moyklass_teacher_id] : []
+      teacherIds: teacherIds
     };
 
     console.log(`MoyKlass: Creating lesson with payload:`, JSON.stringify(lessonPayload));
@@ -257,13 +275,31 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
     try {
       lesson = await mk.createLesson(lessonPayload);
       console.log(`MoyKlass: Lesson created successfully with ID ${lesson.id}`);
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to create lesson in MoyKlass:', e);
+      // Fallback: Try without teacher if it failed due to incorrect teacherIds
+      if (e.message?.includes('incorrect teacherIds') && teacherIds.length > 0) {
+          console.log('MoyKlass: Retrying lesson creation without teacherIds...');
+          try {
+              lesson = await mk.createLesson({ ...lessonPayload, teacherIds: [] });
+              console.log(`MoyKlass: Lesson created (fallback) with ID ${lesson.id}`);
+          } catch (e2) {
+              console.error('MoyKlass: Fallback lesson creation failed:', e2);
+          }
+      }
     }
   }
 
   // 3. Create record
   if (lesson) {
-    await mk.createRecord(lesson.id, mkUserId);
+    console.log(`MoyKlass: Attempting to create record for lesson ${lesson.id} and user ${mkUserId}`);
+    try {
+      const record = await mk.createRecord(lesson.id, mkUserId);
+      console.log(`MoyKlass: Record created successfully: ${JSON.stringify(record)}`);
+    } catch (e) {
+      console.error(`MoyKlass: Failed to create record:`, e);
+    }
+  } else {
+    console.warn(`MoyKlass: Skipping record creation as no lesson was found or created`);
   }
 }

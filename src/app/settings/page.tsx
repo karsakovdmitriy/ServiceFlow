@@ -341,7 +341,7 @@ export default function SettingsPage() {
                                 className="flex-1 input-modern bg-surface"
                                 style={{ WebkitTextSecurity: 'disc' } as any}
                                 type="text"
-                                name={`mk_api_key_${Math.random().toString(36).substring(7)}`}
+                                name="moyklass_api_key_secure_input"
                                 placeholder="Ваш API-ключ"
                                 autoComplete="new-password"
                                 data-lpignore="true"
