@@ -137,6 +137,7 @@ CREATE TABLE IF NOT EXISTS venues (
   max_id TEXT,
   description TEXT,
   telegram_bot_token TEXT,
+  moyklass_filial_id INTEGER,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -148,6 +149,7 @@ ALTER TABLE venues ADD COLUMN IF NOT EXISTS telegram_id TEXT;
 ALTER TABLE venues ADD COLUMN IF NOT EXISTS max_id TEXT;
 ALTER TABLE venues ADD COLUMN IF NOT EXISTS description TEXT;
 ALTER TABLE venues ADD COLUMN IF NOT EXISTS telegram_bot_token TEXT;
+ALTER TABLE venues ADD COLUMN IF NOT EXISTS moyklass_filial_id INTEGER;
 
 ALTER TABLE venues ENABLE ROW LEVEL SECURITY;
 

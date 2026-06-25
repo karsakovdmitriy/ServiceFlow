@@ -537,13 +537,24 @@ export async function POST(request: Request) {
                             await supabase.from('clients').update({ moyklass_id: mkUser.id }).eq('id', client.id);
                           }
 
-                          // Fetch service mapping details
-                          const { data: fullService } = await supabase.from('services').select('moyklass_class_id, moyklass_room_id, duration').eq('id', serviceId).single();
+                          // Fetch service mapping details including venue filial ID
+                          const { data: fullService } = await supabase
+                            .from('services')
+                            .select(`
+                                duration,
+                                moyklass_class_id,
+                                moyklass_room_id,
+                                venue:venues!venue_id(moyklass_filial_id)
+                            `)
+                            .eq('id', serviceId)
+                            .single();
+
+                          const activeFilialId = (fullService?.venue as any)?.moyklass_filial_id || profile.moyklass_filial_id;
 
                           const lessons = await mk.getLessons({
                             from: date,
                             to: date,
-                            filialId: profile.moyklass_filial_id
+                            filialId: activeFilialId
                           });
 
                           // Match lesson by time (rough matching)
@@ -560,7 +571,7 @@ export async function POST(request: Request) {
                                       date,
                                       beginTime: time,
                                       endTime: endTimeStr,
-                                      filialId: profile.moyklass_filial_id!,
+                                      filialId: activeFilialId!,
                                       roomId: fullService.moyklass_room_id!,
                                       classId: fullService.moyklass_class_id!,
                                       teacherIds: masterData.moyklass_teacher_id ? [masterData.moyklass_teacher_id] : []
