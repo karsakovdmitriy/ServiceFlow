@@ -337,8 +337,9 @@ export default function SettingsPage() {
                                 className="flex-1 input-modern bg-surface"
                                 style={{ WebkitTextSecurity: 'disc' } as any}
                                 type="text"
+                                name="mk_api_key_secure_field"
                                 placeholder="Ваш API-ключ"
-                                autoComplete="off"
+                                autoComplete="new-password"
                                 data-lpignore="true"
                                 value={formData.moyklass_api_key}
                                 onChange={e => setFormData({...formData, moyklass_api_key: e.target.value})}
