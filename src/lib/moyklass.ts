@@ -121,7 +121,9 @@ export class MoyKlassClient {
 
   // Clients (Users)
   async findUserByContact(contact: string) {
-    const users = await this.request(`/company/users?search=${encodeURIComponent(contact)}`);
+    const response = await this.request(`/company/users?search=${encodeURIComponent(contact)}`);
+    // API v1 usually returns { users: [], stats: {} }
+    const users = Array.isArray(response) ? response : (response.users || []);
     return users.length > 0 ? users[0] : null;
   }
 
@@ -135,7 +137,9 @@ export class MoyKlassClient {
   // Lessons and Records
   async getLessons(params: { from: string; to: string; filialId?: number }) {
     const query = new URLSearchParams(params as any).toString();
-    return this.request(`/company/lessons?${query}`);
+    const response = await this.request(`/company/lessons?${query}`);
+    // Documentation shows response format: { "lessons": [...], "stats": { "totalItems": 5 } }
+    return response.lessons || [];
   }
 
   async createRecord(lessonId: number, userId: number, options: { statusId?: number } = {}) {
