@@ -106,7 +106,7 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
       client_id,
       service_id,
       client:clients!client_id(id, full_name, email, phone, telegram_id, moyklass_id),
-      service:services!service_id(id, name, duration, moyklass_class_id, moyklass_room_id, venue:venues!venue_id(moyklass_filial_id)),
+      service:services!service_id(id, name, duration, moyklass_class_id, moyklass_room_id, moyklass_filial_id, venue:venues!venue_id(moyklass_filial_id)),
       master:masters!master_id(user_id, moyklass_teacher_id)
     `)
     .eq('id', sessionId)
@@ -175,7 +175,7 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
   // 2. Find or create lesson
   const date = session.start_time.split('T')[0];
   const beginTime = session.start_time.split('T')[1].slice(0, 5);
-  const activeFilialId = service?.venue?.moyklass_filial_id || profile.moyklass_filial_id;
+  const activeFilialId = service?.moyklass_filial_id || service?.venue?.moyklass_filial_id || profile.moyklass_filial_id;
 
   if (!activeFilialId) {
     console.error(`MoyKlass: Filial ID missing for sync of session ${sessionId}`);
