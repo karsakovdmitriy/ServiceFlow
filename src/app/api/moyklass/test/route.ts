@@ -13,6 +13,7 @@ export async function POST(request: Request) {
 
     // Attempt to get filials to verify connectivity and key
     const filials = await client.getFilials();
+    console.log(`MoyKlass Test: Success, found ${filials?.length || 0} filials`);
 
     return NextResponse.json({ success: true, filials });
   } catch (error: any) {

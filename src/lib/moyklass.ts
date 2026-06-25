@@ -10,7 +10,6 @@ export class MoyKlassClient {
   private accessToken: string | null = null;
 
   constructor(apiKey: string) {
-    // Trim to avoid whitespace issues common during copy-paste
     this.apiKey = apiKey?.trim() || '';
   }
 
@@ -53,14 +52,21 @@ export class MoyKlassClient {
       'x-access-token': token
     };
 
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
+    const url = `${BASE_URL}${endpoint}`;
+    const response = await fetch(url, {
       ...options,
       headers
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: response.statusText }));
-      throw new Error(`MoyKlass API Error (${response.status}): ${error.message || response.statusText}`);
+      const errorText = await response.text().catch(() => '');
+      let errorMessage = response.statusText;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorMessage;
+      } catch (e) {}
+
+      throw new Error(`MoyKlass API Error (${response.status}) on ${endpoint}: ${errorMessage}`);
     }
 
     return response.json();
@@ -98,6 +104,22 @@ export class MoyKlassClient {
   }
 
   async getFilials() {
-    return this.request('/filials');
+    try {
+      // Try direct filials endpoint first
+      return await this.request('/filials');
+    } catch (err: any) {
+      if (err.message?.includes('404')) {
+        console.log('MoyKlass: /filials not found, trying /company fallback');
+        // Some MoyKlass API setups return filials as part of the company info
+        const company = await this.getCompany();
+        if (company && company.filials) return company.filials;
+
+        // If still not found, try alternative filials path common in some systems
+        try {
+            return await this.request('/company/filials');
+        } catch (e) {}
+      }
+      throw err;
+    }
   }
 }
