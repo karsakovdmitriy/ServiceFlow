@@ -5,8 +5,7 @@ import { useStore } from '@/lib/store';
 import { IconDatabase, IconDatabaseOff, IconInfoCircle, IconShieldCheck, IconLock, IconBrandTelegram, IconPhoto, IconCheck, IconExternalLink, IconLoader2 } from '@tabler/icons-react';
 
 export default function SettingsPage() {
-  const { profile, trainerId, updateProfile, loading: storeLoading, isDemoMode, testMoyKlassConnection } = useStore();
-  const { profile, activeMaster, updateProfile, updateMaster, loading: storeLoading, isDemoMode } = useStore();
+  const { profile, activeMaster, updateProfile, updateMaster, loading: storeLoading, isDemoMode, testMoyKlassConnection } = useStore();
   const [formData, setFormData] = useState({
     full_name: '',
     specialization: '',
@@ -35,15 +34,12 @@ export default function SettingsPage() {
         specialization: activeMaster?.specialization || '',
         avatar_url: activeMaster?.avatar_url || profile.avatar_url || '',
         email: profile.email || '',
-        phone: (profile as any).phone || '',
-        slot_duration: String(profile.slot_duration || 60),
-        category: (profile as any).category || 'Спорт',
+        phone: activeMaster?.phone || profile.phone || '',
+        slot_duration: String(activeMaster?.slot_duration || 60),
+        category: activeMaster?.category || 'Спорт',
         moyklass_api_key: profile.moyklass_api_key || '',
         moyklass_filial_id: String(profile.moyklass_filial_id || ''),
         moyklass_enabled: profile.moyklass_enabled || false
-        phone: activeMaster?.phone || profile.phone || '',
-        slot_duration: String(activeMaster?.slot_duration || 60),
-        category: activeMaster?.category || 'Спорт'
       });
     }
   }, [profile, activeMaster]);
@@ -65,18 +61,6 @@ export default function SettingsPage() {
     setSaving(true);
     setMessage('');
 
-    const { error } = await updateProfile({
-      full_name: formData.full_name,
-      specialization: formData.specialization,
-      avatar_url: formData.avatar_url,
-      email: formData.email,
-      phone: formData.phone,
-      slot_duration: parseInt(formData.slot_duration),
-      category: formData.category,
-      moyklass_api_key: formData.moyklass_api_key,
-      moyklass_filial_id: formData.moyklass_filial_id ? parseInt(formData.moyklass_filial_id) : null,
-      moyklass_enabled: formData.moyklass_enabled
-    } as any) as any;
     let error = null;
 
     // 1. Update Master data if applicable
@@ -97,8 +81,11 @@ export default function SettingsPage() {
       const { error: profileErr } = await updateProfile({
         full_name: formData.full_name,
         avatar_url: formData.avatar_url,
-        phone: formData.phone
-      });
+        phone: formData.phone,
+        moyklass_api_key: formData.moyklass_api_key,
+        moyklass_filial_id: formData.moyklass_filial_id ? parseInt(formData.moyklass_filial_id) : undefined,
+        moyklass_enabled: formData.moyklass_enabled
+      } as any);
       if (profileErr) error = profileErr;
     }
 
