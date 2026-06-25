@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { IconPlus, IconTrash, IconEdit, IconCheck, IconX, IconMapPin, IconClock, IconCurrencyRubel, IconUsers, IconBarbell, IconDotsVertical } from '@tabler/icons-react';
 import { useStore, Service, Venue } from '@/lib/store';
+import PortalModal from '@/components/PortalModal';
 
 export default function ServicesPage() {
   const {
@@ -32,7 +33,7 @@ export default function ServicesPage() {
     addService({
       ...newData,
       venue_id: newData.venue_id || null
-    });
+    } as any);
     setNewData({ name: '', duration: 60, price: 1000, is_group: false, venue_id: '' });
     setIsAdding(false);
   };
@@ -50,7 +51,7 @@ export default function ServicesPage() {
   };
 
   const handleAddVenue = () => {
-    addVenue(newVenueData);
+    addVenue(newVenueData as any);
     setNewVenueData({ name: '', address: '' });
     setIsAddingVenue(false);
   };
@@ -265,8 +266,7 @@ export default function ServicesPage() {
         )}
 
       {/* Add/Edit Service Modal */}
-      {(isAdding || editingId) && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
+      <PortalModal isOpen={isAdding || !!editingId} onClose={() => { setIsAdding(false); setEditingId(null); }}>
           <div className="bg-surface rounded-3xl w-full max-w-md shadow-2xl animate-fade-up overflow-hidden border border-border">
             <div className="p-6 border-b border-border flex items-center justify-between">
               <h2 className="text-[16px] font-bold text-t1 tracking-tight">{editingId ? 'Редактировать услугу' : 'Новая услуга'}</h2>
@@ -278,7 +278,7 @@ export default function ServicesPage() {
                 <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">Название</label>
                 <input
                   type="text"
-                  placeholder="Напр. Персональная тренировка"
+                  placeholder="Напр. Персональная консультация"
                   value={editingId ? editData.name : newData.name}
                   onChange={e => editingId ? setEditData({...editData, name: e.target.value}) : setNewData({...newData, name: e.target.value})}
                   className="w-full input-modern"
@@ -330,7 +330,7 @@ export default function ServicesPage() {
                     />
                 </div>
                 <div>
-                    <div className="text-[13.5px] font-bold text-t1 group-hover:text-accent transition-colors">Групповая тренировка</div>
+                    <div className="text-[13.5px] font-bold text-t1 group-hover:text-accent transition-colors">Групповая услуга</div>
                     <div className="text-[11px] text-t3 leading-relaxed mt-0.5">Позволяет нескольким клиентам записаться на один и тот же временной слот.</div>
                 </div>
               </label>
@@ -346,12 +346,10 @@ export default function ServicesPage() {
               </button>
             </div>
           </div>
-        </div>
-      )}
+      </PortalModal>
 
       {/* Add/Edit Venue Modal */}
-      {(isAddingVenue || editingVenueId) && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
+      <PortalModal isOpen={isAddingVenue || !!editingVenueId} onClose={() => { setIsAddingVenue(false); setEditingVenueId(null); }}>
           <div className="bg-surface rounded-3xl w-full max-w-md shadow-2xl animate-fade-up overflow-hidden border border-border">
             <div className="p-6 border-b border-border flex items-center justify-between">
               <h2 className="text-[16px] font-bold text-t1 tracking-tight">{editingVenueId ? 'Редактировать площадку' : 'Новая площадка'}</h2>
@@ -392,8 +390,7 @@ export default function ServicesPage() {
               </button>
             </div>
           </div>
-        </div>
-      )}
+      </PortalModal>
     </div>
   );
 }

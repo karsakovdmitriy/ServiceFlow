@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendTelegramMessage } from '@/lib/telegram';
+import { sendMaxMessage } from '@/lib/max';
 
 export async function POST(request: Request) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -23,10 +24,10 @@ export async function POST(request: Request) {
       .from('sessions')
       .select(`
         start_time,
-        trainer_id,
-        client:clients!client_id(telegram_id),
+        master_id,
+        client:clients!client_id(telegram_id, max_id),
         service:services!service_id(name, venues!venue_id(name, address)),
-        trainer:trainers!trainer_id(full_name)
+        master:masters!master_id(full_name)
       `)
       .eq('id', sessionId)
       .single();
@@ -37,8 +38,9 @@ export async function POST(request: Request) {
     }
 
     const clientTelegramId = (sessionData.client as any)?.telegram_id;
+    const clientMaxId = (sessionData.client as any)?.max_id;
 
-    if (clientTelegramId) {
+    if (clientTelegramId || clientMaxId) {
       const date = new Date(sessionData.start_time);
       const dateStr = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
       const timeStr = sessionData.start_time.split('T')[1].slice(0, 5);
@@ -49,30 +51,35 @@ export async function POST(request: Request) {
       let message = '';
       let replyMarkup = undefined;
       if (status === 'completed') {
-        message = `💪 <b>Как прошла тренировка?</b>\n\n` +
-          `Надеемся, вам понравилось занятие с тренером <b>${(sessionData.trainer as any)?.full_name}</b>!\n\n` +
+        message = `💪 <b>Как все прошло?</b>\n\n` +
+          `Надеемся, вам понравилась услуга у специалиста <b>${(sessionData.master as any)?.full_name}</b>!\n\n` +
           `Будем рады вашему отзыву.`;
 
         replyMarkup = {
           inline_keyboard: [
             [{ text: '⭐ Оценить и оставить отзыв', callback_data: `rate_init:${sessionId}` }],
-            [{ text: '🔄 Записаться снова', callback_data: `svc_list:${sessionData.trainer_id}` }]
+            [{ text: '🔄 Записаться снова', callback_data: `svc_list:${sessionData.master_id}` }]
           ]
         };
       } else {
         message = `✅ <b>Ваша запись подтверждена!</b>\n\n` +
-          `Тренер: <b>${(sessionData.trainer as any)?.full_name}</b>\n` +
+          `Мастер: <b>${(sessionData.master as any)?.full_name}</b>\n` +
           `Услуга: <b>${(sessionData.service as any)?.name}</b>${venueText}\n` +
           `Дата: <b>${dateStr}</b>\n` +
           `Время: <b>${timeStr}</b>\n\n` +
-          `Ждем вас на тренировке!`;
+          `Ждем вас!`;
       }
 
-      await sendTelegramMessage(clientTelegramId, message, replyMarkup);
+      if (clientTelegramId) {
+        await sendTelegramMessage(clientTelegramId, message, replyMarkup);
+      }
+      if (clientMaxId) {
+        await sendMaxMessage(clientMaxId, message, replyMarkup);
+      }
       return NextResponse.json({ ok: true });
     }
 
-    return NextResponse.json({ ok: false, message: 'No telegram ID' });
+    return NextResponse.json({ ok: false, message: 'No telegram or MAX ID' });
   } catch (error) {
     console.error('Error in notify API:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

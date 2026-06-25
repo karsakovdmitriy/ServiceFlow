@@ -26,7 +26,7 @@ export async function GET(request: Request) {
         start_time,
         client:clients!client_id(telegram_id, full_name),
         service:services!service_id(name),
-        trainer:trainers!trainer_id(full_name)
+        master:masters!master_id(full_name)
       `)
       .eq('status', 'confirmed')
       .gte('start_time', reminderStart.toISOString())
@@ -37,8 +37,8 @@ export async function GET(request: Request) {
         const clientTelegramId = (session.client as any)?.telegram_id;
         if (clientTelegramId) {
             const timeStr = session.start_time.split('T')[1].slice(0, 5);
-            const message = `⏰ <b>Напоминание о тренировке!</b>\n\n` +
-              `Через час у вас занятие с тренером <b>${(session.trainer as any)?.full_name}</b>.\n` +
+            const message = `⏰ <b>Напоминание о записи!</b>\n\n` +
+              `Через час у вас визит к специалисту <b>${(session.master as any)?.full_name}</b>.\n` +
               `Услуга: <b>${(session.service as any)?.name}</b>\n` +
               `Начало в: <b>${timeStr}</b>\n\n` +
               `Ждем вас!`;
@@ -56,7 +56,7 @@ export async function GET(request: Request) {
       .select(`
         id,
         client:clients!client_id(telegram_id, full_name),
-        trainer:trainers!trainer_id(full_name)
+        master:masters!master_id(full_name)
       `)
       .eq('status', 'completed')
       .gte('end_time', followUpStart.toISOString())
@@ -66,9 +66,9 @@ export async function GET(request: Request) {
       for (const session of completed) {
         const clientTelegramId = (session.client as any)?.telegram_id;
         if (clientTelegramId) {
-            const message = `💪 <b>Как прошла тренировка?</b>\n\n` +
-              `Надеемся, вам понравилось занятие с тренером <b>${(session.trainer as any)?.full_name}</b>!\n\n` +
-              `Будем рады вашему отзыву. Также вы уже можете записаться на следующую тренировку через меню бота.`;
+            const message = `💪 <b>Как все прошло?</b>\n\n` +
+              `Надеемся, вам понравилась услуга у специалиста <b>${(session.master as any)?.full_name}</b>!\n\n` +
+              `Будем рады вашему отзыву. Также вы уже можете записаться повторно через меню бота.`;
             await sendTelegramMessage(clientTelegramId, message);
         }
       }

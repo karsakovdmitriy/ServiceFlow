@@ -5,7 +5,7 @@ import { useStore } from '@/lib/store';
 import { IconDeviceFloppy, IconBuildingStore, IconMail, IconPhone, IconBrandTelegram, IconMapPin, IconInfoCircle, IconShieldCheck, IconCheck, IconDatabase, IconDatabaseOff } from '@tabler/icons-react';
 
 export default function VenueProfile() {
-  const { venues, addVenue, updateVenue, profile, updateProfile, trainerId, isDemoMode } = useStore();
+  const { venues, addVenue, updateVenue, profile, updateProfile, activeMaster, isDemoMode } = useStore();
   const venue = venues[0];
 
   const [formData, setFormData] = useState({
@@ -33,7 +33,7 @@ export default function VenueProfile() {
   }, [venue]);
 
   const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'TrainerSpaceBot';
-  const linkTgLink = `https://t.me/${botUsername}?start=link_${trainerId || 'id'}`;
+  const linkTgLink = `https://t.me/${botUsername}?start=link_${venue?.id || 'id'}`;
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -43,7 +43,7 @@ export default function VenueProfile() {
     if (venue) {
       result = await updateVenue(venue.id, formData);
     } else {
-      result = await addVenue(formData);
+      result = await addVenue(formData as any);
     }
 
     if (result?.error) {
@@ -157,15 +157,15 @@ export default function VenueProfile() {
                 <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-4">Оповещения площадки</div>
                 <div className="p-5 rounded-2xl bg-surface border border-border flex flex-col gap-4 shadow-sh-sm">
                     <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${profile?.telegram_id ? 'bg-green-light text-green-custom' : 'bg-accent-light text-accent'}`}>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${venue?.telegram_id ? 'bg-green-light text-green-custom' : 'bg-accent-light text-accent'}`}>
                             <IconBrandTelegram size={22} stroke={1.5} />
                         </div>
                         <div>
                             <div className="text-[14px] font-bold text-t1 tracking-tight">
-                                {profile?.telegram_id ? 'Telegram подключен' : 'Привязать Telegram'}
+                                {venue?.telegram_id ? 'Telegram подключен' : 'Привязать Telegram'}
                             </div>
                             <div className="text-[11px] text-t3 font-medium mt-0.5">
-                                {profile?.telegram_id ? 'Уведомления активны' : 'Получайте уведомления'}
+                                {venue?.telegram_id ? 'Уведомления активны' : 'Получайте уведомления'}
                             </div>
                         </div>
                     </div>
@@ -175,7 +175,7 @@ export default function VenueProfile() {
                         rel="noopener noreferrer"
                         className="text-center text-[12px] font-bold py-2.5 bg-bg-custom text-t1 rounded-xl hover:bg-surface transition-all border border-border shadow-sh-sm"
                     >
-                        {profile?.telegram_id ? 'Переподключить' : 'Подключить бота'}
+                        {venue?.telegram_id ? 'Переподключить' : 'Подключить бота'}
                     </a>
                 </div>
             </section>

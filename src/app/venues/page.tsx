@@ -14,7 +14,7 @@ export default function VenuesPage() {
 
   const handleAdd = () => {
     if (newData.name.trim()) {
-      addVenue(newData);
+      addVenue(newData as any);
       setNewData({ name: '', address: '' });
       setIsAdding(false);
     }
@@ -139,7 +139,7 @@ export default function VenuesPage() {
           <div className="text-center py-12 bg-bg-custom/50 rounded-xl border border-dashed border-border-custom">
             <IconMapPin size={48} className="mx-auto text-t3 opacity-20 mb-3" />
             <div className="text-t2 font-medium">У вас пока нет площадок</div>
-            <div className="text-[13px] text-t3 mt-1">Добавьте места, где вы проводите тренировки</div>
+            <div className="text-[13px] text-t3 mt-1">Добавьте места, где вы оказываете услуги</div>
           </div>
         )}
       </div>

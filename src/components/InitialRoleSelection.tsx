@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { useStore } from '@/lib/store';
 import { IconStethoscope, IconUser, IconBuildingStore, IconCheck } from '@tabler/icons-react';
 
 export default function InitialRoleSelection() {
-  const { profile, updateProfile, loading, switchActiveRole } = useStore();
+  const pathname = usePathname();
+  const { profile, updateProfile, loading, switchActiveRole, addMaster, userId } = useStore();
   const [selectedRoles, setSelectedRoles] = useState<{ master: boolean; client: boolean; venue: boolean }>({
     master: false,
     client: false,
@@ -14,7 +16,9 @@ export default function InitialRoleSelection() {
 
   const hasAnyRole = profile && (profile.is_master || profile.is_client || profile.is_venue);
 
-  if (loading || !profile || hasAnyRole) return null;
+  const isLegalPage = pathname?.startsWith('/legal');
+
+  if (loading || !profile || hasAnyRole || isLegalPage) return null;
 
   const handleSave = async () => {
     const rolesToEnable = {
@@ -23,7 +27,16 @@ export default function InitialRoleSelection() {
       is_venue: selectedRoles.venue
     };
 
-    await updateProfile(rolesToEnable);
+    const { error } = await updateProfile(rolesToEnable);
+
+    if (!error && selectedRoles.master) {
+      // Create initial master record if it doesn't exist
+      await addMaster({
+        user_id: userId || profile?.id,
+        full_name: profile?.full_name || 'Новый мастер',
+        slot_duration: 60
+      });
+    }
 
     // Set active role to the first selected one
     if (selectedRoles.master) switchActiveRole('master');
@@ -43,7 +56,7 @@ export default function InitialRoleSelection() {
           <div className="grid grid-cols-1 gap-4 mb-10">
             {[
               { id: 'master', label: 'Мастер', desc: 'Записываю клиентов и веду расписание', icon: <IconStethoscope size={24} /> },
-              { id: 'client', label: 'Клиент', desc: 'Записываюсь на тренировки и услуги', icon: <IconUser size={24} /> },
+              { id: 'client', label: 'Клиент', desc: 'Записываюсь на услуги и сеансы', icon: <IconUser size={24} /> },
               { id: 'venue', label: 'Площадка', desc: 'Управляю локацией и мастерами', icon: <IconBuildingStore size={24} /> }
             ].map(role => {
               const active = selectedRoles[role.id as keyof typeof selectedRoles];

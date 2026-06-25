@@ -1,16 +1,18 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { IconCalendar, IconCheck, IconX, IconSearch, IconChevronRight, IconClock, IconHistory, IconCalendarTime } from '@tabler/icons-react';
+import { IconCalendar, IconCheck, IconX, IconSearch, IconChevronRight, IconClock, IconHistory, IconCalendarTime, IconBellRinging } from '@tabler/icons-react';
 import { useStore } from '@/lib/store';
+import PortalModal from '@/components/PortalModal';
 
 export default function RequestsPage() {
-  const { requests, sessions, completedSessions, approveRequest, rejectRequest, cancelSession, completeSession } = useStore();
+  const { requests, sessions, completedSessions, approveRequest, rejectRequest, cancelSession, completeSession, sendReminder } = useStore();
   const [rejectingId, setRejectingId] = React.useState<string | null>(null);
   const [cancellingId, setCancellingId] = React.useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
   const [showAllUpcoming, setShowAllUpcoming] = useState(false);
+  const [remindingId, setRemindingId] = React.useState<string | null>(null);
 
   const handleReject = (id: string, reschedule: boolean) => {
     rejectRequest(id, reschedule);
@@ -24,6 +26,12 @@ export default function RequestsPage() {
         cancelSession(id);
     }
     setCancellingId(null);
+  };
+
+  const handleSendReminder = async (id: string) => {
+    setRemindingId(id);
+    await sendReminder(id);
+    setTimeout(() => setRemindingId(null), 2000);
   };
 
   const groupSessionsByDay = (list: any[]) => {
@@ -235,7 +243,17 @@ export default function RequestsPage() {
                                     <IconClock size={12} stroke={2} /> {session.time}
                                 </div>
                             </div>
-                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity items-center">
+                                <button
+                                    onClick={() => handleSendReminder(session.id)}
+                                    disabled={remindingId === session.id}
+                                    className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${
+                                        remindingId === session.id ? 'text-green-custom bg-green-50' : 'text-t3 hover:text-accent hover:bg-accent/5'
+                                    }`}
+                                    title="Напомнить"
+                                >
+                                    {remindingId === session.id ? <IconCheck size={16} /> : <IconBellRinging size={16} />}
+                                </button>
                                 <button
                                     onClick={() => completeSession(session.id)}
                                     className="w-8 h-8 flex items-center justify-center rounded-lg text-green-custom hover:bg-green-50 transition-all"
@@ -296,11 +314,10 @@ export default function RequestsPage() {
       )}
 
       {/* Reject/Cancel Modal */}
-      {(rejectingId || cancellingId) && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
+      <PortalModal isOpen={!!(rejectingId || cancellingId)} onClose={() => { setRejectingId(null); setCancellingId(null); }}>
             <div className="bg-surface rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-fade-up border border-border">
-                <div className="text-[16px] font-bold text-t1 mb-2 tracking-tight">{rejectingId ? 'Отклонить заявку?' : 'Отменить тренировку?'}</div>
-                <p className="text-[13px] text-t3 mb-6 leading-relaxed">Вы можете просто {rejectingId ? 'отклонить запись' : 'отменить тренировку'} или предложить клиенту выбрать другое время в боте.</p>
+                <div className="text-[16px] font-bold text-t1 mb-2 tracking-tight">{rejectingId ? 'Отклонить заявку?' : 'Отменить запись?'}</div>
+                <p className="text-[13px] text-t3 mb-6 leading-relaxed">Вы можете просто {rejectingId ? 'отклонить запись' : 'отменить визит'} или предложить клиенту выбрать другое время в боте.</p>
                 <div className="flex flex-col gap-2">
                     <button
                         onClick={() => rejectingId ? handleReject(rejectingId, true) : handleCancel(cancellingId!, true)}
@@ -322,8 +339,7 @@ export default function RequestsPage() {
                     </button>
                 </div>
             </div>
-        </div>
-      )}
+      </PortalModal>
     </div>
   );
 }

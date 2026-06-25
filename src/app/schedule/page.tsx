@@ -4,8 +4,8 @@ import React, { useState, useMemo } from 'react';
 import { IconBan, IconX, IconPlus, IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import { useStore, Session, BlockedSlot, ScheduleDay } from '@/lib/store';
 
-const DAYS_RU_SHORT = ['ВС', 'ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
-const DAYS_RU_FULL = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+const DAYS_RU_SHORT = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+const DAYS_RU_FULL = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 
 export default function SchedulePage() {
   const [activeDayIndex, setActiveDayIndex] = useState(0);
@@ -30,7 +30,10 @@ export default function SchedulePage() {
   });
 
   const handleAddBlock = () => {
-    addBlock(newBlock);
+    addBlock({
+      ...newBlock,
+      master_id: (profile as any)?.master_id || '' // master_id is handled in store but type requires it
+    } as any);
   };
 
   const formatBlock = (block: any) => {
@@ -42,8 +45,8 @@ export default function SchedulePage() {
   const { weekGrid, weekRangeLabel, currentWeekMonday, currentWeekSunday } = useMemo(() => {
     const curr = new Date();
     curr.setDate(curr.getDate() + (weekOffset * 7));
-    const day = curr.getDay(); // 0-6
-    const diff = curr.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+    const day = curr.getDay(); // 0-6 (0 is Sunday)
+    const diff = curr.getDate() - (day === 0 ? 6 : day - 1); // adjust to Monday
     const monday = new Date(curr.setDate(diff));
     monday.setHours(0, 0, 0, 0);
 
@@ -58,9 +61,13 @@ export default function SchedulePage() {
       const d = String(date.getDate()).padStart(2, '0');
       const dateStr = `${y}-${m}-${d}`;
 
-      const dayOfWeek = date.getDay();
-      const dayName = DAYS_RU_FULL[dayOfWeek];
-      const dayShort = DAYS_RU_SHORT[dayOfWeek];
+      // In JS, getDay() returns 0 for Sunday, 1 for Monday, etc.
+      // Our UI expects 0 for Monday, 1 for Tuesday ... 6 for Sunday
+      const jsDay = date.getDay();
+      const uiDayIdx = jsDay === 0 ? 6 : jsDay - 1;
+
+      const dayName = DAYS_RU_FULL[uiDayIdx];
+      const dayShort = DAYS_RU_SHORT[uiDayIdx];
       const isToday = new Date().toISOString().split('T')[0] === dateStr;
 
       const dayConfig = schedule.find(s => s.name === dayName);

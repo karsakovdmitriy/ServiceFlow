@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { useStore } from '@/lib/store';
 import { IconChevronRight, IconStethoscope, IconUser, IconBuildingStore, IconCheck } from '@tabler/icons-react';
 
 export default function OnboardingWizard() {
-  const { profile, activeRole, updateProfile, loading } = useStore();
+  const pathname = usePathname();
+  const { profile, activeRole, updateProfile, activeMaster, updateMaster, loading } = useStore();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     specialization: '',
@@ -17,25 +19,43 @@ export default function OnboardingWizard() {
     if (profile) {
       setFormData(prev => ({
         ...prev,
-        specialization: prev.specialization || profile.specialization || '',
-        category: prev.category === 'Спорт' ? (profile.category || 'Спорт') : prev.category,
+        specialization: prev.specialization || activeMaster?.specialization || '',
+        category: prev.category === 'Спорт' ? (activeMaster?.category || 'Спорт') : prev.category,
         full_name: prev.full_name || profile.full_name || '',
       }));
     }
-  }, [profile]);
+  }, [profile, activeMaster]);
 
   const onboardingField = `onboarding_completed_${activeRole}` as keyof typeof profile;
   const isCompleted = profile?.[onboardingField];
 
-  if (loading || !profile || isCompleted) return null;
+  const isLegalPage = pathname?.startsWith('/legal');
+
+  if (loading || !profile || isCompleted || isLegalPage) return null;
 
   const handleComplete = async () => {
-    const { error } = await updateProfile({
-      ...formData,
-      [onboardingField]: true
-    });
+    let error = null;
+
+    if (activeRole === 'master' && activeMaster) {
+      const { error: masterErr } = await updateMaster(activeMaster.id, {
+        specialization: formData.specialization,
+        category: formData.category
+      });
+      error = masterErr;
+    }
+
+    if (!error) {
+      const profileUpdates: any = { [onboardingField]: true };
+      if (activeRole === 'client' && formData.full_name) {
+        profileUpdates.full_name = formData.full_name;
+      }
+      const { error: profileErr } = await updateProfile(profileUpdates);
+      error = profileErr;
+    }
+
     if (error) {
-      alert('Ошибка при сохранении профиля. Пожалуйста, попробуйте еще раз или проверьте консоль.');
+      console.error('Onboarding update error:', error);
+      alert('Ошибка при сохранении данных. Пожалуйста, попробуйте еще раз.');
     }
   };
 
@@ -47,7 +67,7 @@ export default function OnboardingWizard() {
           <p className="text-t3 text-sm mb-6">Расскажите, чем вы занимаетесь, чтобы клиенты могли вас найти.</p>
           <input
             type="text"
-            placeholder="Например: Силовой тренер, Визажист..."
+            placeholder="Например: Косметолог, Визажист..."
             className="w-full bg-bg-custom border border-border-light rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-accent outline-none transition-all"
             value={formData.specialization}
             onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}

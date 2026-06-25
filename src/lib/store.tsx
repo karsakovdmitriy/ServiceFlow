@@ -4,24 +4,20 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from './supabase';
 
 // Types and Mock Data
-export interface Venue { id: string; name: string; address?: string; phone?: string; email?: string; telegram_id?: string; description?: string; telegram_bot_token?: string; }
-export interface Service { id: string; name: string; duration: number; price: number; is_group: boolean; venue_id?: string | null; venue?: Venue; }
-export interface Client { id: string; full_name: string; email?: string; phone?: string; telegram_id?: string; is_active: boolean; created_at: string; }
-export interface Session { id: string; name: string; time: string; initials: string; bg?: string; color?: string; status: string; date: string; service?: string; serviceId?: string; clientId?: string; }
+export interface Venue { id: string; owner_id: string; name: string; address?: string; phone?: string; email?: string; telegram_id?: string; max_id?: string; description?: string; telegram_bot_token?: string; }
+export interface Service { id: string; owner_id: string; name: string; duration: number; price: number; is_group: boolean; venue_id?: string | null; master_id?: string | null; venue?: Venue; master?: Master; }
+export interface Client { id: string; owner_id: string; user_id?: string; full_name: string; email?: string; phone?: string; telegram_id?: string; max_id?: string; is_active: boolean; created_at: string; }
+export interface Session { id: string; name: string; time: string; initials: string; bg?: string; color?: string; status: string; date: string; service?: string; serviceId?: string; clientId?: string; masterId?: string; }
 export interface ScheduleDay { name: string; startTime: string; endTime: string; on: boolean; }
-export interface BlockedSlot { id: string; date: string; startTime: string; endTime: string; allDay: boolean; }
+export interface BlockedSlot { id: string; master_id: string; date: string; startTime: string; endTime: string; allDay: boolean; }
 export interface Partnership { id: string; user_id: string; partner_id: string; status: 'pending' | 'accepted'; partner_name?: string; }
-export interface VenueStaff { id: string; venue_id: string; trainer_id: string; trainer_name?: string; }
-export interface TrainerProfile {
-  id?: string;
+export interface VenueStaff { id: string; venue_id: string; master_id: string; master_name?: string; }
+export interface Profile {
+  id: string;
   full_name: string;
-  specialization: string;
-  avatar_url?: string;
   email: string;
   phone?: string;
-  slot_duration: number;
-  telegram_id?: string;
-  category?: string;
+  avatar_url?: string;
   is_master: boolean;
   is_client: boolean;
   is_venue: boolean;
@@ -31,12 +27,29 @@ export interface TrainerProfile {
   moyklass_api_key?: string;
   moyklass_filial_id?: number;
   moyklass_enabled?: boolean;
+  subscription_tier?: 'free' | 'pro' | 'business';
+  subscription_status?: string;
+  subscription_period_end?: string;
 }
-export interface Message { id: string; trainer_id: string; client_id: string; sender_type: 'trainer' | 'client'; text: string; read: boolean; created_at: string; }
-export interface Event { id: string; trainer_id: string; type: string; message: string; read: boolean; created_at: string; }
-export interface Review { id: string; rating: number; comment?: string; created_at: string; client_name?: string; }
+export interface Master {
+  id: string;
+  user_id?: string;
+  full_name: string;
+  specialization?: string;
+  avatar_url?: string;
+  phone?: string;
+  slot_duration: number;
+  telegram_id?: string;
+  max_id?: string;
+  telegram_bot_token?: string;
+  category?: string;
+  created_at: string;
+}
+export interface Message { id: string; profile_id: string; client_id: string; sender_type: 'master' | 'client'; text: string; read: boolean; created_at: string; }
+export interface Event { id: string; profile_id: string; type: string; message: string; read: boolean; created_at: string; }
+export interface Review { id: string; master_id: string; rating: number; comment?: string; created_at: string; client_name?: string; }
 
-const DAYS = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+const DAYS = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 
 const getTodayStr = (offset = 0) => {
     const d = new Date();
@@ -45,14 +58,14 @@ const getTodayStr = (offset = 0) => {
 };
 
 const MOCK_VENUES = [
-  { id: 'v1', name: 'Gym 24/7', address: 'ул. Пушкина, 10' },
-  { id: 'v2', name: 'Спорт-Лайф', address: 'пр. Мира, 5' },
+  { id: 'v1', owner_id: 'demo-user', name: 'Gym 24/7', address: 'ул. Пушкина, 10' },
+  { id: 'v2', owner_id: 'demo-user', name: 'Спорт-Лайф', address: 'пр. Мира, 5' },
 ];
 
 const MOCK_SERVICES = [
-  { id: 's1', name: 'Персональная тренировка', duration: 60, price: 2500, is_group: false, venue_id: 'v1' },
-  { id: 's2', name: 'Сплит-тренировка', duration: 60, price: 3500, is_group: false, venue_id: 'v1' },
-  { id: 's3', name: 'Групповая тренировка', duration: 60, price: 1000, is_group: true, venue_id: 'v2' },
+  { id: 's1', owner_id: 'demo-user', name: 'Персональная услуга', duration: 60, price: 2500, is_group: false, venue_id: 'v1' },
+  { id: 's2', owner_id: 'demo-user', name: 'Сплит-услуга', duration: 60, price: 3500, is_group: false, venue_id: 'v1' },
+  { id: 's3', owner_id: 'demo-user', name: 'Групповая услуга', duration: 60, price: 1000, is_group: true, venue_id: 'v2' },
 ];
 
 const MOCK_SESSIONS = [
@@ -68,7 +81,7 @@ const MOCK_SCHEDULE = DAYS.map((name, i) => ({
   name,
   startTime: '09:00',
   endTime: '20:00',
-  on: i !== 0
+  on: i !== 6 // Sunday (last in DAYS) is off by default
 }));
 
 interface StoreContextType {
@@ -82,16 +95,18 @@ interface StoreContextType {
   venues: Venue[];
   events: Event[];
   reviews: Review[];
-  profile: TrainerProfile | null;
+  profile: Profile | null;
+  masters: Master[];
+  activeMaster: Master | null;
   activeRole: 'master' | 'client' | 'venue';
   partners: Partnership[];
   venueStaff: VenueStaff[];
   loading: boolean;
-  trainerId: string | null;
+  userId: string | null;
   isDemoMode: boolean;
   switchActiveRole: (role: 'master' | 'client' | 'venue') => void;
-  updateProfile: (updated: Partial<TrainerProfile>) => Promise<{ error: any }>;
-  approveRequest: (id: string, trainerId?: string) => Promise<void>;
+  updateProfile: (updated: Partial<Profile>) => Promise<{ error: any }>;
+  approveRequest: (id: string, masterId?: string) => Promise<void>;
   rejectRequest: (id: string, reschedule?: boolean) => Promise<void>;
   sendMessage: (clientId: string, text: string) => Promise<void>;
   getMessages: (clientId: string) => Promise<Message[]>;
@@ -100,7 +115,7 @@ interface StoreContextType {
   cancelSession: (id: string) => Promise<void>;
   completeSession: (id: string) => Promise<void>;
   addSession: (session: any) => Promise<void>;
-  addService: (service: Omit<Service, 'id' | 'venue'>) => Promise<void>;
+  addService: (service: Omit<Service, 'id' | 'venue' | 'master'>) => Promise<void>;
   updateService: (id: string, service: Partial<Service>) => Promise<void>;
   addVenue: (venue: Omit<Venue, 'id'>) => Promise<{ error: any }>;
   updateVenue: (id: string, venue: Partial<Venue>) => Promise<{ error: any }>;
@@ -109,9 +124,14 @@ interface StoreContextType {
   removeBlock: (id: string) => Promise<void>;
   addPartnership: (partnerEmail: string) => Promise<void>;
   removePartnership: (partnershipId: string) => Promise<void>;
-  addVenueStaff: (venueId: string, trainerEmail: string) => Promise<void>;
+  addVenueStaff: (venueId: string, masterId: string) => Promise<void>;
+  addMasterByEmail: (venueId: string, masterEmail: string) => Promise<void>;
   removeVenueStaff: (staffId: string) => Promise<void>;
-  getAllMasters: () => Promise<TrainerProfile[]>;
+  getAllMasters: () => Promise<Master[]>;
+  addMaster: (master: Omit<Master, 'id' | 'created_at'>) => Promise<{ data: Master | null, error: any }>;
+  updateMaster: (id: string, master: Partial<Master>) => Promise<{ error: any }>;
+  removeMaster: (id: string) => Promise<void>;
+  sendReminder: (sessionId: string) => Promise<{ error: any }>;
   toggleDay: (idx: number) => Promise<void>;
   updateScheduleTime: (idx: number, startTime: string, endTime: string) => Promise<void>;
   removeService: (id: string) => Promise<void>;
@@ -132,12 +152,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [profile, setProfile] = useState<TrainerProfile | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [masters, setMasters] = useState<Master[]>([]);
+  const [activeMaster, setActiveMaster] = useState<Master | null>(null);
   const [activeRole, setActiveRole] = useState<'master' | 'client' | 'venue'>('master');
   const [partners, setPartners] = useState<Partnership[]>([]);
   const [venueStaff, setVenueStaff] = useState<VenueStaff[]>([]);
   const [loading, setLoading] = useState(true);
-  const [trainerId, setTrainerId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [isDemoMode, setIsDemoMode] = useState(false);
 
   const hasConfig = process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -155,7 +177,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) throw error;
         if (session?.user) {
-          setTrainerId(session.user.id);
+          setUserId(session.user.id);
           setIsDemoMode(false);
         } else {
           setLoading(false);
@@ -168,17 +190,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     checkUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setTrainerId(session?.user?.id || null);
+      setUserId(session?.user?.id || null);
     });
 
     return () => subscription.unsubscribe();
   }, [hasConfig]);
 
   useEffect(() => {
-    if (trainerId && !isDemoMode) {
+    if (userId && !isDemoMode) {
       fetchData();
     }
-  }, [trainerId, isDemoMode]);
+  }, [userId, isDemoMode]);
 
   const loadDemoData = () => {
     const saved = localStorage.getItem('trainer_space_demo');
@@ -193,10 +215,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setVenues(data.venues || MOCK_VENUES);
       setEvents(data.events || []);
       setProfile(data.profile || {
-        full_name: 'Алексей (Демо)', specialization: 'Тренер', email: 'demo@example.com', slot_duration: 60,
+        id: 'demo-user',
+        full_name: 'Алексей (Демо)', email: 'demo@example.com',
         is_master: false, is_client: false, is_venue: false,
         onboarding_completed_master: false, onboarding_completed_client: false, onboarding_completed_venue: false
       });
+      setMasters(data.masters || []);
+      setActiveMaster(data.activeMaster || null);
       setActiveRole(data.activeRole || 'master');
       setPartners(data.partners || []);
       setVenueStaff(data.venueStaff || []);
@@ -207,7 +232,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setServices(MOCK_SERVICES);
       setVenues(MOCK_VENUES);
       setProfile({
-        full_name: 'Алексей (Демо)', specialization: 'Тренер', email: 'demo@example.com', slot_duration: 60,
+        id: 'demo-user',
+        full_name: 'Алексей (Демо)', email: 'demo@example.com',
         is_master: false, is_client: false, is_venue: false,
         onboarding_completed_master: false, onboarding_completed_client: false, onboarding_completed_venue: false
       });
@@ -224,11 +250,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   };
 
   const fetchData = async (roleOverride?: 'master' | 'client' | 'venue') => {
-    if (!trainerId) return;
+    if (!userId) return;
     const role = roleOverride || activeRole;
     setLoading(true);
     try {
-      const { data: profileData } = await supabase.from('trainers').select('*').eq('id', trainerId).maybeSingle();
+      const { data: profileData } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
       if (profileData) {
         setProfile(profileData);
         // Ensure activeRole is one of the enabled roles
@@ -244,22 +270,36 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      if (role === 'master') {
-        const { data: venuesData } = await supabase.from('venues').select('*').eq('trainer_id', trainerId).order('created_at');
+      // Fetch masters linked to this user
+      const { data: mastersData } = await supabase.from('masters').select('*').eq('user_id', userId);
+      if (mastersData) {
+        setMasters(mastersData);
+        // Find the "primary" master record for the current user
+        const primaryMaster = mastersData.find(m => m.user_id === userId) || mastersData[0];
+        if (primaryMaster && (!activeMaster || !mastersData.find(m => m.id === activeMaster.id))) {
+          setActiveMaster(primaryMaster);
+        }
+      }
+
+      if (role === 'master' && mastersData && mastersData.length > 0) {
+        const currentMasterId = activeMaster?.id || mastersData[0].id;
+        
+        const { data: venuesData } = await supabase.from('venues').select('*').eq('owner_id', userId).order('created_at');
         if (venuesData) setVenues(venuesData);
 
         const { data: servicesData } = await supabase.from('services')
-          .select('*, venues!venue_id(id, name, address)')
-          .or(`trainer_id.eq.${trainerId},assigned_trainer_id.eq.${trainerId}`)
+          .select('*, venues!venue_id(id, name, address), masters!master_id(id, full_name)')
+          .or(`owner_id.eq.${userId},master_id.eq.${currentMasterId}`)
           .order('name');
         if (servicesData) {
           setServices(servicesData.map(s => ({
             ...s,
-            venue: s.venues
+            venue: s.venues,
+            master: s.masters
           })));
         }
 
-        const { data: clientsData } = await supabase.from('clients').select('*').eq('trainer_id', trainerId).order('full_name');
+        const { data: clientsData } = await supabase.from('clients').select('*').eq('owner_id', userId).order('full_name');
         if (clientsData) setClients(clientsData);
 
         const { data: sessionsData, error: sessErr } = await supabase
@@ -270,9 +310,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             start_time,
             end_time,
             client:clients!client_id(id, full_name),
-            service:services!service_id(name, id)
+            service:services!service_id(name, id, price)
           `)
-          .eq('trainer_id', trainerId);
+          .eq('master_id', currentMasterId);
 
         if (!sessErr && sessionsData) {
           const formatted = sessionsData.map((s: any) => ({
@@ -281,6 +321,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             clientId: s.client?.id,
             service: s.service?.name,
             serviceId: s.service?.id,
+            price: s.service?.price || 0,
             status: s.status,
             date: s.start_time.split('T')[0],
             time: `${s.start_time.split('T')[1].slice(0,5)} – ${s.end_time.split('T')[1].slice(0,5)}`,
@@ -296,21 +337,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           setCompletedSessions(formatted.filter(s => s.status === 'completed'));
         }
 
-        const { data: schedData } = await supabase.from('schedule_config').select('*').eq('trainer_id', trainerId).order('day_of_week');
+        const { data: schedData } = await supabase.from('schedule_config').select('*').eq('master_id', currentMasterId).order('day_of_week');
         if (schedData && schedData.length > 0) {
           const sorted = [...schedData].sort((a, b) => (a.day_of_week === 0 ? 7 : a.day_of_week) - (b.day_of_week === 0 ? 7 : b.day_of_week));
           setSchedule(sorted.map(s => ({
-            name: DAYS[s.day_of_week],
+            name: DAYS[(s.day_of_week + 6) % 7],
             startTime: s.start_hour?.slice(0, 5) || '09:00',
             endTime: s.end_hour?.slice(0, 5) || '20:00',
             on: s.is_active
           })));
+        } else {
+          setSchedule(DAYS.map((name, i) => ({
+            name,
+            startTime: '09:00',
+            endTime: '20:00',
+            on: i !== 6 // Sunday is last in DAYS now
+          })));
         }
 
-        const { data: blocksData } = await supabase.from('blocked_slots').select('*').eq('trainer_id', trainerId).order('date');
+        const { data: blocksData } = await supabase.from('blocked_slots').select('*').eq('master_id', currentMasterId).order('date');
         if (blocksData) {
           setBlocks(blocksData.map(b => ({
             id: b.id,
+            master_id: b.master_id,
             date: b.date,
             startTime: b.start_hour?.slice(0, 5) || '00:00',
             endTime: b.end_hour?.slice(0, 5) || '23:59',
@@ -318,13 +367,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           })));
         }
 
-        const { data: eventsData } = await supabase.from('events').select('*').eq('trainer_id', trainerId).order('created_at', { ascending: false }).limit(20);
+        const { data: eventsData } = await supabase.from('events').select('*').eq('profile_id', userId).order('created_at', { ascending: false }).limit(20);
         if (eventsData) setEvents(eventsData.map(e => ({ ...e, read: e.read ?? true })));
 
-        const { data: reviewsData } = await supabase.from('reviews').select('*, clients(full_name)').eq('trainer_id', trainerId).order('created_at', { ascending: false });
+        const { data: reviewsData } = await supabase.from('reviews').select('*, clients(full_name)').eq('master_id', currentMasterId).order('created_at', { ascending: false });
         if (reviewsData) {
           setReviews(reviewsData.map(r => ({
             id: r.id,
+            master_id: r.master_id,
             rating: r.rating,
             comment: r.comment,
             created_at: r.created_at,
@@ -332,7 +382,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           })));
         }
       } else if (role === 'client') {
-        const { data: myClientRecords } = await supabase.from('clients').select('id').eq('user_id', trainerId);
+        const { data: myClientRecords } = await supabase.from('clients').select('id').eq('user_id', userId);
         const myClientIds = myClientRecords?.map(c => c.id) || [];
 
         if (myClientIds.length > 0) {
@@ -343,7 +393,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
               status,
               start_time,
               end_time,
-              trainer:trainers!trainer_id(full_name),
+              master:masters!master_id(full_name),
               service:services!service_id(name, id)
             `)
             .in('client_id', myClientIds);
@@ -351,13 +401,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           if (sessionsData) {
             const formatted = sessionsData.map((s: any) => ({
               id: s.id,
-              name: s.trainer?.full_name || 'Тренер',
+              name: s.master?.full_name || 'Мастер',
               service: s.service?.name,
               serviceId: s.service?.id,
               status: s.status,
               date: s.start_time.split('T')[0],
               time: `${s.start_time.split('T')[1].slice(0,5)} – ${s.end_time.split('T')[1].slice(0,5)}`,
-              initials: (s.trainer?.full_name || 'Т').slice(0, 2).toUpperCase()
+              initials: (s.master?.full_name || 'М').slice(0, 2).toUpperCase()
             }));
             setSessions(formatted.filter(s => s.status === 'confirmed'));
             setRequests(formatted.filter(s => s.status === 'pending'));
@@ -365,8 +415,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         }
 
         const { data: partnersData } = await supabase.from('partnerships')
-          .select('*, partner:trainers!partner_id(full_name)')
-          .eq('user_id', trainerId);
+          .select('*, partner:profiles!partner_id(full_name)')
+          .eq('user_id', userId);
         if (partnersData) {
           setPartners(partnersData.map(p => ({
             ...p,
@@ -374,15 +424,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           })));
         }
       } else if (role === 'venue') {
-        const { data: myVenues } = await supabase.from('venues').select('*').eq('trainer_id', trainerId).order('created_at');
+        const { data: myVenues } = await supabase.from('venues').select('*').eq('owner_id', userId).order('created_at');
         if (myVenues && myVenues.length > 0) {
           setVenues(myVenues);
           const venueIds = myVenues.map(v => v.id);
           let currentStaff: any[] = [];
 
-          const { data: staffData } = await supabase.from('venue_staff').select('*, trainer:trainers!trainer_id(full_name)').in('venue_id', venueIds);
+          const { data: staffData } = await supabase.from('venue_staff').select('*, master:masters!master_id(full_name)').in('venue_id', venueIds);
           if (staffData) {
-            currentStaff = staffData.map(s => ({ ...s, trainer_name: (s.trainer as any)?.full_name }));
+            currentStaff = staffData.map(s => ({ ...s, master_name: (s.master as any)?.full_name }));
             setVenueStaff(currentStaff);
           }
 
@@ -391,7 +441,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             .select(`
               id, status, start_time, end_time,
               client:clients!client_id(full_name),
-              trainer:trainers!trainer_id(full_name),
+              master:masters!master_id(full_name),
               service:services!service_id(name)
             `)
             .in('venue_id', venueIds);
@@ -399,7 +449,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           if (sessionsData) {
             const formatted = sessionsData.map((s: any) => ({
               id: s.id,
-              name: `${s.trainer?.full_name} > ${s.client?.full_name}`,
+              name: `${s.master?.full_name} > ${s.client?.full_name}`,
               service: s.service?.name,
               status: s.status,
               date: s.start_time.split('T')[0],
@@ -417,16 +467,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             if (schedData && schedData.length > 0) {
               const sorted = [...schedData].sort((a, b) => (a.day_of_week === 0 ? 7 : a.day_of_week) - (b.day_of_week === 0 ? 7 : b.day_of_week));
               setSchedule(sorted.map(s => ({
-                name: DAYS[s.day_of_week],
+              name: DAYS[(s.day_of_week + 6) % 7],
                 startTime: s.start_hour?.slice(0, 5) || '09:00',
                 endTime: s.end_hour?.slice(0, 5) || '20:00',
                 on: s.is_active
+              })));
+            } else {
+              setSchedule(DAYS.map((name, i) => ({
+                name,
+                startTime: '09:00',
+                endTime: '20:00',
+                on: i !== 6
               })));
             }
           }
 
           // Fetch Clients for Venue
-          const { data: clientsData } = await supabase.from('clients').select('*').in('trainer_id', [trainerId, ...currentStaff.map(s => s.trainer_id)]);
+          const { data: clientsData } = await supabase.from('clients').select('*').in('owner_id', [userId]);
           if (clientsData) setClients(clientsData);
 
           // Fetch Reviews for Venue
@@ -434,6 +491,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           if (reviewsData) {
             setReviews(reviewsData.map(r => ({
               id: r.id,
+              master_id: r.master_id,
               rating: r.rating,
               comment: r.comment,
               created_at: r.created_at,
@@ -459,15 +517,30 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateProfile = async (updated: Partial<TrainerProfile>) => {
+  const updateProfile = async (updated: Partial<Profile>) => {
+    // Explicitly allow only valid profile fields to prevent PGRST204 errors
+    const allowedFields = [
+      'full_name', 'email', 'phone', 'avatar_url', 'max_id',
+      'is_master', 'is_client', 'is_venue',
+      'onboarding_completed_master', 'onboarding_completed_client', 'onboarding_completed_venue',
+      'subscription_tier', 'subscription_status', 'subscription_period_end'
+    ];
+
+    const filteredUpdate = Object.keys(updated)
+      .filter(key => allowedFields.includes(key))
+      .reduce((obj, key) => {
+        obj[key as keyof Profile] = updated[key as keyof Profile];
+        return obj;
+      }, {} as any);
+
     if (isDemoMode) {
-      const newProfile = { ...profile!, ...updated };
+      const newProfile = { ...profile!, ...filteredUpdate };
       setProfile(newProfile);
       saveDemoData({ profile: newProfile });
       logEvent('system', 'Профиль обновлен (Демо)');
       return { error: null };
     }
-    const { error } = await supabase.from('trainers').update(updated).eq('id', trainerId);
+    const { error } = await supabase.from('profiles').update(filteredUpdate).eq('id', userId);
     if (error) {
       console.error('Update profile error:', error);
     } else {
@@ -477,7 +550,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
-  const updateSessionStatus = async (id: string, status: string, reschedule: boolean = false, assignedTrainerId?: string) => {
+  const updateSessionStatus = async (id: string, status: string, reschedule: boolean = false, assignedMasterId?: string) => {
     if (isDemoMode) {
         const all = [...sessions, ...requests, ...completedSessions];
         const session = all.find(s => s.id === id);
@@ -488,7 +561,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             const newCompleted = completedSessions.filter(s => s.id !== id);
             if (status === 'pending') newRequests.push(updated);
             else if (status === 'confirmed') {
-                if (assignedTrainerId) updated.name = `(Назначен) ${session.name}`;
+                if (assignedMasterId) updated.name = `(Назначен) ${session.name}`;
                 newSessions.push(updated);
                 logEvent('booking', `Запись ${session.name} подтверждена`);
             }
@@ -508,7 +581,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const clientName = (currentSession?.client as any)?.full_name || 'Клиент';
 
     const updateData: any = { status };
-    if (assignedTrainerId) updateData.trainer_id = assignedTrainerId;
+    if (assignedMasterId) updateData.master_id = assignedMasterId;
 
     const { error } = await supabase.from('sessions').update(updateData).eq('id', id);
 
@@ -520,9 +593,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
     if (!error && status === 'rejected' && reschedule) {
        // Notify client about rejection with reschedule request
-       const { data: sessionData } = await supabase.from('sessions').select('client:clients!client_id(telegram_id), trainer:trainers!trainer_id(full_name)').eq('id', id).single();
+       const { data: sessionData } = await supabase.from('sessions').select('client:clients!client_id(telegram_id), master:masters!master_id(full_name)').eq('id', id).single();
        if (sessionData && (sessionData.client as any)?.telegram_id) {
-          const message = `❌ <b>Тренер ${(sessionData.trainer as any)?.full_name} отклонил вашу заявку.</b>\n\nНо он предлагает вам выбрать другое время! Пожалуйста, воспользуйтесь меню бота для повторной записи.`;
+          const message = `❌ <b>Мастер ${(sessionData.master as any)?.full_name} отклонил вашу заявку.</b>\n\nНо он предлагает вам выбрать другое время! Пожалуйста, воспользуйтесь меню бота для повторной записи.`;
           await fetch('/api/notify/custom', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -542,6 +615,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addSession = async (session: any) => {
+    const currentMasterId = activeMaster?.id;
     if (isDemoMode) {
       const newSession = {
         ...session,
@@ -553,7 +627,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
             return parts[0].slice(0, 2).toUpperCase();
         })(),
-        time: `${session.startTime} – ${session.endTime}`
+        time: `${session.startTime} – ${session.endTime}`,
+        masterId: currentMasterId
       };
       const newSess = [...sessions, newSession];
       setSessions(newSess);
@@ -562,10 +637,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
 
     let clientId;
-    const { data: client } = await supabase.from('clients').select('id').eq('trainer_id', trainerId).eq('full_name', session.name).maybeSingle();
+    const { data: client } = await supabase.from('clients').select('id').eq('owner_id', userId).eq('full_name', session.name).maybeSingle();
     if (client) clientId = client.id;
     else {
-      const { data: newClient } = await supabase.from('clients').insert({ full_name: session.name, trainer_id: trainerId }).select().single();
+      const { data: newClient } = await supabase.from('clients').insert({ full_name: session.name, owner_id: userId }).select().single();
       clientId = newClient?.id;
     }
 
@@ -575,7 +650,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const selectedService = services.find(s => s.id === session.serviceId);
 
     await supabase.from('sessions').insert({
-      trainer_id: trainerId,
+      master_id: currentMasterId,
       client_id: clientId,
       service_id: session.serviceId,
       venue_id: selectedService?.venue_id,
@@ -588,15 +663,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addBlock = async (block: Omit<BlockedSlot, 'id'>) => {
+    const currentMasterId = activeMaster?.id;
     if (isDemoMode) {
-      const newB = { ...block, id: Math.random().toString() };
+      const newB = { ...block, id: Math.random().toString(), master_id: currentMasterId || 'demo-master' };
       const newBlocks = [...blocks, newB];
       setBlocks(newBlocks);
       saveDemoData({ blocks: newBlocks });
       return;
     }
     await supabase.from('blocked_slots').insert({
-      trainer_id: trainerId,
+      master_id: currentMasterId,
       date: block.date,
       start_hour: block.allDay ? null : block.startTime,
       end_hour: block.allDay ? null : block.endTime,
@@ -618,7 +694,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const toggleDay = async (idx: number) => {
     const day = schedule[idx];
-    const dayOfWeek = DAYS.indexOf(day.name);
+    // Map our UI index to DB index (0 is Sunday, 1 is Monday ...)
+    const dbDayOfWeek = (idx + 1) % 7;
     if (isDemoMode) {
         const newSched = [...schedule];
         newSched[idx].on = !newSched[idx].on;
@@ -626,13 +703,25 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         saveDemoData({ schedule: newSched });
         return;
     }
-    await supabase.from('schedule_config').update({ is_active: !day.on }).eq('trainer_id', trainerId).eq('day_of_week', dayOfWeek);
+    if (activeRole === 'venue' && venues.length > 0) {
+      await supabase.from('venue_schedule').upsert({
+        venue_id: venues[0].id,
+        day_of_week: dbDayOfWeek,
+        is_active: !day.on
+      }, { onConflict: 'venue_id,day_of_week' });
+    } else {
+      await supabase.from('schedule_config').upsert({
+        master_id: activeMaster?.id,
+        day_of_week: dbDayOfWeek,
+        is_active: !day.on
+      }, { onConflict: 'master_id,day_of_week' });
+    }
     fetchData();
   };
 
   const updateScheduleTime = async (idx: number, startTime: string, endTime: string) => {
     const day = schedule[idx];
-    const dayOfWeek = DAYS.indexOf(day.name);
+    const dbDayOfWeek = (idx + 1) % 7;
     if (isDemoMode) {
         const newSched = [...schedule];
         newSched[idx].startTime = startTime;
@@ -641,28 +730,48 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         saveDemoData({ schedule: newSched });
         return;
     }
-    await supabase.from('schedule_config').update({ start_hour: startTime, end_hour: endTime }).eq('trainer_id', trainerId).eq('day_of_week', dayOfWeek);
+    if (activeRole === 'venue' && venues.length > 0) {
+      await supabase.from('venue_schedule').upsert({
+        venue_id: venues[0].id,
+        day_of_week: dbDayOfWeek,
+        start_hour: startTime,
+        end_hour: endTime
+      }, { onConflict: 'venue_id,day_of_week' });
+    } else {
+      await supabase.from('schedule_config').upsert({
+        master_id: activeMaster?.id,
+        day_of_week: dbDayOfWeek,
+        start_hour: startTime,
+        end_hour: endTime
+      }, { onConflict: 'master_id,day_of_week' });
+    }
     fetchData();
   };
 
-  const addService = async (service: Omit<Service, 'id' | 'venue'>) => {
+  const addService = async (service: Omit<Service, 'id' | 'venue' | 'master'>) => {
     if (isDemoMode) {
       const venue = service.venue_id ? venues.find(v => v.id === service.venue_id) : undefined;
-      const newS = { ...service, id: Math.random().toString(), venue };
+      const master = service.master_id ? masters.find(m => m.id === service.master_id) : undefined;
+      const newS = { ...service, id: Math.random().toString(), venue, master };
       const newServices = [...services, newS as Service];
       setServices(newServices);
       saveDemoData({ services: newServices });
       return;
     }
-    await supabase.from('services').insert({ trainer_id: trainerId, ...service });
+    await supabase.from('services').insert({
+      ...service,
+      owner_id: userId,
+      master_id: service.master_id || activeMaster?.id
+    });
     fetchData();
   };
 
   const updateService = async (id: string, service: Partial<Service>) => {
-    const { venue: _unused, ...rest } = service;
+    const { venue: _v, master: _m, ...rest } = service;
     if (isDemoMode) {
       const venue = rest.venue_id ? venues.find(v => v.id === rest.venue_id) : undefined;
-      const newServices = services.map(s => s.id === id ? { ...s, ...rest, venue } : s);
+      const master = rest.master_id ? masters.find(m => m.id === rest.master_id) : undefined;
+      const newServices = services.map(s => s.id === id ? { ...s, ...rest, venue, master } : s);
       setServices(newServices);
       saveDemoData({ services: newServices });
       return;
@@ -688,18 +797,25 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
 
     await supabase.from('messages').insert({
-      trainer_id: user.id,
+      profile_id: user.id,
       client_id: clientId,
-      sender_type: 'trainer',
+      sender_type: 'master',
       text
     });
 
-    const { data: client } = await supabase.from('clients').select('telegram_id').eq('id', clientId).single();
+    const { data: client } = await supabase.from('clients').select('telegram_id, max_id').eq('id', clientId).single();
     if (client?.telegram_id) {
       await fetch('/api/notify/custom', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chatId: client.telegram_id, message: `💬 <b>Сообщение от тренера:</b>\n\n${text}` })
+        body: JSON.stringify({ chatId: client.telegram_id, message: `💬 <b>Сообщение:</b>\n\n${text}` })
+      });
+    }
+    if (client?.max_id) {
+      await fetch('/api/notify/custom', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chatId: client.max_id, message: `💬 <b>Сообщение:</b>\n\n${text}`, isMax: true })
       });
     }
   };
@@ -717,7 +833,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (isDemoMode) {
       const newEvent = {
         id: Math.random().toString(),
-        trainer_id: 'demo',
+        profile_id: 'demo',
         type,
         message,
         read: false,
@@ -729,7 +845,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     await supabase.from('events').insert({
-      trainer_id: trainerId,
+      profile_id: userId,
       type,
       message
     });
@@ -738,14 +854,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const addVenue = async (venue: Omit<Venue, 'id'>) => {
     if (isDemoMode) {
-      const newV = { ...venue, id: Math.random().toString() };
-      const newVenues = [...venues, newV];
+      const newV = { ...venue, id: Math.random().toString(), owner_id: profile?.id || 'demo-user' };
+      const newVenues = [...venues, newV as Venue];
       setVenues(newVenues);
       saveDemoData({ venues: newVenues });
       return { error: null };
     }
-    if (!trainerId) return { error: new Error('Trainer ID not found') };
-    const { error } = await supabase.from('venues').insert({ trainer_id: trainerId, ...venue });
+    if (!userId) return { error: new Error('User ID not found') };
+    const { error } = await supabase.from('venues').insert({
+      ...venue,
+      owner_id: userId
+    });
     if (!error) fetchData();
     return { error };
   };
@@ -792,19 +911,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const addPartnership = async (partnerSearch: string) => {
     if (isDemoMode) {
-      const newP: Partnership = { id: Math.random().toString(), user_id: trainerId!, partner_id: 'demo-partner', status: 'pending', partner_name: partnerSearch };
+      const newP: Partnership = { id: Math.random().toString(), user_id: userId!, partner_id: 'demo-partner', status: 'pending', partner_name: partnerSearch };
       const updated = [...partners, newP];
       setPartners(updated);
       saveDemoData({ partners: updated });
       return;
     }
-    const { data: partner } = await supabase.from('trainers')
+    const { data: partner } = await supabase.from('profiles')
       .select('id')
-      .or(`email.eq.${partnerSearch},telegram_id.eq.${partnerSearch},phone.eq.${partnerSearch}`)
+      .or(`email.eq.${partnerSearch},phone.eq.${partnerSearch}`)
       .maybeSingle();
 
     if (partner) {
-      await supabase.from('partnerships').insert({ user_id: trainerId, partner_id: partner.id });
+      await supabase.from('partnerships').insert({ user_id: userId, partner_id: partner.id });
       fetchData();
     }
   };
@@ -820,22 +939,26 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     fetchData();
   };
 
-  const addVenueStaff = async (venueId: string, trainerSearch: string) => {
+  const addVenueStaff = async (venueId: string, masterId: string) => {
     if (isDemoMode) {
-      const newS: VenueStaff = { id: Math.random().toString(), venue_id: venueId, trainer_id: 'demo-staff', trainer_name: trainerSearch };
+      const master = masters.find(m => m.id === masterId);
+      const newS: VenueStaff = { id: Math.random().toString(), venue_id: venueId, master_id: masterId, master_name: master?.full_name || 'Мастер' };
       const updated = [...venueStaff, newS];
       setVenueStaff(updated);
       saveDemoData({ venueStaff: updated });
       return;
     }
-    const { data: trainer } = await supabase.from('trainers')
-      .select('id')
-      .or(`email.eq.${trainerSearch},telegram_id.eq.${trainerSearch},phone.eq.${trainerSearch}`)
-      .maybeSingle();
+    await supabase.from('venue_staff').insert({ venue_id: venueId, master_id: masterId });
+    fetchData();
+  };
 
-    if (trainer) {
-      await supabase.from('venue_staff').insert({ venue_id: venueId, trainer_id: trainer.id });
-      fetchData();
+  const addMasterByEmail = async (venueId: string, masterEmail: string) => {
+    const { data: profile } = await supabase.from('profiles').select('id').eq('email', masterEmail).maybeSingle();
+    if (profile) {
+      const { data: master } = await supabase.from('masters').select('id').eq('user_id', profile.id).maybeSingle();
+      if (master) {
+        await addVenueStaff(venueId, master.id);
+      }
     }
   };
 
@@ -853,12 +976,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const getAllMasters = async () => {
     if (isDemoMode) {
       return [
-        { full_name: 'Александр Петров', specialization: 'Силовой тренинг', email: 'alex@example.com', slot_duration: 60, is_master: true, is_client: false, is_venue: false, category: 'Спорт' },
-        { full_name: 'Елена Соколова', specialization: 'Йога и пилатес', email: 'elena@example.com', slot_duration: 60, is_master: true, is_client: false, is_venue: false, category: 'Спорт' },
-        { full_name: 'Марина Иванова', specialization: 'Стрижка и окрашивание', email: 'marina@example.com', slot_duration: 60, is_master: true, is_client: false, is_venue: false, category: 'Бьюти' },
-      ] as TrainerProfile[];
+        { id: 'm1', full_name: 'Александр Петров', specialization: 'Силовой тренинг', slot_duration: 60, category: 'Спорт', created_at: '' },
+        { id: 'm2', full_name: 'Елена Соколова', specialization: 'Йога и пилатес', slot_duration: 60, category: 'Спорт', created_at: '' },
+      ] as Master[];
     }
-    const { data } = await supabase.from('trainers').select('*').eq('is_master', true);
+    const { data } = await supabase.from('masters').select('*');
     return data || [];
   };
 
@@ -879,6 +1001,66 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       return { success: false, message: 'Ошибка сети или API' };
     }
+  const addMaster = async (master: Omit<Master, 'id' | 'created_at'>) => {
+    if (isDemoMode) {
+      const newMaster: Master = { ...master, id: Math.random().toString(), created_at: new Date().toISOString() };
+      const updatedMasters = [...masters, newMaster];
+      setMasters(updatedMasters);
+      saveDemoData({ masters: updatedMasters });
+      return { data: newMaster, error: null };
+    }
+    const { data, error } = await supabase.from('masters').insert(master).select().single();
+    if (!error) fetchData();
+    return { data, error };
+  };
+
+  const updateMaster = async (id: string, master: Partial<Master>) => {
+    if (isDemoMode) {
+      const updatedMasters = masters.map(m => m.id === id ? { ...m, ...master } : m);
+      setMasters(updatedMasters);
+      if (activeMaster?.id === id) setActiveMaster({ ...activeMaster, ...master });
+      saveDemoData({ masters: updatedMasters, activeMaster: activeMaster?.id === id ? { ...activeMaster, ...master } : activeMaster });
+      return { error: null };
+    }
+    const { error } = await supabase.from('masters').update(master).eq('id', id);
+    if (!error) {
+      if (activeMaster?.id === id) setActiveMaster({ ...activeMaster, ...master });
+      fetchData();
+    }
+    return { error };
+  };
+
+  const sendReminder = async (sessionId: string) => {
+    if (isDemoMode) {
+      logEvent('system', 'Напоминание отправлено (Демо)');
+      return { error: null };
+    }
+    try {
+      const res = await fetch('/api/notify/reminder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        logEvent('system', 'Напоминание отправлено клиенту');
+        return { error: null };
+      }
+      return { error: new Error(data.message || 'Ошибка отправки') };
+    } catch (err: any) {
+      return { error: err };
+    }
+  };
+
+  const removeMaster = async (id: string) => {
+    if (isDemoMode) {
+      const updatedMasters = masters.filter(m => m.id !== id);
+      setMasters(updatedMasters);
+      saveDemoData({ masters: updatedMasters });
+      return;
+    }
+    await supabase.from('masters').delete().eq('id', id);
+    fetchData();
   };
 
   const switchActiveRole = (role: 'master' | 'client' | 'venue') => {
@@ -892,16 +1074,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const value = {
     sessions, completedSessions, requests, clients, schedule, blocks, services, venues, events, reviews, profile,
+    masters, activeMaster,
     activeRole, partners, venueStaff,
-    loading, trainerId, isDemoMode,
+    loading, userId, isDemoMode,
     switchActiveRole,
-    updateProfile, approveRequest: (id: string, trId?: string) => updateSessionStatus(id, 'confirmed', false, trId),
+    updateProfile, approveRequest: (id: string, mId?: string) => updateSessionStatus(id, 'confirmed', false, mId),
     rejectRequest: (id: string, reschedule: boolean = false) => updateSessionStatus(id, 'rejected', reschedule),
     sendMessage, getMessages, logEvent, markEventsAsRead,
     cancelSession: (id: string) => updateSessionStatus(id, 'cancelled'),
     completeSession: (id: string) => updateSessionStatus(id, 'completed'),
     addSession, addService, updateService, addVenue, updateVenue, removeVenue, addBlock, removeBlock,
-    addPartnership, removePartnership, addVenueStaff, removeVenueStaff, getAllMasters,
+    addPartnership, removePartnership, addVenueStaff, addMasterByEmail, removeVenueStaff, getAllMasters,
+    addMaster, updateMaster, removeMaster,
+    sendReminder,
     toggleDay, updateScheduleTime, removeService,
     refresh: fetchData,
     testMoyKlassConnection

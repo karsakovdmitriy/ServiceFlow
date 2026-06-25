@@ -1,21 +1,15 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { sendTelegramMessage, answerCallbackQuery, escapeHtml } from '@/lib/telegram';
-import { MoyKlassClient } from '@/lib/moyklass';
+import { sendMaxMessage, answerMaxCallback, escapeHtml } from '@/lib/max';
 
-// Helper to get supabase client
+// Helper to get supabase client (Service Role for Bot bypass RLS)
 function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
-
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.warn('Warning: SUPABASE_SERVICE_ROLE_KEY is not set. Bot may encounter RLS issues.');
-  }
-
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
   return createClient(url, key);
 }
 
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const BOT_TOKEN = process.env.MAX_BOT_TOKEN;
 
 export async function POST(request: Request) {
   const supabase = getSupabase();
@@ -23,27 +17,35 @@ export async function POST(request: Request) {
   const secret = url.searchParams.get('secret');
 
   // Simple security check via query param
-  if (process.env.TELEGRAM_BOT_SECRET && secret !== process.env.TELEGRAM_BOT_SECRET) {
-    console.warn('Unauthorized bot request: secret mismatch or missing.');
+  if (process.env.MAX_BOT_SECRET && secret !== process.env.MAX_BOT_SECRET) {
+    console.warn('Unauthorized MAX bot request: secret mismatch or missing.');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   if (!BOT_TOKEN) {
-    console.error('TELEGRAM_BOT_TOKEN is missing in environment variables.');
+    console.error('MAX_BOT_TOKEN is missing in environment variables.');
     return NextResponse.json({ error: 'Bot token not configured' }, { status: 500 });
   }
 
   try {
     const body = await request.json();
-    console.log('Bot Update:', JSON.stringify(body, null, 2));
+    console.log('MAX Bot Update:', JSON.stringify(body, null, 2));
 
     if (body.message) {
-      const { chat, text, from } = body.message;
-      console.log(`Message from ${from.id}: ${text}`);
+      const { chat_id, text, user } = body.message;
+      const fromId = user.user_id;
+      console.log(`Message from ${fromId}: ${text}`);
 
       // Handle direct messages to master and Review comments
       if (text) {
-         const { data: client } = await supabase.from('clients').select('id, owner_id, full_name, last_bot_state, last_session_id').eq('telegram_id', from.id.toString()).limit(1).single();
+         // Note: in multi-tenant environment, a user could be a client for multiple masters.
+         // We prioritize the most recent interaction or use metadata if available.
+         const { data: clients } = await supabase.from('clients')
+            .select('id, owner_id, full_name, last_bot_state, last_session_id')
+            .eq('max_id', fromId.toString())
+            .order('created_at', { ascending: false });
+
+         const client = clients?.[0]; // Best effort: take the most recent client record
 
          if (client) {
             if (client.last_bot_state === 'waiting_for_comment' && client.last_session_id) {
@@ -51,20 +53,20 @@ export async function POST(request: Request) {
                await supabase.from('reviews').update({ comment: text }).eq('session_id', client.last_session_id);
                await supabase.from('clients').update({ last_bot_state: null, last_session_id: null }).eq('id', client.id);
 
-               await sendTelegramMessage(chat.id, '✅ <b>Спасибо за ваш отзыв!</b> Он очень важен для нас.');
+               await sendMaxMessage(chat_id, '✅ <b>Спасибо за ваш отзыв!</b> Он очень важен для нас.');
 
                // Log review event
                await supabase.from('events').insert({
                  profile_id: client.owner_id,
                  type: 'review',
-                 message: `Получен отзыв от ${client.full_name}`
+                 message: `Получен отзыв (MAX) от ${client.full_name}`
                });
                return NextResponse.json({ ok: true });
             }
 
             if (text === '/skip' && client.last_bot_state === 'waiting_for_comment') {
                 await supabase.from('clients').update({ last_bot_state: null, last_session_id: null }).eq('id', client.id);
-                await sendTelegramMessage(chat.id, '👌 Без проблем! Благодарим за оценку.');
+                await sendMaxMessage(chat_id, '👌 Без проблем! Благодарим за оценку.');
                 return NextResponse.json({ ok: true });
             }
 
@@ -79,13 +81,13 @@ export async function POST(request: Request) {
                 await supabase.from('events').insert({
                 profile_id: client.owner_id,
                 type: 'message',
-                message: `Новое сообщение от ${client.full_name}`
+                message: `Новое сообщение (MAX) от ${client.full_name}`
                 });
 
                 // Notify master about message
-                const { data: master } = await supabase.from('masters').select('telegram_id').eq('user_id', client.owner_id).limit(1).single();
-                if (master?.telegram_id) {
-                    await sendTelegramMessage(master.telegram_id, `💬 <b>Новое сообщение от ${escapeHtml(client.full_name)}:</b>\n\n${escapeHtml(text)}`);
+                const { data: master } = await supabase.from('masters').select('telegram_id, max_id').eq('user_id', client.owner_id).limit(1).single();
+                if (master?.max_id) {
+                    await sendMaxMessage(master.max_id, `💬 <b>Новое сообщение (MAX) от ${escapeHtml(client.full_name)}:</b>\n\n${escapeHtml(text)}`);
                 }
             }
          }
@@ -98,7 +100,7 @@ export async function POST(request: Request) {
         if (!masterId) {
           const { data: previousClients } = await supabase.from('clients')
             .select('owner_id')
-            .eq('telegram_id', from.id.toString());
+            .eq('max_id', fromId.toString());
 
           if (previousClients && previousClients.length > 0) {
             // Filter unique owners
@@ -114,11 +116,11 @@ export async function POST(request: Request) {
               callback_data: `svc_list:${pm.id}`
             }]));
 
-            await sendTelegramMessage(chat.id, '👋 <b>С возвращением!</b>\n\nВыберите специалиста из вашей истории для новой записи:', {
+            await sendMaxMessage(chat_id, '👋 <b>С возвращением!</b>\n\nВыберите специалиста из вашей истории для новой записи:', {
               inline_keyboard: masterButtons
             });
           } else {
-            await sendTelegramMessage(chat.id, '👋 Привет! Чтобы записаться, используйте специальную ссылку от вашего мастера.');
+            await sendMaxMessage(chat_id, '👋 Привет! Чтобы записаться, используйте специальную ссылку от вашего мастера.');
           }
           return NextResponse.json({ ok: true });
         }
@@ -130,7 +132,7 @@ export async function POST(request: Request) {
           // Validate UUID format for linking
           const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
           if (!uuidRegex.test(actualId)) {
-            await sendTelegramMessage(chat.id, '❌ Некорректная ссылка для привязки.');
+            await sendMaxMessage(chat_id, '❌ Некорректная ссылка для привязки.');
             return NextResponse.json({ ok: true });
           }
 
@@ -150,26 +152,26 @@ export async function POST(request: Request) {
           }
 
           if (!entity || !ownerId) {
-             await sendTelegramMessage(chat.id, '❌ Ошибка при привязке: Аккаунт не найден.');
+             await sendMaxMessage(chat_id, '❌ Ошибка при привязке: Аккаунт не найден.');
              return NextResponse.json({ ok: true });
           }
 
-          // Update ALL master and venue records for this user to have this telegram_id
-          const { error: mErr } = await supabase.from('masters').update({ telegram_id: from.id.toString() }).eq('user_id', ownerId);
-          const { error: vErr } = await supabase.from('venues').update({ telegram_id: from.id.toString() }).eq('owner_id', ownerId);
+          // Update ALL master and venue records for this user to have this max_id
+          const { error: mErr } = await supabase.from('masters').update({ max_id: fromId.toString() }).eq('user_id', ownerId);
+          const { error: vErr } = await supabase.from('venues').update({ max_id: fromId.toString() }).eq('owner_id', ownerId);
 
           if (mErr || vErr) {
-             console.error('Linking error:', mErr, vErr);
-             await sendTelegramMessage(chat.id, '❌ Произошла ошибка при привязке аккаунта. Пожалуйста, попробуйте позже.');
+             console.error('Linking error (MAX):', mErr, vErr);
+             await sendMaxMessage(chat_id, '❌ Произошла ошибка при привязке аккаунта. Пожалуйста, попробуйте позже.');
              return NextResponse.json({ ok: true });
           }
 
-          await sendTelegramMessage(chat.id, `✅ <b>Аккаунт успешно привязан!</b>\n\nТеперь вы (${escapeHtml(displayName || '')}) будете получать уведомления в этот чат.`);
+          await sendMaxMessage(chat_id, `✅ <b>Аккаунт успешно привязан!</b>\n\nТеперь вы (${escapeHtml(displayName || '')}) будете получать уведомления в этот чат.`);
 
           await supabase.from('events').insert({
             profile_id: ownerId,
             type: 'system',
-            message: 'Telegram аккаунт успешно привязан'
+            message: 'MAX Messenger аккаунт успешно привязан'
           });
 
           return NextResponse.json({ ok: true });
@@ -180,7 +182,7 @@ export async function POST(request: Request) {
            const venueId = masterId.replace('v_', '');
            const { data: venue } = await supabase.from('venues').select('name').eq('id', venueId).single();
            if (!venue) {
-             await sendTelegramMessage(chat.id, '❌ Площадка не найдена.');
+             await sendMaxMessage(chat_id, '❌ Площадка не найдена.');
              return NextResponse.json({ ok: true });
            }
 
@@ -190,7 +192,7 @@ export async function POST(request: Request) {
              callback_data: `svc:${s.id}`
            }]));
 
-           await sendTelegramMessage(chat.id, `👋 Добро пожаловать в <b>${escapeHtml(venue.name)}</b>!\n\nВыберите услугу для записи:`, {
+           await sendMaxMessage(chat_id, `👋 Добро пожаловать в <b>${escapeHtml(venue.name)}</b>!\n\nВыберите услугу для записи:`, {
              inline_keyboard: svcButtons
            });
            return NextResponse.json({ ok: true });
@@ -199,7 +201,7 @@ export async function POST(request: Request) {
         // Validate UUID format to prevent Supabase error
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         if (!uuidRegex.test(masterId)) {
-          await sendTelegramMessage(chat.id, '❌ Некорректная ссылка (неверный ID).');
+          await sendMaxMessage(chat_id, '❌ Некорректная ссылка (неверный ID).');
           return NextResponse.json({ ok: true });
         }
 
@@ -207,32 +209,29 @@ export async function POST(request: Request) {
         const { data: master, error: masterError } = await supabase.from('masters').select('full_name, specialization, user_id').eq('id', masterId).single();
 
         if (masterError || !master) {
-          console.error('Master lookup error:', masterError);
-          await sendTelegramMessage(chat.id, '❌ Мастер не найден. Проверьте правильность ссылки.');
+          console.error('Master lookup error (MAX):', masterError);
+          await sendMaxMessage(chat_id, '❌ Мастер не найден. Проверьте правильность ссылки.');
           return NextResponse.json({ ok: true });
         }
 
         // Upsert client
-        const namePart = `${from.first_name || ''} ${from.last_name || ''}`.trim() || 'Клиент';
-        const fullName = from.username ? `${namePart} (@${from.username})` : namePart;
+        const fullName = user.name || 'Клиент MAX';
         const { error: upsertError } = await supabase.from('clients').upsert({
           owner_id: master.user_id,
-          telegram_id: from.id.toString(),
+          max_id: fromId.toString(),
           full_name: fullName
-        }, { onConflict: 'owner_id, telegram_id' });
+        }, { onConflict: 'owner_id, max_id' }); // Note: unique constraint might need update or different handling
 
         if (upsertError) {
-          console.error('Client upsert error during /start:', upsertError);
-        } else {
-          console.log(`Client ${fullName} upserted successfully.`);
+          console.error('Client upsert error during /start (MAX):', upsertError);
         }
 
         const servicesKeyboard = await getServicesKeyboard(masterId);
 
         if (servicesKeyboard.length === 0) {
-          await sendTelegramMessage(chat.id, `👋 Привет! Вы записываетесь к мастеру <b>${escapeHtml(master.full_name)}</b>.\n\nК сожалению, пока нет настроенных услуг для записи. Пожалуйста, свяжитесь напрямую.`);
+          await sendMaxMessage(chat_id, `👋 Привет! Вы записываетесь к мастеру <b>${escapeHtml(master.full_name)}</b>.\n\nК сожалению, пока нет настроенных услуг для записи. Пожалуйста, свяжитесь напрямую.`);
         } else {
-          await sendTelegramMessage(chat.id, `👋 Привет! Вы записываетесь к специалисту <b>${escapeHtml(master.full_name)}</b> (${escapeHtml(master.specialization || '')}).\n\nВыберите действие:`, {
+          await sendMaxMessage(chat_id, `👋 Привет! Вы записываетесь к специалисту <b>${escapeHtml(master.full_name)}</b> (${escapeHtml(master.specialization || '')}).\n\nВыберите действие:`, {
             inline_keyboard: [
                 ...servicesKeyboard,
                 [{ text: '👤 Мои записи / Перенос', callback_data: `my_bookings:${masterId}` }]
@@ -241,30 +240,23 @@ export async function POST(request: Request) {
         }
       }
     } else if (body.callback_query) {
-      const { id, data, message, from } = body.callback_query;
-      const chatId = message.chat.id;
+      const { id, payload: data, chat_id, user } = body.callback_query;
+      const fromId = user.user_id;
 
       try {
         const [action, ...params] = data.split(':');
 
-        // Always ensure client exists (in case they use old buttons or direct links)
+        // Always ensure client exists
         const { data: serviceForClient } = await supabase.from('services').select('master_id').eq('id', params[0]).single();
         if (serviceForClient) {
           const { data: master } = await supabase.from('masters').select('user_id').eq('id', serviceForClient.master_id).single();
           if (master) {
-              const namePart = `${from.first_name || ''} ${from.last_name || ''}`.trim() || 'Клиент';
-              const fullName = from.username ? `${namePart} (@${from.username})` : namePart;
-              const { error: upsertError } = await supabase.from('clients').upsert({
+              const fullName = user.name || 'Клиент MAX';
+              await supabase.from('clients').upsert({
                 owner_id: master.user_id,
-                telegram_id: from.id.toString(),
+                max_id: fromId.toString(),
                 full_name: fullName
-              }, { onConflict: 'owner_id, telegram_id' });
-
-              if (upsertError) {
-                console.error('Client upsert error during callback:', upsertError);
-              } else {
-                console.log(`Client ${fullName} upserted successfully via callback.`);
-              }
+        }, { onConflict: 'owner_id,max_id' });
           }
         }
 
@@ -273,55 +265,21 @@ export async function POST(request: Request) {
           const { data: master } = await supabase.from('masters').select('full_name, specialization').eq('id', masterId).single();
           if (master) {
              const servicesKeyboard = await getServicesKeyboard(masterId);
-             await sendTelegramMessage(chatId, `🏃 Запись к специалисту <b>${escapeHtml(master.full_name)}</b>\n\nВыберите услугу:`, {
+             await sendMaxMessage(chat_id, `🏃 Запись к специалисту <b>${escapeHtml(master.full_name)}</b>\n\nВыберите услугу:`, {
                 inline_keyboard: [
                     ...servicesKeyboard,
                     [{ text: '👤 Мои записи / Перенос', callback_data: `my_bookings:${masterId}` }]
                 ]
              });
           }
-        } else if (action === 'tr_appr') {
-           const [sessionId] = params;
-           await supabase.from('sessions').update({ status: 'confirmed' }).eq('id', sessionId);
-           await sendTelegramMessage(chatId, '✅ Запись подтверждена. Клиент получит уведомление.');
-
-           // Trigger client notification
-           const notifyUrl = `${url.origin}/api/notify`;
-           fetch(notifyUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ sessionId, status: 'confirmed' })
-           }).catch(e => console.error('Notify error from bot:', e));
-
-        } else if (action === 'tr_rejt') {
-           const [sessionId] = params;
-           await supabase.from('sessions').update({ status: 'rejected' }).eq('id', sessionId);
-           await sendTelegramMessage(chatId, '❌ Запись отклонена.');
-
-           const { data: sessionData } = await supabase.from('sessions').select('client:clients!client_id(telegram_id), master:masters!master_id(full_name)').eq('id', sessionId).single();
-           if (sessionData && (sessionData.client as any)?.telegram_id) {
-              await sendTelegramMessage((sessionData.client as any).telegram_id, `❌ <b>Ваша заявка отклонена мастером ${(sessionData.master as any)?.full_name}.</b>`);
-           }
-        } else if (action === 'tr_rsch') {
-           const [sessionId] = params;
-           await supabase.from('sessions').update({ status: 'rejected' }).eq('id', sessionId);
-           await sendTelegramMessage(chatId, '📅 Предложение о переносе отправлено клиенту.');
-
-           const { data: sessionData } = await supabase.from('sessions').select('service_id, client:clients!client_id(telegram_id), master:masters!master_id(full_name)').eq('id', sessionId).single();
-           if (sessionData && (sessionData.client as any)?.telegram_id) {
-              const message = `❌ <b>Мастер ${(sessionData.master as any)?.full_name} отклонил вашу текущую заявку, но предлагает выбрать другое время!</b>\n\nПожалуйста, выберите подходящую дату для записи:`;
-              await sendTelegramMessage((sessionData.client as any).telegram_id, message, {
-                  inline_keyboard: await getDatesKeyboard(sessionData.service_id)
-              });
-           }
         } else if (action === 'rate_init') {
            const [sessionId] = params;
            const { data: session } = await supabase.from('sessions').select('master:masters!master_id(full_name)').eq('id', sessionId).single();
 
            if (session) {
-                await supabase.from('clients').update({ last_bot_state: 'waiting_for_rating', last_session_id: sessionId }).eq('telegram_id', from.id.toString());
+                await supabase.from('clients').update({ last_bot_state: 'waiting_for_rating', last_session_id: sessionId }).eq('max_id', fromId.toString());
 
-                await sendTelegramMessage(chatId, `⭐ Пожалуйста, оцените ваш визит к специалисту <b>${escapeHtml((session.master as any).full_name)}</b>:`, {
+                await sendMaxMessage(chat_id, `⭐ Пожалуйста, оцените ваш визит к специалисту <b>${escapeHtml((session.master as any).full_name)}</b>:`, {
                     inline_keyboard: [
                         [
                             { text: '1 ⭐', callback_data: `rate_val:${sessionId}:1` },
@@ -345,18 +303,18 @@ export async function POST(request: Request) {
                     rating: parseInt(rating)
                 }, { onConflict: 'session_id' });
 
-                await supabase.from('clients').update({ last_bot_state: 'waiting_for_comment', last_session_id: sessionId }).eq('telegram_id', from.id.toString());
+                await supabase.from('clients').update({ last_bot_state: 'waiting_for_comment', last_session_id: sessionId }).eq('max_id', fromId.toString());
 
-                await sendTelegramMessage(chatId, '⭐ <b>Оценка сохранена!</b>\n\nТеперь вы можете написать текстовый отзыв или отправить /skip, чтобы пропустить этот шаг.');
+                await sendMaxMessage(chat_id, '⭐ <b>Оценка сохранена!</b>\n\nТеперь вы можете написать текстовый отзыв или отправить /skip, чтобы пропустить этот шаг.');
            }
         } else if (action === 'my_bookings') {
           const [masterId] = params;
           const { data: master } = await supabase.from('masters').select('user_id').eq('id', masterId).single();
           if (master) {
-              const { data: client } = await supabase.from('clients').select('id').eq('owner_id', master.user_id).eq('telegram_id', from.id.toString()).single();
+              const { data: client } = await supabase.from('clients').select('id').eq('owner_id', master.user_id).eq('max_id', fromId.toString()).single();
 
               if (!client) {
-                 await sendTelegramMessage(chatId, '❌ У вас пока нет записей к этому специалисту.');
+                 await sendMaxMessage(chat_id, '❌ У вас пока нет записей к этому специалисту.');
               } else {
                  const { data: sessions } = await supabase.from('sessions')
                     .select('id, start_time, service:services!service_id(name)')
@@ -365,7 +323,7 @@ export async function POST(request: Request) {
                     .order('start_time');
 
                  if (!sessions || sessions.length === 0) {
-                    await sendTelegramMessage(chatId, '📅 У вас нет предстоящих записей.');
+                    await sendMaxMessage(chat_id, '📅 У вас нет предстоящих записей.');
                  } else {
                     let msg = '<b>Ваши предстоящие записи:</b>\n\n';
                     const buttons = [];
@@ -377,7 +335,7 @@ export async function POST(request: Request) {
                         buttons.push([{ text: `🔄 Перенести ${s.start_time.split('T')[1].slice(0, 5)}`, callback_data: `reschedule:${s.id}` }]);
                     }
 
-                    await sendTelegramMessage(chatId, msg, { inline_keyboard: buttons });
+                    await sendMaxMessage(chat_id, msg, { inline_keyboard: buttons });
                  }
               }
           }
@@ -385,18 +343,17 @@ export async function POST(request: Request) {
            const [sessionId] = params;
            const { data: session } = await supabase.from('sessions').select('service_id').eq('id', sessionId).single();
            if (session) {
-                await sendTelegramMessage(chatId, '📅 Выберите новую дату для переноса:', {
+                await sendMaxMessage(chat_id, '📅 Выберите новую дату для переноса:', {
                     inline_keyboard: await getDatesKeyboard(session.service_id)
                 });
-                // In a real app, we would store that this interaction is a reschedule for sessionId
            }
         } else if (action === 'svc') {
           const [serviceId] = params;
           const { data: service } = await supabase.from('services').select('id').eq('id', serviceId).single();
           if (!service) {
-             await sendTelegramMessage(chatId, '❌ Ошибка: Услуга не найдена или была удалена.');
+             await sendMaxMessage(chat_id, '❌ Ошибка: Услуга не найдена или была удалена.');
           } else {
-            await sendTelegramMessage(chatId, '📅 Выберите удобную дату:', {
+            await sendMaxMessage(chat_id, '📅 Выберите удобную дату:', {
               inline_keyboard: await getDatesKeyboard(serviceId)
             });
           }
@@ -405,15 +362,15 @@ export async function POST(request: Request) {
           const { data: service } = await supabase.from('services').select('master_id').eq('id', serviceId).single();
 
           if (!service) {
-            await sendTelegramMessage(chatId, '❌ Ошибка: Услуга не найдена.');
+            await sendMaxMessage(chat_id, '❌ Ошибка: Услуга не найдена.');
           } else {
             const timesKeyboard = await getTimesKeyboard(service.master_id, serviceId, date);
             if (timesKeyboard.length === 0 || (timesKeyboard.length === 1 && timesKeyboard[0][0].callback_data === 'none')) {
-              await sendTelegramMessage(chatId, `❌ К сожалению, на <b>${date}</b> нет доступного времени для записи. Пожалуйста, выберите другую дату.`, {
+              await sendMaxMessage(chat_id, `❌ К сожалению, на <b>${date}</b> нет доступного времени для записи. Пожалуйста, выберите другую дату.`, {
                 inline_keyboard: await getDatesKeyboard(serviceId)
               });
             } else {
-              await sendTelegramMessage(chatId, `🕒 Выберите время на <b>${date}</b>:`, {
+              await sendMaxMessage(chat_id, `🕒 Выберите время на <b>${date}</b>:`, {
                 inline_keyboard: timesKeyboard
               });
             }
@@ -423,14 +380,14 @@ export async function POST(request: Request) {
           const { data: service } = await supabase.from('services').select('master_id, duration, venue_id').eq('id', serviceId).single();
 
           if (!service) {
-            await sendTelegramMessage(chatId, '❌ Ошибка: Услуга не найдена.');
+            await sendMaxMessage(chat_id, '❌ Ошибка: Услуга не найдена.');
           } else {
-            const { data: master } = await supabase.from('masters').select('user_id, full_name, telegram_id').eq('id', service.master_id).single();
+            const { data: master } = await supabase.from('masters').select('user_id, full_name, telegram_id, max_id').eq('id', service.master_id).single();
             if (master) {
                 const { data: client } = await supabase.from('clients')
                   .select('id')
                   .eq('owner_id', master.user_id)
-                  .eq('telegram_id', from.id.toString())
+                  .eq('max_id', fromId.toString())
                   .single();
 
                 if (client) {
@@ -450,8 +407,8 @@ export async function POST(request: Request) {
                   }).select('id').single();
 
                   if (sessErr) {
-                    console.error('Session insert error:', sessErr);
-                    await sendTelegramMessage(chatId, '❌ Ошибка при создании записи. Пожалуйста, попробуйте позже.');
+                    console.error('Session insert error (MAX):', sessErr);
+                    await sendMaxMessage(chat_id, '❌ Ошибка при создании записи. Пожалуйста, попробуйте позже.');
                     return;
                   }
 
@@ -459,100 +416,55 @@ export async function POST(request: Request) {
                   const { data: clientData } = await supabase.from('clients').select('full_name').eq('id', client.id).single();
                   const { data: svcData } = await supabase.from('services').select('name').eq('id', serviceId).single();
 
-                  const notificationMsg = `🆕 <b>Новая заявка!</b>\n\n` +
+                  const notificationMsg = `🆕 <b>Новая заявка (MAX)!</b>\n\n` +
                     `Клиент: <b>${escapeHtml(clientData?.full_name || 'Неизвестно')}</b>\n` +
                     `Услуга: <b>${escapeHtml(svcData?.name || 'Услуга')}</b>\n` +
                     `Дата: <b>${date}</b>\n` +
                     `Время: <b>${time}</b>\n\n` +
-                    `Выберите действие:`;
+                    `Для управления записью используйте веб-панель или Telegram-бот.`;
 
-                  const inlineKeyboard = [
-                    [
-                        { text: '✅ Подтвердить', callback_data: `tr_appr:${session.id}` },
-                        { text: '❌ Отклонить', callback_data: `tr_rejt:${session.id}` }
-                    ],
-                    [{ text: '📅 Предложить перенос', callback_data: `tr_rsch:${session.id}` }]
-                  ];
+                  // In this version, we just notify without buttons for simplicity or use Telegram for actions
+                  if (master.max_id) {
+                     await sendMaxMessage(master.max_id, notificationMsg);
+                  }
 
+                  // Also notify via Telegram if linked
                   if (master.telegram_id) {
-                     await sendTelegramMessage(master.telegram_id, notificationMsg, { inline_keyboard: inlineKeyboard });
+                      const tgMsg = notificationMsg + '\n\n' + `Выберите действие:`;
+                      const tgKeyboard = {
+                        inline_keyboard: [
+                            [
+                                { text: '✅ Подтвердить', callback_data: `tr_appr:${session.id}` },
+                                { text: '❌ Отклонить', callback_data: `tr_rejt:${session.id}` }
+                            ],
+                            [{ text: '📅 Предложить перенос', callback_data: `tr_rsch:${session.id}` }]
+                          ]
+                      };
+                      // We'd need to import telegram libs or just call another endpoint
+                      fetch(`${url.origin}/api/notify/custom`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ chatId: master.telegram_id, message: tgMsg, replyMarkup: tgKeyboard })
+                      }).catch(e => console.error('TG notification from MAX bot failed:', e));
                   }
 
-                  // Notify Venue Owner if different
-                  if (service.venue_id) {
-                    const { data: venue } = await supabase.from('venues').select('owner_id, name, telegram_id').eq('id', service.venue_id).single();
-                    if (venue && venue.owner_id !== master.user_id) {
-                      if (venue.telegram_id) {
-                        const venueMsg = `🏢 <b>Заявка на вашей площадке (${escapeHtml(venue.name)})</b>\n\n${notificationMsg}`;
-                        await sendTelegramMessage(venue.telegram_id, venueMsg, { inline_keyboard: inlineKeyboard });
-                      }
-                    }
-                  }
-
-                  const namePart = `${from.first_name || ''} ${from.last_name || ''}`.trim() || 'Клиент';
-                  const clientFullName = from.username ? `${namePart} (@${from.username})` : namePart;
-
-                  await supabase.from('events').insert({
-                    profile_id: master.user_id,
-                    type: 'booking',
-                    message: `Новая заявка от ${clientFullName}`
-                  });
-
-              await sendTelegramMessage(chatId, `✅ <b>Заявка отправлена!</b>\n\nТренер получит уведомление и подтвердит вашу запись. Ожидайте сообщения.`);
-
-              // MoyKlass Sync
-              const { data: trainerProfile } = await supabase.from('trainers').select('moyklass_api_key, moyklass_filial_id, moyklass_enabled').eq('id', service.trainer_id).single();
-              if (trainerProfile?.moyklass_enabled && trainerProfile?.moyklass_api_key) {
-                try {
-                  const mk = new MoyKlassClient(trainerProfile.moyklass_api_key);
-                  const contact = from.username ? `@${from.username}` : (from.id.toString());
-
-                  let mkUser = await mk.findUserByContact(contact);
-                  if (!mkUser) {
-                    mkUser = await mk.createUser({
-                      name: clientData?.full_name || 'Клиент из Telegram',
-                      phone: from.id.toString() // Using TG ID as placeholder if no phone
-                    });
-                  }
-
-                  if (mkUser) {
-                    const lessons = await mk.getLessons({
-                      from: date,
-                      to: date,
-                      filialId: trainerProfile.moyklass_filial_id
-                    });
-
-                    // Match lesson by time (rough matching)
-                    const lesson = lessons.find((l: any) => l.date === date && l.beginTime?.startsWith(time));
-                    if (lesson) {
-                      await mk.createRecord(lesson.id, mkUser.id);
-                      console.log('MoyKlass: Record created for lesson', lesson.id);
-                    }
-                  }
-                } catch (mkErr) {
-                  console.error('MoyKlass Sync Error:', mkErr);
-                }
-              }
-
-            } else {
-              await sendTelegramMessage(chatId, '❌ Ошибка: Клиент не найден. Попробуйте перезапустить бот через ссылку тренера.');
-                  await sendTelegramMessage(chatId, `✅ <b>Заявка отправлена!</b>\n\nМастер получит уведомление и подтвердит вашу запись. Ожидайте сообщения.`);
+                  await sendMaxMessage(chat_id, `✅ <b>Заявка отправлена!</b>\n\nМастер получит уведомление и подтвердит вашу запись. Ожидайте сообщения.`);
                 } else {
-                  await sendTelegramMessage(chatId, '❌ Ошибка: Клиент не найден. Попробуйте перезапустить бот через ссылку мастера.');
+                  await sendMaxMessage(chat_id, '❌ Ошибка: Клиент не найден. Попробуйте перезапустить бот через ссылку мастера.');
                 }
             }
           }
         }
       } catch (err) {
-        console.error('Callback error:', err);
+        console.error('Callback error (MAX):', err);
       } finally {
-        await answerCallbackQuery(id);
+        await answerMaxCallback(id);
       }
     }
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error('Error in bot API:', error);
+    console.error('Error in MAX bot API:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
@@ -584,7 +496,6 @@ async function getTimesKeyboard(masterId: string, serviceId: string, date: strin
   const supabase = getSupabase();
   const dayOfWeek = new Date(date).getDay();
 
-  // 1. Fetch master schedule
   let { data: config } = await supabase.from('schedule_config')
     .select('start_hour, end_hour, is_active')
     .eq('master_id', masterId)
@@ -592,11 +503,10 @@ async function getTimesKeyboard(masterId: string, serviceId: string, date: strin
     .maybeSingle();
 
   if (!config) {
-    // Default schedule if not configured
     config = {
         start_hour: '09:00',
         end_hour: '20:00',
-        is_active: dayOfWeek !== 0 // Sunday is off by default
+        is_active: dayOfWeek !== 0
     };
   }
 
@@ -605,10 +515,8 @@ async function getTimesKeyboard(masterId: string, serviceId: string, date: strin
   let start = parseInt(config.start_hour.split(':')[0]);
   let end = parseInt(config.end_hour.split(':')[0]);
 
-  // 2. Fetch service info to check venue
   const { data: service } = await supabase.from('services').select('is_group, venue_id').eq('id', serviceId).single();
 
-  // 3. Intersect with venue schedule if exists
   if (service?.venue_id) {
     const { data: venueConfig } = await supabase.from('venue_schedule')
       .select('start_hour, end_hour, is_active')
@@ -618,22 +526,16 @@ async function getTimesKeyboard(masterId: string, serviceId: string, date: strin
 
     if (venueConfig) {
       if (!venueConfig.is_active) return [[{ text: 'Площадка закрыта в этот день', callback_data: 'none' }]];
-
       const vStart = parseInt(venueConfig.start_hour.split(':')[0]);
       const vEnd = parseInt(venueConfig.end_hour.split(':')[0]);
-
-      // Tighten the window
       start = Math.max(start, vStart);
       end = Math.min(end, vEnd);
-
-      if (start >= end) return [[{ text: 'Нет пересечения времени мастера и площадки', callback_data: 'none' }]];
+      if (start >= end) return [[{ text: 'Нет пересечения времени', callback_data: 'none' }]];
     }
   }
 
-  // Fetch info about the selected service (to get is_group flag)
   const isSelectedGroup = service?.is_group || false;
 
-  // Fetch existing sessions and blocks
   const { data: sessions } = await supabase.from('sessions')
     .select('start_time, service:services!service_id(is_group)')
     .eq('master_id', masterId)
@@ -645,26 +547,14 @@ async function getTimesKeyboard(masterId: string, serviceId: string, date: strin
     .eq('master_id', masterId)
     .eq('date', date);
 
-  const bookedTimes = (sessions || []).map(s => s.start_time.split('T')[1].slice(0, 5));
-
   const times = [];
   for (let h = start; h < end; h++) {
     const time = `${h.toString().padStart(2, '0')}:00`;
-
-    // Logic for slot availability:
-    // 1. If the selected service is NOT group: the slot must be completely empty.
-    // 2. If the selected service IS group: the slot is available if there are NO individual sessions.
-
     const existingSessionsAtTime = (sessions || []).filter(s => s.start_time.split('T')[1].slice(0, 5) === time);
     const hasIndividualSession = existingSessionsAtTime.some(s => !(s.service as any)?.is_group);
     const hasAnySession = existingSessionsAtTime.length > 0;
 
-    let isBooked = false;
-    if (!isSelectedGroup) {
-      isBooked = hasAnySession;
-    } else {
-      isBooked = hasIndividualSession;
-    }
+    let isBooked = isSelectedGroup ? hasIndividualSession : hasAnySession;
 
     const isBlocked = (blocks || []).some(b => {
         if (b.all_day) return true;
@@ -679,7 +569,6 @@ async function getTimesKeyboard(masterId: string, serviceId: string, date: strin
     }
   }
 
-  // Group times into rows of 4
   const rows = [];
   for (let i = 0; i < times.length; i += 4) {
     rows.push(times.slice(i, i + 4));

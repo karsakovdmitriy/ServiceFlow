@@ -6,6 +6,7 @@ import { IconDatabase, IconDatabaseOff, IconInfoCircle, IconShieldCheck, IconLoc
 
 export default function SettingsPage() {
   const { profile, trainerId, updateProfile, loading: storeLoading, isDemoMode, testMoyKlassConnection } = useStore();
+  const { profile, activeMaster, updateProfile, updateMaster, loading: storeLoading, isDemoMode } = useStore();
   const [formData, setFormData] = useState({
     full_name: '',
     specialization: '',
@@ -23,16 +24,16 @@ export default function SettingsPage() {
   const [mkFilials, setMkFilials] = useState<any[]>([]);
 
   const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'TrainerSpaceBot';
-  const linkTgLink = `https://t.me/${botUsername}?start=link_${trainerId || 'id'}`;
+  const linkTgLink = `https://t.me/${botUsername}?start=link_${activeMaster?.id || 'id'}`;
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
     if (profile) {
       setFormData({
-        full_name: profile.full_name || '',
-        specialization: profile.specialization || '',
-        avatar_url: profile.avatar_url || '',
+        full_name: activeMaster?.full_name || profile.full_name || '',
+        specialization: activeMaster?.specialization || '',
+        avatar_url: activeMaster?.avatar_url || profile.avatar_url || '',
         email: profile.email || '',
         phone: (profile as any).phone || '',
         slot_duration: String(profile.slot_duration || 60),
@@ -40,9 +41,12 @@ export default function SettingsPage() {
         moyklass_api_key: profile.moyklass_api_key || '',
         moyklass_filial_id: String(profile.moyklass_filial_id || ''),
         moyklass_enabled: profile.moyklass_enabled || false
+        phone: activeMaster?.phone || profile.phone || '',
+        slot_duration: String(activeMaster?.slot_duration || 60),
+        category: activeMaster?.category || 'Спорт'
       });
     }
-  }, [profile]);
+  }, [profile, activeMaster]);
 
   const handleTestMoyKlass = async () => {
     if (!formData.moyklass_api_key) return;
@@ -73,8 +77,32 @@ export default function SettingsPage() {
       moyklass_filial_id: formData.moyklass_filial_id ? parseInt(formData.moyklass_filial_id) : null,
       moyklass_enabled: formData.moyklass_enabled
     } as any) as any;
+    let error = null;
 
-    if (error) setMessage('Ошибка при сохранении: ' + error.message);
+    // 1. Update Master data if applicable
+    if (activeMaster) {
+      const { error: masterErr } = await updateMaster(activeMaster.id, {
+        full_name: formData.full_name,
+        specialization: formData.specialization,
+        avatar_url: formData.avatar_url,
+        phone: formData.phone,
+        slot_duration: parseInt(formData.slot_duration),
+        category: formData.category
+      });
+      if (masterErr) error = masterErr;
+    }
+
+    // 2. Update Profile data
+    if (!error) {
+      const { error: profileErr } = await updateProfile({
+        full_name: formData.full_name,
+        avatar_url: formData.avatar_url,
+        phone: formData.phone
+      });
+      if (profileErr) error = profileErr;
+    }
+
+    if (error) setMessage('Ошибка при сохранении: ' + (error.message || 'Неизвестная ошибка'));
     else {
         setMessage('Изменения успешно сохранены');
         setTimeout(() => setMessage(''), 3000);
@@ -121,7 +149,7 @@ export default function SettingsPage() {
                     <input
                       className="w-full input-modern bg-bg-custom/50"
                       type="text"
-                      placeholder="Фитнес-тренер"
+                      placeholder="Специалист"
                       value={formData.specialization}
                       onChange={e => setFormData({...formData, specialization: e.target.value})}
                     />
@@ -318,18 +346,18 @@ export default function SettingsPage() {
         <div className="lg:col-span-4 space-y-10">
           {!isDemoMode && (
             <section>
-                <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-4">Оповещения тренера</div>
+                <div className="text-[11px] font-bold text-t3 uppercase tracking-widest mb-4">Оповещения мастера</div>
                 <div className="p-5 rounded-2xl bg-surface border border-border flex flex-col gap-4 shadow-sh-sm">
                     <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${profile?.telegram_id ? 'bg-green-light text-green-custom' : 'bg-accent-light text-accent'}`}>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${activeMaster?.telegram_id ? 'bg-green-light text-green-custom' : 'bg-accent-light text-accent'}`}>
                             <IconBrandTelegram size={22} stroke={1.5} />
                         </div>
                         <div>
                             <div className="text-[14px] font-bold text-t1 tracking-tight">
-                                {profile?.telegram_id ? 'Telegram подключен' : 'Привязать Telegram'}
+                                {activeMaster?.telegram_id ? 'Telegram подключен' : 'Привязать Telegram'}
                             </div>
                             <div className="text-[11px] text-t3 font-medium mt-0.5">
-                                {profile?.telegram_id ? 'Уведомления активны' : 'Получайте уведомления'}
+                                {activeMaster?.telegram_id ? 'Уведомления активны' : 'Получайте уведомления'}
                             </div>
                         </div>
                     </div>
@@ -339,7 +367,7 @@ export default function SettingsPage() {
                         rel="noopener noreferrer"
                         className="text-center text-[12px] font-bold py-2.5 bg-bg-custom text-t1 rounded-xl hover:bg-surface transition-all border border-border shadow-sh-sm"
                     >
-                        {profile?.telegram_id ? 'Переподключить' : 'Подключить бота'}
+                        {activeMaster?.telegram_id ? 'Переподключить' : 'Подключить бота'}
                     </a>
                 </div>
             </section>
