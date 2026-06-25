@@ -214,11 +214,15 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
   if (service?.moyklass_class_id) {
     try {
       const mkClass = await mk.getClass(service.moyklass_class_id);
-      if (mkClass && mkClass.filialIds && mkClass.filialIds.length > 0) {
+      console.log(`MoyKlass: Class ${service.moyklass_class_id} details:`, JSON.stringify(mkClass));
+
+      const classFilials = mkClass.filialIds || (mkClass.filialId ? [mkClass.filialId] : []);
+
+      if (classFilials.length > 0) {
         // If current activeFilialId is not in the class's filials, override it
-        if (!activeFilialId || !mkClass.filialIds.includes(activeFilialId)) {
-          activeFilialId = mkClass.filialIds[0];
-          console.log(`MoyKlass: Filial ID overridden to ${activeFilialId} based on class ${service.moyklass_class_id} branches`);
+        if (!activeFilialId || !classFilials.includes(activeFilialId)) {
+          activeFilialId = classFilials[0];
+          console.log(`MoyKlass: Filial ID overridden to ${activeFilialId} based on class ${service.moyklass_class_id} branches: ${classFilials.join(',')}`);
         }
       }
     } catch (e) {
@@ -238,16 +242,21 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
 
   if (!lesson && service?.moyklass_class_id) {
     const endTimeStr = session.end_time.split('T')[1].slice(0, 5);
+    const lessonPayload = {
+      date,
+      beginTime,
+      endTime: endTimeStr,
+      filialId: activeFilialId,
+      roomId: service.moyklass_room_id!,
+      classId: service.moyklass_class_id!,
+      teacherIds: master.moyklass_teacher_id ? [master.moyklass_teacher_id] : []
+    };
+
+    console.log(`MoyKlass: Creating lesson with payload:`, JSON.stringify(lessonPayload));
+
     try {
-      lesson = await mk.createLesson({
-        date,
-        beginTime,
-        endTime: endTimeStr,
-        filialId: activeFilialId,
-        roomId: service.moyklass_room_id!,
-        classId: service.moyklass_class_id!,
-        teacherIds: master.moyklass_teacher_id ? [master.moyklass_teacher_id] : []
-      });
+      lesson = await mk.createLesson(lessonPayload);
+      console.log(`MoyKlass: Lesson created successfully with ID ${lesson.id}`);
     } catch (e) {
       console.error('Failed to create lesson in MoyKlass:', e);
     }

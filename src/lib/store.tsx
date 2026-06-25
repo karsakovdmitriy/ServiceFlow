@@ -1127,7 +1127,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           const exists = services.find(s => s.moyklass_class_id === cls.id);
           if (!exists) {
             // Pick the first filial ID associated with this class if available
-            const filialId = cls.filialIds && cls.filialIds.length > 0 ? cls.filialIds[0] : null;
+            const filialId = cls.filialIds && cls.filialIds.length > 0 ? cls.filialIds[0] : (cls.filialId || null);
 
             await addService({
               name: cls.name,

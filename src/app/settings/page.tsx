@@ -333,11 +333,15 @@ export default function SettingsPage() {
                           <div>
                             <label className="text-[11px] font-bold text-t3 uppercase tracking-widest block mb-2">API Ключ</label>
                             <div className="flex gap-2">
+                              {/* Hidden inputs to trick password managers */}
+                              <input type="text" style={{display: 'none'}} tabIndex={-1} autoComplete="off" />
+                              <input type="password" style={{display: 'none'}} tabIndex={-1} autoComplete="off" />
+
                               <input
                                 className="flex-1 input-modern bg-surface"
                                 style={{ WebkitTextSecurity: 'disc' } as any}
                                 type="text"
-                                name="mk_api_key_secure_field"
+                                name={`mk_api_key_${Math.random().toString(36).substring(7)}`}
                                 placeholder="Ваш API-ключ"
                                 autoComplete="new-password"
                                 data-lpignore="true"
