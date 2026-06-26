@@ -167,11 +167,13 @@ export class MoyKlassClient {
         { endpoint: '/company/lesson-records', body: { record: { lessonId: lid, userId: uid, statusId: sid } } },
 
         // 1. Centralized (Plural) - Often used for group lessons
+        { endpoint: '/company/lessonRecords', body: { lessonId: lid, userId: uid, statusId: sid, classId: cid } },
         { endpoint: '/company/lessons/records', body: [{ userId: uid, lessonId: lid, statusId: sid }] },
         { endpoint: '/company/lessons/records', body: { userId: uid, lessonId: lid, statusId: sid } },
         { endpoint: '/company/lessons/records', body: { userId: uid, lessonId: lid, statusId: sid, classId: cid, filialId: fid } },
         { endpoint: '/company/lessons/records', body: { records: [{ userId: uid, lessonId: lid, statusId: sid }] } },
-        { endpoint: '/company/records', body: { userId: uid, lessonId: lid, statusId: sid } },
+        { endpoint: '/company/records', body: { userId: uid, lessonId: lid, statusId: sid, classId: cid } },
+        { endpoint: '/company/records', body: { user_id: uid, lesson_id: lid, status_id: sid, class_id: cid } },
 
         // 2. Path-based (Standard v1)
         { endpoint: `/company/lessons/${lid}/records`, body: { userId: uid, statusId: sid } },
@@ -187,7 +189,8 @@ export class MoyKlassClient {
         { endpoint: `/company/lessons/${lid}/students`, body: { userId: uid } },
         { endpoint: `/company/lessons/${lid}/records`, body: { user_id: uid, status_id: sid } },
         { endpoint: `/company/lessons/${lid}/records`, body: [uid] },
-        { endpoint: '/company/lessonRecords', body: { lessonId: String(lid), userId: String(uid), statusId: sid } }
+        { endpoint: '/company/lessonRecords', body: { lessonId: String(lid), userId: String(uid), statusId: sid } },
+        { endpoint: '/company/lessonRecords', body: { lesson_id: lid, user_id: uid, status_id: sid } }
     ];
 
     let lastError: any;
@@ -252,6 +255,35 @@ export class MoyKlassClient {
 
   async getClass(classId: number) {
     return this.request(`/company/classes/${classId}`);
+  }
+
+  async createJoin(userId: number, classId: number, options: { filialId?: number } = {}) {
+    const uid = Math.trunc(Number(userId));
+    const cid = Math.trunc(Number(classId));
+    const fid = options.filialId ? Math.trunc(Number(options.filialId)) : undefined;
+
+    // Joins (Enrolling a user in a class/course)
+    const attempts = [
+        { endpoint: '/company/records', body: { userId: uid, classId: cid, filialId: fid, statusId: 1 } },
+        { endpoint: '/company/records', body: { user_id: uid, class_id: cid, filial_id: fid, status_id: 1 } },
+        { endpoint: '/company/joins', body: { userId: uid, classId: cid } },
+        { endpoint: '/company/lessonRecords', body: { userId: uid, classId: cid, statusId: 1 } }
+    ];
+
+    for (const attempt of attempts) {
+        try {
+            console.log(`MoyKlass: Attempting Join creation at ${attempt.endpoint}...`);
+            await this.request(attempt.endpoint, {
+                method: 'POST',
+                body: JSON.stringify(attempt.body)
+            });
+            console.log(`MoyKlass: Join successful at ${attempt.endpoint}`);
+            return true;
+        } catch (e: any) {
+            console.log(`MoyKlass: Join attempt at ${attempt.endpoint} failed: ${e.message}`);
+        }
+    }
+    return false;
   }
 
   async getRooms() {
