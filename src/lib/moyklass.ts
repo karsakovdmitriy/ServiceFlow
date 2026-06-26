@@ -156,8 +156,7 @@ export class MoyKlassClient {
         { endpoint: '/company/lessonRecords', body: { lessonId: lid, userId: uid, statusId: sid } },
         { endpoint: '/company/lessonRecords', body: { lessonId: lid, userId: uid, statusId: sid, classId: cid } },
         { endpoint: '/company/lessonRecords', body: [{ lessonId: lid, userId: uid, statusId: sid }] },
-        // Try snake_case in lessonRecords
-        { endpoint: '/company/lessonRecords', body: { lesson_id: lid, user_id: uid, status_id: sid } },
+        { endpoint: '/company/lessonRecords', body: { lessonId: lid, userId: uid, statusId: sid, lesson_id: lid, user_id: uid, status_id: sid } },
         // Centralized records
         { endpoint: '/company/lessons/records', body: [{ userId: uid, lessonId: lid, statusId: sid }] },
         { endpoint: '/company/lessons/records', body: { userId: uid, lessonId: lid, statusId: sid } },
@@ -236,9 +235,13 @@ export class MoyKlassClient {
 
     // Enrollment into Class/Course is mandatory before lesson records in some MoyKlass configs
     const attempts = [
+        // Pure camelCase (likely correct for v1 company API)
         { endpoint: '/company/joins', body: { userId: uid, classId: cid, statusId: 1 } },
-        { endpoint: '/company/joins', body: { user_id: uid, class_id: cid, status_id: 1 } },
         { endpoint: '/company/joins', body: { userId: uid, classId: cid, statusId: 1, filialId: fid } },
+        // Pure snake_case
+        { endpoint: '/company/joins', body: { user_id: uid, class_id: cid, status_id: 1 } },
+        { endpoint: '/company/joins', body: { user_id: uid, class_id: cid, status_id: 1, filial_id: fid } },
+        // records endpoint fallbacks
         { endpoint: '/company/records', body: { userId: uid, classId: cid, statusId: 1 } },
         { endpoint: '/company/records', body: { user_id: uid, class_id: cid, status_id: 1 } }
     ];
