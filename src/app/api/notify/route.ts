@@ -294,10 +294,13 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
   if (lesson) {
     console.log(`MoyKlass: Attempting to create record for lesson ${lesson.id} and user ${mkUserId}`);
     try {
-      const record = await mk.createRecord(lesson.id, mkUserId);
-      console.log(`MoyKlass: Record created successfully: ${JSON.stringify(record)}`);
+      // Pass classId in options as some MoyKlass configurations require it for record creation
+      const record = await mk.createRecord(lesson.id, mkUserId, {
+        classId: service?.moyklass_class_id
+      } as any);
+      console.log(`MoyKlass: Record created successfully for user ${mkUserId} on lesson ${lesson.id}`);
     } catch (e) {
-      console.error(`MoyKlass: Failed to create record:`, e);
+      console.error(`MoyKlass: Final attempt to create record failed for user ${mkUserId} on lesson ${lesson.id}:`, e);
     }
   } else {
     console.warn(`MoyKlass: Skipping record creation as no lesson was found or created`);
