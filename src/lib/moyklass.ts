@@ -142,14 +142,23 @@ export class MoyKlassClient {
     return response.lessons || [];
   }
 
-  async createRecord(lessonId: number, userId: number, options: { statusId?: number } = {}) {
-    // MoyKlass API v1 has variations of record creation endpoints.
-    // POST /company/records is the most common v1 endpoint.
+  async createRecord(lessonId: number, userId: number, options: { statusId?: number, classId?: number } = {}) {
+    // Ensure IDs are integers
+    const lid = parseInt(String(lessonId), 10);
+    const uid = parseInt(String(userId), 10);
+
+    const sanitizedOptions: any = { ...options };
+    if (sanitizedOptions.statusId) sanitizedOptions.statusId = parseInt(String(sanitizedOptions.statusId), 10);
+    if (sanitizedOptions.classId) sanitizedOptions.classId = parseInt(String(sanitizedOptions.classId), 10);
+
+    // MoyKlass API v1 has variations of record creation endpoints depending on the module/version.
     const attempts = [
-        { endpoint: '/company/records', body: { userId, lessonId, ...options } },
-        { endpoint: `/company/lessons/${lessonId}/records`, body: { userId, ...options } },
-        { endpoint: '/company/lessons/records', body: { userId, lessonId, ...options } },
-        { endpoint: '/company/lesson-records', body: { userId, lessonId, ...options } }
+        { endpoint: '/company/lessons/records', body: { userId: uid, lessonId: lid, ...sanitizedOptions } },
+        { endpoint: '/company/records', body: { userId: uid, lessonId: lid, ...sanitizedOptions } },
+        { endpoint: `/company/lessons/${lid}/records`, body: { userId: uid, ...sanitizedOptions } },
+        { endpoint: `/company/lessons/${lid}/join`, body: { userId: uid, ...sanitizedOptions } },
+        { endpoint: `/company/users/${uid}/records`, body: { lessonId: lid, ...sanitizedOptions } },
+        { endpoint: '/company/lesson-records', body: { userId: uid, lessonId: lid, ...sanitizedOptions } }
     ];
 
     let lastError: any;
@@ -165,8 +174,12 @@ export class MoyKlassClient {
         } catch (e: any) {
             lastError = e;
             // If we get 404, the endpoint might be wrong for this company, try next.
-            // If we get 400 or other errors, it might be a data issue, but we still try other endpoints just in case.
+            // 400 might be missing fields or wrong type, but sometimes endpoints have different required fields.
             console.log(`MoyKlass: Attempt at ${attempt.endpoint} failed: ${e.message}`);
+
+            // If it's a 400 and specifically says something about lessonId/userId, we keep trying other endpoints
+            // but if it's a 400 that looks like a real validation error of data (e.g. "already exists"), we might want to stop.
+            // For now, continuing to try all is safer given the variety of MoyKlass implementations.
             continue;
         }
     }
