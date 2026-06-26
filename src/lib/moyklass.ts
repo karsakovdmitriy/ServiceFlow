@@ -228,22 +228,34 @@ export class MoyKlassClient {
     return this.request(`/company/classes/${classId}`);
   }
 
-  async createJoin(userId: number, classId: number, options: { filialId?: number } = {}) {
+  async getJoinStatuses() {
+    const endpoints = ['/company/joinStatuses', '/company/join-statuses'];
+    for (const endpoint of endpoints) {
+        try {
+            const response = await this.request(endpoint);
+            return Array.isArray(response) ? response : (response.statuses || response.joinStatuses || []);
+        } catch (e) {}
+    }
+    return [];
+  }
+
+  async createJoin(userId: number, classId: number, options: { filialId?: number, statusId?: number } = {}) {
     const uid = Math.trunc(Number(userId));
     const cid = Math.trunc(Number(classId));
     const fid = options.filialId ? Math.trunc(Number(options.filialId)) : undefined;
+    const sid = options.statusId ? Math.trunc(Number(options.statusId)) : 1;
 
     // Enrollment into Class/Course is mandatory before lesson records in some MoyKlass configs
     const attempts = [
         // Pure camelCase (likely correct for v1 company API)
-        { endpoint: '/company/joins', body: { userId: uid, classId: cid, statusId: 1 } },
-        { endpoint: '/company/joins', body: { userId: uid, classId: cid, statusId: 1, filialId: fid } },
-        // Pure snake_case
-        { endpoint: '/company/joins', body: { user_id: uid, class_id: cid, status_id: 1 } },
-        { endpoint: '/company/joins', body: { user_id: uid, class_id: cid, status_id: 1, filial_id: fid } },
+        { endpoint: '/company/joins', body: { userId: uid, classId: cid, statusId: sid } },
+        { endpoint: '/company/joins', body: { userId: uid, classId: cid, statusId: sid, filialId: fid } },
+        // Pure snake_case (fallback casing)
+        { endpoint: '/company/joins', body: { user_id: uid, class_id: cid, status_id: sid } },
+        { endpoint: '/company/joins', body: { user_id: uid, class_id: cid, status_id: sid, filial_id: fid } },
         // records endpoint fallbacks
-        { endpoint: '/company/records', body: { userId: uid, classId: cid, statusId: 1 } },
-        { endpoint: '/company/records', body: { user_id: uid, class_id: cid, status_id: 1 } }
+        { endpoint: '/company/records', body: { userId: uid, classId: cid, statusId: sid } },
+        { endpoint: '/company/records', body: { user_id: uid, class_id: cid, status_id: sid } }
     ];
 
     for (const attempt of attempts) {
