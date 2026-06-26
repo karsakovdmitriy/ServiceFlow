@@ -322,21 +322,21 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
     // If it's a group lesson (has classId), ensure user is enrolled in the group (Create Join)
     // to prevent "Join not exists" errors when recording attendance for the specific lesson.
     if (service?.moyklass_class_id) {
-        console.log(`MoyKlass: Ensuring user ${mkUserId} is enrolled in class ${service.moyklass_class_id}...`);
-        try {
-            const joinRes = await mk.createJoin(mkUserId, service.moyklass_class_id, { filialId: activeFilialId, statusId: 1 });
-            if (!joinRes) {
-                console.log('MoyKlass: Initial Join failed, attempting to find non-end status...');
-                const statuses = await mk.getJoinStatuses();
-                const workingStatus = statuses.find((s: any) => !s.isEnd && s.name !== 'Завершено' && s.name !== 'Отказ');
-                if (workingStatus) {
-                    console.log(`MoyKlass: Retrying Join with status ${workingStatus.id} (${workingStatus.name})`);
-                    await mk.createJoin(mkUserId, service.moyklass_class_id, { filialId: activeFilialId, statusId: workingStatus.id });
-                }
-            }
-        } catch (e) {
-            console.error('MoyKlass: Join flow failed:', e);
+      console.log(`MoyKlass: Ensuring user ${mkUserId} is enrolled in class ${service.moyklass_class_id}...`);
+      try {
+        const joinRes = await mk.createJoin(mkUserId, service.moyklass_class_id, { filialId: activeFilialId, statusId: 1 });
+        if (!joinRes.success && joinRes.error === 'terminal_status') {
+          console.log('MoyKlass: Initial Join failed (terminal status), attempting to find non-end status...');
+          const statuses = await mk.getJoinStatuses();
+          const workingStatus = statuses.find((s: any) => !s.isEnd && s.name !== 'Завершено' && s.name !== 'Отказ');
+          if (workingStatus) {
+            console.log(`MoyKlass: Retrying Join with status ${workingStatus.id} (${workingStatus.name})`);
+            await mk.createJoin(mkUserId, service.moyklass_class_id, { filialId: activeFilialId, statusId: workingStatus.id });
+          }
         }
+      } catch (e) {
+        console.error('MoyKlass: Join flow failed:', e);
+      }
     }
 
     console.log(`MoyKlass: Attempting to create record for lesson ${lesson.id} and user ${mkUserId}`);

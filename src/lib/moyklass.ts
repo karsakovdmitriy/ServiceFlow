@@ -151,13 +151,13 @@ export class MoyKlassClient {
     const sid = options.statusId ? Math.trunc(Number(options.statusId)) : 1;
     const cid = options.classId ? Math.trunc(Number(options.classId)) : undefined;
 
+    // API v1 exhibits high variability. We prioritize endpoints proven to work in logs.
+    // Fixed: lessonRecords (singular-ish) successfully parsed body with camelCase.
     const attempts: { endpoint: string; method?: string; body: any }[] = [
-        // Prioritize lessonRecords with both IDs and status
         { endpoint: '/company/lessonRecords', body: { lessonId: lid, userId: uid, statusId: sid } },
         { endpoint: '/company/lessonRecords', body: { lessonId: lid, userId: uid, statusId: sid, classId: cid } },
         { endpoint: '/company/lessonRecords', body: [{ lessonId: lid, userId: uid, statusId: sid }] },
-        { endpoint: '/company/lessonRecords', body: { lessonId: lid, userId: uid, statusId: sid, lesson_id: lid, user_id: uid, status_id: sid } },
-        // Centralized records
+        // Centralized plural records
         { endpoint: '/company/lessons/records', body: [{ userId: uid, lessonId: lid, statusId: sid }] },
         { endpoint: '/company/lessons/records', body: { userId: uid, lessonId: lid, statusId: sid } },
         // Path-based
@@ -239,23 +239,18 @@ export class MoyKlassClient {
     return [];
   }
 
-  async createJoin(userId: number, classId: number, options: { filialId?: number, statusId?: number } = {}) {
+  async createJoin(userId: number, classId: number, options: { filialId?: number, statusId?: number } = {}): Promise<{ success: boolean, alreadyExists?: boolean, error?: string }> {
     const uid = Math.trunc(Number(userId));
     const cid = Math.trunc(Number(classId));
     const fid = options.filialId ? Math.trunc(Number(options.filialId)) : undefined;
     const sid = options.statusId ? Math.trunc(Number(options.statusId)) : 1;
 
-    // Enrollment into Class/Course is mandatory before lesson records in some MoyKlass configs
+    // API v1 strictly requires camelCase (userId, classId, statusId).
+    // /company/joins is the standard endpoint for Class enrollment.
     const attempts = [
-        // Pure camelCase (likely correct for v1 company API)
         { endpoint: '/company/joins', body: { userId: uid, classId: cid, statusId: sid } },
         { endpoint: '/company/joins', body: { userId: uid, classId: cid, statusId: sid, filialId: fid } },
-        // Pure snake_case (fallback casing)
-        { endpoint: '/company/joins', body: { user_id: uid, class_id: cid, status_id: sid } },
-        { endpoint: '/company/joins', body: { user_id: uid, class_id: cid, status_id: sid, filial_id: fid } },
-        // records endpoint fallbacks
-        { endpoint: '/company/records', body: { userId: uid, classId: cid, statusId: sid } },
-        { endpoint: '/company/records', body: { user_id: uid, class_id: cid, status_id: sid } }
+        { endpoint: '/company/records', body: { userId: uid, classId: cid, statusId: sid } }
     ];
 
     for (const attempt of attempts) {
@@ -266,12 +261,22 @@ export class MoyKlassClient {
                 body: JSON.stringify(attempt.body)
             });
             console.log(`MoyKlass: Join successful at ${attempt.endpoint}`);
-            return true;
+            return { success: true };
         } catch (e: any) {
-            console.log(`MoyKlass: Join attempt at ${attempt.endpoint} failed: ${e.message}`);
+            const msg = e.message || '';
+            console.log(`MoyKlass: Join attempt at ${attempt.endpoint} failed: ${msg}`);
+
+            // Handle case-insensitive errors from different API versions
+            const lowerMsg = msg.toLowerCase();
+            if (lowerMsg.includes('already exists') || lowerMsg.includes('exist')) {
+                return { success: true, alreadyExists: true };
+            }
+            if (lowerMsg.includes('end status') || lowerMsg.includes('terminal') || lowerMsg.includes('cant be in end')) {
+                return { success: false, error: 'terminal_status' };
+            }
         }
     }
-    return false;
+    return { success: false, error: 'failed_all_attempts' };
   }
 
   async getRooms() {
