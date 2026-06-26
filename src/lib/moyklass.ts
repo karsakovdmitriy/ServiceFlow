@@ -92,6 +92,10 @@ export class MoyKlassClient {
         };
 
         const url = `${BASE_URL}${endpoint}`;
+        if (options.body) {
+            console.log(`MoyKlass: [${options.method || 'GET'}] ${endpoint} Payload:`, options.body);
+        }
+
         const response = await fetch(url, {
             ...options,
             headers
@@ -143,22 +147,41 @@ export class MoyKlassClient {
   }
 
   async createRecord(lessonId: number, userId: number, options: { statusId?: number, classId?: number } = {}) {
-    // Ensure IDs are integers
-    const lid = parseInt(String(lessonId), 10);
-    const uid = parseInt(String(userId), 10);
+    // Ensure IDs are strict numbers (JSON integers)
+    const lid = Math.trunc(Number(lessonId));
+    const uid = Math.trunc(Number(userId));
 
-    const sanitizedOptions: any = { ...options };
-    if (sanitizedOptions.statusId) sanitizedOptions.statusId = parseInt(String(sanitizedOptions.statusId), 10);
-    if (sanitizedOptions.classId) sanitizedOptions.classId = parseInt(String(sanitizedOptions.classId), 10);
+    const sid = options.statusId ? Math.trunc(Number(options.statusId)) : 1; // Default statusId 1 (reserved/confirmed)
+    const cid = options.classId ? Math.trunc(Number(options.classId)) : undefined;
 
-    // MoyKlass API v1 has variations of record creation endpoints depending on the module/version.
+    // MoyKlass API v1 has significant variations depending on the company's specific version and modules.
+    // We try variations with and without /company prefix, and with different payload structures.
     const attempts = [
-        { endpoint: '/company/lessons/records', body: { userId: uid, lessonId: lid, ...sanitizedOptions } },
-        { endpoint: '/company/records', body: { userId: uid, lessonId: lid, ...sanitizedOptions } },
-        { endpoint: `/company/lessons/${lid}/records`, body: { userId: uid, ...sanitizedOptions } },
-        { endpoint: `/company/lessons/${lid}/join`, body: { userId: uid, ...sanitizedOptions } },
-        { endpoint: `/company/users/${uid}/records`, body: { lessonId: lid, ...sanitizedOptions } },
-        { endpoint: '/company/lesson-records', body: { userId: uid, lessonId: lid, ...sanitizedOptions } }
+        // 1. Standard v1 endpoint (as per docs) - often the most reliable
+        { endpoint: `/company/lessons/${lid}/records`, body: { userId: uid, statusId: sid } },
+
+        // 2. Alternative v1 endpoints
+        { endpoint: '/company/records', body: { userId: uid, lessonId: lid, statusId: sid } },
+
+        // 3. Lessons records list endpoint - re-trying with minimal payload
+        { endpoint: '/company/lessons/records', body: { userId: uid, lessonId: lid, statusId: sid } },
+
+        // 4. Variations without /company prefix (some proxies/versions)
+        { endpoint: `/lessons/${lid}/records`, body: { userId: uid, statusId: sid } },
+        { endpoint: '/records', body: { userId: uid, lessonId: lid, statusId: sid } },
+
+        // 5. Snake case variations (for 400 "type should be integer" errors which might be misreported field errors)
+        { endpoint: '/company/lessons/records', body: { user_id: uid, lesson_id: lid, status_id: sid } },
+        { endpoint: `/company/lessons/${lid}/records`, body: { user_id: uid, status_id: sid } },
+
+        // 6. Nested variations (some API versions expect arrays)
+        { endpoint: '/company/lessons/records', body: { records: [{ userId: uid, lessonId: lid, statusId: sid }] } },
+
+        // 7. Join variations
+        { endpoint: `/company/lessons/${lid}/join`, body: { userId: uid, statusId: sid } },
+
+        // 8. User-centric variations
+        { endpoint: `/company/users/${uid}/records`, body: { lessonId: lid, statusId: sid } }
     ];
 
     let lastError: any;
