@@ -20,8 +20,6 @@ export class MoyKlassClient {
   private async getAccessToken(): Promise<string> {
     if (this.accessToken) return this.accessToken;
 
-    // TZ says POST /auth, but the image showed /company/auth/getToken.
-    // We'll try both, prioritizing the one from the image as it's likely more current.
     const endpoints = ['/company/auth/getToken', '/auth', '/company/auth'];
     let lastError: any;
 
@@ -129,7 +127,6 @@ export class MoyKlassClient {
   // Clients (Users)
   async findUserByContact(contact: string) {
     const response = await this.request(`/company/users?search=${encodeURIComponent(contact)}`);
-    // API v1 usually returns { users: [], stats: {} }
     const users = Array.isArray(response) ? response : (response.users || []);
     return users.length > 0 ? users[0] : null;
   }
@@ -145,44 +142,27 @@ export class MoyKlassClient {
   async getLessons(params: { from: string; to: string; filialId?: number }) {
     const query = new URLSearchParams(params as any).toString();
     const response = await this.request(`/company/lessons?${query}`);
-    // Documentation shows response format: { "lessons": [...], "stats": { "totalItems": 5 } }
     return response.lessons || [];
   }
 
   async createRecord(lessonId: number, userId: number, options: { statusId?: number, classId?: number, filialId?: number } = {}) {
-    // Ensure IDs are strict numbers (JSON integers)
     const lid = Math.trunc(Number(lessonId));
     const uid = Math.trunc(Number(userId));
-
     const sid = options.statusId ? Math.trunc(Number(options.statusId)) : 1;
     const cid = options.classId ? Math.trunc(Number(options.classId)) : undefined;
-    const fid = options.filialId ? Math.trunc(Number(options.filialId)) : undefined;
 
-    // MoyKlass API v1 has significant variations depending on the company's specific version and modules.
     const attempts: { endpoint: string; method?: string; body: any }[] = [
-        // 0. Primary recommended endpoints for v1 (Prefer camelCase for userId/lessonId as per errors)
+        // Prioritize lessonRecords with both IDs and status
         { endpoint: '/company/lessonRecords', body: { lessonId: lid, userId: uid, statusId: sid } },
         { endpoint: '/company/lessonRecords', body: { lessonId: lid, userId: uid, statusId: sid, classId: cid } },
         { endpoint: '/company/lessonRecords', body: [{ lessonId: lid, userId: uid, statusId: sid }] },
-        { endpoint: '/company/lesson-records', body: { lessonId: lid, userId: uid, statusId: sid } },
-
-        // 1. Centralized (Plural) - Often used for group lessons
-        { endpoint: '/company/lessons/records', body: { userId: uid, lessonId: lid, statusId: sid } },
+        // Try snake_case in lessonRecords
+        { endpoint: '/company/lessonRecords', body: { lesson_id: lid, user_id: uid, status_id: sid } },
+        // Centralized records
         { endpoint: '/company/lessons/records', body: [{ userId: uid, lessonId: lid, statusId: sid }] },
-        { endpoint: '/company/lessons/records', body: { userId: uid, lessonId: lid, statusId: sid, classId: cid, filialId: fid } },
-        { endpoint: '/company/records', body: { userId: uid, lessonId: lid, statusId: sid, classId: cid } },
-
-        // 2. Path-based (Standard v1)
-        { endpoint: `/company/lessons/${lid}/records`, body: { userId: uid, statusId: sid } },
-        { endpoint: `/company/lessons/${lid}/records`, body: [{ userId: uid, statusId: sid }] },
-
-        // 3. Fallbacks
-        { endpoint: `/company/lessons/${lid}`, method: 'PUT', body: { userIds: [uid] } },
-        { endpoint: `/company/lessons/${lid}/join`, body: { userId: uid } },
-        { endpoint: `/company/lessons/${lid}/enroll`, body: { userId: uid } },
-        { endpoint: `/company/users/${uid}/records`, body: { lessonId: lid } },
-        { endpoint: `/company/lessons/${lid}/records`, body: { user_id: uid, status_id: sid } },
-        { endpoint: '/company/lessonRecords', body: { lessonId: lid, userId: uid, statusId: sid, lesson_id: lid, user_id: uid, status_id: sid } }
+        { endpoint: '/company/lessons/records', body: { userId: uid, lessonId: lid, statusId: sid } },
+        // Path-based
+        { endpoint: `/company/lessons/${lid}/records`, body: { userId: uid, statusId: sid } }
     ];
 
     let lastError: any;
@@ -254,12 +234,13 @@ export class MoyKlassClient {
     const cid = Math.trunc(Number(classId));
     const fid = options.filialId ? Math.trunc(Number(options.filialId)) : undefined;
 
-    // Joins (Enrolling a user in a class/course)
+    // Enrollment into Class/Course is mandatory before lesson records in some MoyKlass configs
     const attempts = [
         { endpoint: '/company/joins', body: { userId: uid, classId: cid, statusId: 1 } },
+        { endpoint: '/company/joins', body: { user_id: uid, class_id: cid, status_id: 1 } },
         { endpoint: '/company/joins', body: { userId: uid, classId: cid, statusId: 1, filialId: fid } },
-        { endpoint: '/company/records', body: { userId: uid, classId: cid, statusId: 1, filialId: fid } },
-        { endpoint: '/company/joins', body: { user_id: uid, class_id: cid, status_id: 1 } }
+        { endpoint: '/company/records', body: { userId: uid, classId: cid, statusId: 1 } },
+        { endpoint: '/company/records', body: { user_id: uid, class_id: cid, status_id: 1 } }
     ];
 
     for (const attempt of attempts) {
