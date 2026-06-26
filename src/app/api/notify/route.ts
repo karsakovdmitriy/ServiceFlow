@@ -293,7 +293,9 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
         console.log('MoyKlass: Retrying as group lesson (standalone creation)...');
         try {
           const { userId, lessonRecord, ...barePayload } = lessonPayload;
-          lesson = await mk.createLesson(barePayload);
+          // Some v1 versions allow passing userIds array to link existing students immediately
+          const groupPayload = { ...barePayload, userIds: [mkUserId] };
+          lesson = await mk.createLesson(groupPayload);
           if (lesson?.id) {
             console.log(`MoyKlass: Standalone group lesson created with ID ${lesson.id}. Proceeding to separate enrollment.`);
           }
@@ -317,6 +319,13 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
 
   // 3. Create record (only if not created during lesson creation)
   if (lesson) {
+    // If it's a group lesson (has classId), ensure user is enrolled in the group (Create Join)
+    // to prevent "Join not exists" errors when recording attendance for the specific lesson.
+    if (service?.moyklass_class_id) {
+        console.log(`MoyKlass: Ensuring user ${mkUserId} is enrolled in class ${service.moyklass_class_id}...`);
+        await mk.createJoin(mkUserId, service.moyklass_class_id, { filialId: activeFilialId });
+    }
+
     console.log(`MoyKlass: Attempting to create record for lesson ${lesson.id} and user ${mkUserId}`);
     try {
       // Pass classId and filialId in options as some MoyKlass configurations require them for record creation
