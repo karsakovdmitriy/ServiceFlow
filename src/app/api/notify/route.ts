@@ -267,22 +267,45 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
       filialId: activeFilialId,
       roomId: service.moyklass_room_id!,
       classId: service.moyklass_class_id!,
-      teacherIds: teacherIds
+      teacherIds: teacherIds,
+      // Many v1 versions allow/require creating the record together with the lesson for individual bookings
+      userId: mkUserId,
+      lessonRecord: { statusId: 1 }
     };
 
     console.log(`MoyKlass: Creating lesson with payload:`, JSON.stringify(lessonPayload));
 
     try {
       lesson = await mk.createLesson(lessonPayload);
-      console.log(`MoyKlass: Lesson created successfully with ID ${lesson.id}`);
+      console.log(`MoyKlass: Lesson creation result:`, JSON.stringify(lesson));
+
+      // If lesson was created with record (individual lessons often work this way in v1),
+      // MoyKlass usually returns the lesson object. We check if the record was included.
+      if (lesson.id && (lesson.recordsCount > 0 || lesson.userId)) {
+        console.log(`MoyKlass: Lesson and record created simultaneously. Sync complete.`);
+        return;
+      }
     } catch (e: any) {
       console.error('Failed to create lesson in MoyKlass:', e);
+
+      // Handle the case where simultaneous record creation is NOT allowed (e.g. for some group configurations)
+      if (e.message?.includes('lessonRecord required only for individual lessons')) {
+        console.log('MoyKlass: Simultaneous record creation failed (group lesson). Retrying lesson creation separately.');
+        try {
+          const { userId, lessonRecord, ...barePayload } = lessonPayload;
+          lesson = await mk.createLesson(barePayload);
+          console.log(`MoyKlass: Group lesson created (standalone) with ID ${lesson.id}`);
+        } catch (e3) {
+          console.error('MoyKlass: Standalone lesson creation failed:', e3);
+        }
+      }
       // Fallback: Try without teacher if it failed due to incorrect teacherIds
-      if (e.message?.includes('incorrect teacherIds') && teacherIds.length > 0) {
+      else if (e.message?.includes('incorrect teacherIds') && teacherIds.length > 0) {
           console.log('MoyKlass: Retrying lesson creation without teacherIds...');
           try {
               lesson = await mk.createLesson({ ...lessonPayload, teacherIds: [] });
               console.log(`MoyKlass: Lesson created (fallback) with ID ${lesson.id}`);
+              if (lesson.id) return;
           } catch (e2) {
               console.error('MoyKlass: Fallback lesson creation failed:', e2);
           }
@@ -290,15 +313,16 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
     }
   }
 
-  // 3. Create record
+  // 3. Create record (only if not created during lesson creation)
   if (lesson) {
     console.log(`MoyKlass: Attempting to create record for lesson ${lesson.id} and user ${mkUserId}`);
     try {
-      // Pass classId in options as some MoyKlass configurations require it for record creation
+      // Pass classId and filialId in options as some MoyKlass configurations require them for record creation
       const record = await mk.createRecord(lesson.id, mkUserId, {
-        classId: service?.moyklass_class_id
+        classId: service?.moyklass_class_id,
+        filialId: activeFilialId
       } as any);
-      console.log(`MoyKlass: Record created successfully for user ${mkUserId} on lesson ${lesson.id}`);
+      console.log(`MoyKlass: Record creation logic completed for user ${mkUserId} on lesson ${lesson.id}`);
     } catch (e) {
       console.error(`MoyKlass: Final attempt to create record failed for user ${mkUserId} on lesson ${lesson.id}:`, e);
     }
