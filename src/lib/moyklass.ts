@@ -177,6 +177,12 @@ export class MoyKlassClient {
         } catch (e: any) {
             lastError = e;
             console.log(`MoyKlass: Attempt at ${attempt.endpoint} failed: ${e.message}`);
+
+            // If record already exists, treat as success
+            if (e.message?.toLowerCase().includes('already exists') || e.message?.toLowerCase().includes('exist')) {
+                console.log(`MoyKlass: Record already exists at ${attempt.endpoint}. Success.`);
+                return { success: true, alreadyExists: true };
+            }
             continue;
         }
     }

@@ -149,7 +149,7 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
   // 5. Fetch service info (safely, column by column if needed)
   const { data: service, error: svcErr } = await supabase
     .from('services')
-    .select('id, name, duration, moyklass_class_id, moyklass_room_id')
+    .select('id, name, duration, is_group, moyklass_class_id, moyklass_room_id')
     .eq('id', session.service_id)
     .single();
 
@@ -250,18 +250,25 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
       teacherIds = [Math.trunc(Number(master.moyklass_teacher_id))];
     }
 
-    const lessonPayload: any = {
+    let lessonPayload: any = {
       date,
       beginTime,
       endTime: endTimeStr,
       filialId: activeFilialId,
       roomId: service.moyklass_room_id!,
       classId: service.moyklass_class_id!,
-      teacherIds: teacherIds,
-      // Many v1 versions allow/require creating the record together with the lesson for individual bookings
-      userId: mkUserId,
-      lessonRecord: { statusId: 1 }
+      teacherIds: teacherIds
     };
+
+    // Strategy selection based on service type
+    if (service.is_group) {
+        console.log('MoyKlass: Using group lesson creation strategy (standalone lesson + userIds linkage)');
+        lessonPayload.userIds = [mkUserId];
+    } else {
+        console.log('MoyKlass: Using individual lesson creation strategy (simultaneous record creation)');
+        lessonPayload.userId = mkUserId;
+        lessonPayload.lessonRecord = { statusId: 1 };
+    }
 
     console.log(`MoyKlass: Creating lesson with payload:`, JSON.stringify(lessonPayload));
 
@@ -269,28 +276,39 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
       lesson = await mk.createLesson(lessonPayload);
       console.log(`MoyKlass: Lesson creation result:`, JSON.stringify(lesson));
 
-      // If lesson was created with record (individual lessons often work this way in v1),
-      // MoyKlass usually returns the lesson object. We check if the record was included.
-      if (lesson.id && (lesson.recordsCount > 0 || lesson.userId)) {
-        console.log(`MoyKlass: Lesson and record created simultaneously for individual lesson. Sync complete.`);
-        return;
+      // Success check: If lesson was created with record linkage (returned id and record indication)
+      if (lesson.id && (lesson.recordsCount > 0 || lesson.userId || service.is_group)) {
+        console.log(`MoyKlass: Lesson created successfully (${service.is_group ? 'group' : 'individual'}). Sync complete.`);
+        // For individual lessons with recordsCount > 0, we can exit.
+        // For group lessons, we created the lesson, but usually we still want to ensure Join/Record exist.
+        // However, if we used userIds array, some versions already created the record.
+        if (!service.is_group) return;
       }
     } catch (e: any) {
       console.error('MoyKlass: Initial lesson creation attempt failed:', e.message);
 
-      // Handle the case where simultaneous record creation is NOT allowed (e.g. for some group configurations)
+      // Robust fallback: if individual strategy failed, try group strategy (or vice-versa if misconfigured)
       if (e.message?.includes('lessonRecord required only for individual lessons') || e.message?.includes('400')) {
-        console.log('MoyKlass: Retrying as group lesson (standalone creation)...');
+        const fallbackIsGroup = !service.is_group;
+        console.log(`MoyKlass: Retrying with ${fallbackIsGroup ? 'group' : 'individual'} strategy fallback...`);
         try {
-          const { userId, lessonRecord, ...barePayload } = lessonPayload;
-          // Some v1 versions allow passing userIds array to link existing students immediately
-          const groupPayload = { ...barePayload, userIds: [mkUserId] };
-          lesson = await mk.createLesson(groupPayload);
+          const fallbackPayload = {
+            date, beginTime, endTime: endTimeStr, filialId: activeFilialId,
+            roomId: service.moyklass_room_id!, classId: service.moyklass_class_id!,
+            teacherIds: teacherIds
+          };
+          if (fallbackIsGroup) {
+              (fallbackPayload as any).userIds = [mkUserId];
+          } else {
+              (fallbackPayload as any).userId = mkUserId;
+              (fallbackPayload as any).lessonRecord = { statusId: 1 };
+          }
+          lesson = await mk.createLesson(fallbackPayload);
           if (lesson?.id) {
-            console.log(`MoyKlass: Standalone group lesson created with ID ${lesson.id}. Proceeding to separate enrollment.`);
+            console.log(`MoyKlass: Standalone lesson created via fallback with ID ${lesson.id}.`);
           }
         } catch (e3: any) {
-          console.error('MoyKlass: Standalone lesson creation failed:', e3.message);
+          console.error('MoyKlass: Fallback lesson creation failed:', e3.message);
         }
       }
       // Fallback: Try without teacher if it failed due to incorrect teacherIds
