@@ -160,37 +160,29 @@ export class MoyKlassClient {
 
     // MoyKlass API v1 has significant variations depending on the company's specific version and modules.
     const attempts: { endpoint: string; method?: string; body: any }[] = [
-        // 0. Primary recommended endpoints for v1
+        // 0. Primary recommended endpoints for v1 (Prefer camelCase for userId/lessonId as per errors)
         { endpoint: '/company/lessonRecords', body: { lessonId: lid, userId: uid, statusId: sid } },
+        { endpoint: '/company/lessonRecords', body: { lessonId: lid, userId: uid, statusId: sid, classId: cid } },
         { endpoint: '/company/lessonRecords', body: [{ lessonId: lid, userId: uid, statusId: sid }] },
         { endpoint: '/company/lesson-records', body: { lessonId: lid, userId: uid, statusId: sid } },
-        { endpoint: '/company/lesson-records', body: { record: { lessonId: lid, userId: uid, statusId: sid } } },
 
         // 1. Centralized (Plural) - Often used for group lessons
-        { endpoint: '/company/lessonRecords', body: { lessonId: lid, userId: uid, statusId: sid, classId: cid } },
-        { endpoint: '/company/lessons/records', body: [{ userId: uid, lessonId: lid, statusId: sid }] },
         { endpoint: '/company/lessons/records', body: { userId: uid, lessonId: lid, statusId: sid } },
+        { endpoint: '/company/lessons/records', body: [{ userId: uid, lessonId: lid, statusId: sid }] },
         { endpoint: '/company/lessons/records', body: { userId: uid, lessonId: lid, statusId: sid, classId: cid, filialId: fid } },
-        { endpoint: '/company/lessons/records', body: { records: [{ userId: uid, lessonId: lid, statusId: sid }] } },
         { endpoint: '/company/records', body: { userId: uid, lessonId: lid, statusId: sid, classId: cid } },
-        { endpoint: '/company/records', body: { user_id: uid, lesson_id: lid, status_id: sid, class_id: cid } },
 
         // 2. Path-based (Standard v1)
         { endpoint: `/company/lessons/${lid}/records`, body: { userId: uid, statusId: sid } },
         { endpoint: `/company/lessons/${lid}/records`, body: [{ userId: uid, statusId: sid }] },
-        { endpoint: `/lessons/${lid}/records`, body: { userId: uid, statusId: sid } },
 
         // 3. Fallbacks
-        { endpoint: `/company/lessons/records?lessonId=${lid}&userId=${uid}`, body: { statusId: sid } },
         { endpoint: `/company/lessons/${lid}`, method: 'PUT', body: { userIds: [uid] } },
         { endpoint: `/company/lessons/${lid}/join`, body: { userId: uid } },
         { endpoint: `/company/lessons/${lid}/enroll`, body: { userId: uid } },
         { endpoint: `/company/users/${uid}/records`, body: { lessonId: lid } },
-        { endpoint: `/company/lessons/${lid}/students`, body: { userId: uid } },
         { endpoint: `/company/lessons/${lid}/records`, body: { user_id: uid, status_id: sid } },
-        { endpoint: `/company/lessons/${lid}/records`, body: [uid] },
-        { endpoint: '/company/lessonRecords', body: { lessonId: String(lid), userId: String(uid), statusId: sid } },
-        { endpoint: '/company/lessonRecords', body: { lesson_id: lid, user_id: uid, status_id: sid } }
+        { endpoint: '/company/lessonRecords', body: { lessonId: lid, userId: uid, statusId: sid, lesson_id: lid, user_id: uid, status_id: sid } }
     ];
 
     let lastError: any;
@@ -264,10 +256,10 @@ export class MoyKlassClient {
 
     // Joins (Enrolling a user in a class/course)
     const attempts = [
-        { endpoint: '/company/records', body: { userId: uid, classId: cid, filialId: fid, statusId: 1 } },
-        { endpoint: '/company/records', body: { user_id: uid, class_id: cid, filial_id: fid, status_id: 1 } },
-        { endpoint: '/company/joins', body: { userId: uid, classId: cid } },
-        { endpoint: '/company/lessonRecords', body: { userId: uid, classId: cid, statusId: 1 } }
+        { endpoint: '/company/joins', body: { userId: uid, classId: cid, statusId: 1 } },
+        { endpoint: '/company/joins', body: { userId: uid, classId: cid, statusId: 1, filialId: fid } },
+        { endpoint: '/company/records', body: { userId: uid, classId: cid, statusId: 1, filialId: fid } },
+        { endpoint: '/company/joins', body: { user_id: uid, class_id: cid, status_id: 1 } }
     ];
 
     for (const attempt of attempts) {
