@@ -282,21 +282,23 @@ async function syncToMoyKlass(supabase: any, sessionId: string) {
       // If lesson was created with record (individual lessons often work this way in v1),
       // MoyKlass usually returns the lesson object. We check if the record was included.
       if (lesson.id && (lesson.recordsCount > 0 || lesson.userId)) {
-        console.log(`MoyKlass: Lesson and record created simultaneously. Sync complete.`);
+        console.log(`MoyKlass: Lesson and record created simultaneously for individual lesson. Sync complete.`);
         return;
       }
     } catch (e: any) {
-      console.error('Failed to create lesson in MoyKlass:', e);
+      console.error('MoyKlass: Initial lesson creation attempt failed:', e.message);
 
       // Handle the case where simultaneous record creation is NOT allowed (e.g. for some group configurations)
-      if (e.message?.includes('lessonRecord required only for individual lessons')) {
-        console.log('MoyKlass: Simultaneous record creation failed (group lesson). Retrying lesson creation separately.');
+      if (e.message?.includes('lessonRecord required only for individual lessons') || e.message?.includes('400')) {
+        console.log('MoyKlass: Retrying as group lesson (standalone creation)...');
         try {
           const { userId, lessonRecord, ...barePayload } = lessonPayload;
           lesson = await mk.createLesson(barePayload);
-          console.log(`MoyKlass: Group lesson created (standalone) with ID ${lesson.id}`);
-        } catch (e3) {
-          console.error('MoyKlass: Standalone lesson creation failed:', e3);
+          if (lesson?.id) {
+            console.log(`MoyKlass: Standalone group lesson created with ID ${lesson.id}. Proceeding to separate enrollment.`);
+          }
+        } catch (e3: any) {
+          console.error('MoyKlass: Standalone lesson creation failed:', e3.message);
         }
       }
       // Fallback: Try without teacher if it failed due to incorrect teacherIds
