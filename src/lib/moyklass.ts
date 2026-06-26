@@ -60,13 +60,16 @@ export class MoyKlassClient {
         const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
         const supabase = createClient(supabaseUrl, supabaseKey);
 
+        const request_body = body ? (typeof body === 'string' ? body : JSON.stringify(body)) : null;
+        const response_body = response ? (typeof response === 'string' ? response : JSON.stringify(response)) : null;
+
         await supabase.from('integration_logs').insert({
             profile_id: this.profileId,
             entity_type: 'moyklass',
             method,
             endpoint,
-            request_body: body ? JSON.stringify(body) : null,
-            response_body: response ? JSON.stringify(response) : null,
+            request_body,
+            response_body,
             status_code: status,
             success
         });
@@ -93,7 +96,7 @@ export class MoyKlassClient {
 
         const url = `${BASE_URL}${endpoint}`;
         if (options.body) {
-            console.log(`MoyKlass: [${options.method || 'GET'}] ${endpoint} Payload:`, options.body);
+            console.log(`MoyKlass: [${options.method || 'GET'}] ${endpoint} Body:`, options.body);
         }
 
         const response = await fetch(url, {
@@ -119,7 +122,7 @@ export class MoyKlassClient {
         responseData = responseData || { message: error.message };
         throw error;
     } finally {
-        await this.logRequest(options.method || 'GET', endpoint, options.body ? JSON.parse(options.body as string) : null, responseData, status, success);
+        await this.logRequest(options.method || 'GET', endpoint, options.body, responseData, status, success);
     }
   }
 
@@ -146,63 +149,56 @@ export class MoyKlassClient {
     return response.lessons || [];
   }
 
-  async createRecord(lessonId: number, userId: number, options: { statusId?: number, classId?: number } = {}) {
+  async createRecord(lessonId: number, userId: number, options: { statusId?: number, classId?: number, filialId?: number } = {}) {
     // Ensure IDs are strict numbers (JSON integers)
     const lid = Math.trunc(Number(lessonId));
     const uid = Math.trunc(Number(userId));
 
-    const sid = options.statusId ? Math.trunc(Number(options.statusId)) : 1; // Default statusId 1 (reserved/confirmed)
+    const sid = options.statusId ? Math.trunc(Number(options.statusId)) : 1;
     const cid = options.classId ? Math.trunc(Number(options.classId)) : undefined;
+    const fid = options.filialId ? Math.trunc(Number(options.filialId)) : undefined;
 
     // MoyKlass API v1 has significant variations depending on the company's specific version and modules.
-    // We try variations with and without /company prefix, and with different payload structures.
-    const attempts = [
-        // 1. Standard v1 endpoint (as per docs) - often the most reliable
+    const attempts: { endpoint: string; method?: string; body: any }[] = [
+        // 1. Standard v1 path-based enrollment
         { endpoint: `/company/lessons/${lid}/records`, body: { userId: uid, statusId: sid } },
+        { endpoint: `/company/lessons/${lid}/records`, body: [{ userId: uid, statusId: sid }] },
 
-        // 2. Alternative v1 endpoints
+        // 2. Central records endpoint with various payload structures
+        { endpoint: '/company/lessons/records', body: { userId: uid, lessonId: lid, statusId: sid } },
+        { endpoint: '/company/lessons/records', body: { records: [{ userId: uid, lessonId: lid, statusId: sid }] } },
         { endpoint: '/company/records', body: { userId: uid, lessonId: lid, statusId: sid } },
 
-        // 3. Lessons records list endpoint - re-trying with minimal payload
-        { endpoint: '/company/lessons/records', body: { userId: uid, lessonId: lid, statusId: sid } },
+        // 3. Query param variations (to bypass potential body validation issues)
+        { endpoint: `/company/lessons/records?lessonId=${lid}&userId=${uid}`, body: { statusId: sid } },
 
-        // 4. Variations without /company prefix (some proxies/versions)
-        { endpoint: `/lessons/${lid}/records`, body: { userId: uid, statusId: sid } },
-        { endpoint: '/records', body: { userId: uid, lessonId: lid, statusId: sid } },
+        // 4. Update lesson strategy (PUT instead of POST)
+        { endpoint: `/company/lessons/${lid}`, method: 'PUT', body: { userIds: [uid] } },
 
-        // 5. Snake case variations (for 400 "type should be integer" errors which might be misreported field errors)
-        { endpoint: '/company/lessons/records', body: { user_id: uid, lesson_id: lid, status_id: sid } },
+        // 5. Alternative variations
+        { endpoint: `/company/lessons/${lid}/join`, body: { userId: uid } },
+        { endpoint: `/company/lessons/${lid}/enroll`, body: { userId: uid } },
+        { endpoint: `/company/users/${uid}/records`, body: { lessonId: lid } },
+        { endpoint: `/company/lessons/${lid}/students`, body: { userId: uid } },
+
+        // 6. Last resort variations
         { endpoint: `/company/lessons/${lid}/records`, body: { user_id: uid, status_id: sid } },
-
-        // 6. Nested variations (some API versions expect arrays)
-        { endpoint: '/company/lessons/records', body: { records: [{ userId: uid, lessonId: lid, statusId: sid }] } },
-
-        // 7. Join variations
-        { endpoint: `/company/lessons/${lid}/join`, body: { userId: uid, statusId: sid } },
-
-        // 8. User-centric variations
-        { endpoint: `/company/users/${uid}/records`, body: { lessonId: lid, statusId: sid } }
+        { endpoint: `/company/lessons/${lid}/records`, body: [uid] }
     ];
 
     let lastError: any;
     for (const attempt of attempts) {
         try {
-            console.log(`MoyKlass: Attempting record creation at ${attempt.endpoint}...`);
+            console.log(`MoyKlass: Attempting record creation at ${attempt.endpoint} (Method: ${attempt.method || 'POST'})...`);
             const res = await this.request(attempt.endpoint, {
-                method: 'POST',
+                method: attempt.method || 'POST',
                 body: JSON.stringify(attempt.body)
             });
             console.log(`MoyKlass: Record creation successful at ${attempt.endpoint}`);
             return res;
         } catch (e: any) {
             lastError = e;
-            // If we get 404, the endpoint might be wrong for this company, try next.
-            // 400 might be missing fields or wrong type, but sometimes endpoints have different required fields.
             console.log(`MoyKlass: Attempt at ${attempt.endpoint} failed: ${e.message}`);
-
-            // If it's a 400 and specifically says something about lessonId/userId, we keep trying other endpoints
-            // but if it's a 400 that looks like a real validation error of data (e.g. "already exists"), we might want to stop.
-            // For now, continuing to try all is safer given the variety of MoyKlass implementations.
             continue;
         }
     }
@@ -217,6 +213,8 @@ export class MoyKlassClient {
     roomId: number;
     classId: number;
     teacherIds?: number[];
+    userId?: number;
+    lessonRecord?: { statusId: number };
   }) {
     return this.request('/company/lessons', {
       method: 'POST',
