@@ -29,33 +29,31 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    console.log('MAX Bot Update:', JSON.stringify(body, null, 2));
+    console.log('MAX Bot Update Body:', JSON.stringify(body, null, 2));
 
-    if (body.message) {
-      const { chat_id, text, user } = body.message;
+    const message = body.message || body.message_created || body.message_edited;
+    const callbackQuery = body.callback_query || body.message_callback;
+    const botStarted = body.bot_started;
+
+    if (message) {
+      const { chat_id, text, user } = message;
       const fromId = user.user_id;
-      console.log(`Message from ${fromId}: ${text}`);
+      console.log(`Processing message from ${fromId} (chat: ${chat_id}): ${text}`);
 
       // Handle direct messages to master and Review comments
       if (text) {
-         // Note: in multi-tenant environment, a user could be a client for multiple masters.
-         // We prioritize the most recent interaction or use metadata if available.
          const { data: clients } = await supabase.from('clients')
             .select('id, owner_id, full_name, last_bot_state, last_session_id')
             .eq('max_id', fromId.toString())
             .order('created_at', { ascending: false });
 
-         const client = clients?.[0]; // Best effort: take the most recent client record
+         const client = clients?.[0];
 
          if (client) {
             if (client.last_bot_state === 'waiting_for_comment' && client.last_session_id) {
-               // This is a review comment
                await supabase.from('reviews').update({ comment: text }).eq('session_id', client.last_session_id);
                await supabase.from('clients').update({ last_bot_state: null, last_session_id: null }).eq('id', client.id);
-
                await sendMaxMessage(chat_id, '✅ <b>Спасибо за ваш отзыв!</b> Он очень важен для нас.');
-
-               // Log review event
                await supabase.from('events').insert({
                  profile_id: client.owner_id,
                  type: 'review',
@@ -84,7 +82,6 @@ export async function POST(request: Request) {
                 message: `Новое сообщение (MAX) от ${client.full_name}`
                 });
 
-                // Notify master about message
                 const { data: master } = await supabase.from('masters').select('telegram_id, max_id').eq('user_id', client.owner_id).limit(1).single();
                 if (master?.max_id) {
                     await sendMaxMessage(master.max_id, `💬 <b>Новое сообщение (MAX) от ${escapeHtml(client.full_name)}:</b>\n\n${escapeHtml(text)}`);
@@ -96,169 +93,19 @@ export async function POST(request: Request) {
       if (text?.startsWith('/start')) {
         const parts = text.split(' ');
         let masterId = parts[1];
-
-        if (!masterId) {
-          const { data: previousClients } = await supabase.from('clients')
-            .select('owner_id')
-            .eq('max_id', fromId.toString());
-
-          if (previousClients && previousClients.length > 0) {
-            // Filter unique owners
-            const ownerIds = Array.from(new Set(previousClients.map(pc => pc.owner_id)));
-
-            // Find masters for these owners
-            const { data: previousMasters } = await supabase.from('masters')
-              .select('id, full_name')
-              .in('user_id', ownerIds);
-
-            const masterButtons = (previousMasters || []).map(pm => ([{
-              text: `🏃 Записаться к ${escapeHtml(pm.full_name)}`,
-              callback_data: `svc_list:${pm.id}`
-            }]));
-
-            await sendMaxMessage(chat_id, '👋 <b>С возвращением!</b>\n\nВыберите специалиста из вашей истории для новой записи:', {
-              inline_keyboard: masterButtons
-            });
-          } else {
-            await sendMaxMessage(chat_id, '👋 Привет! Чтобы записаться, используйте специальную ссылку от вашего мастера.');
-          }
-          return NextResponse.json({ ok: true });
-        }
-
-        // Handle Account Linking (Master or Venue)
-        if (masterId.startsWith('link_')) {
-          const actualId = masterId.replace('link_', '');
-
-          // Validate UUID format for linking
-          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-          if (!uuidRegex.test(actualId)) {
-            await sendMaxMessage(chat_id, '❌ Некорректная ссылка для привязки.');
-            return NextResponse.json({ ok: true });
-          }
-
-          // Try finding in masters
-          let { data: entity, error: entityError } = await supabase.from('masters').select('full_name, user_id').eq('id', actualId).maybeSingle();
-          let ownerId = entity?.user_id;
-          let displayName = entity?.full_name;
-
-          // If not found in masters, try venues
-          if (!entity) {
-             const { data: venue, error: venueError } = await supabase.from('venues').select('name, owner_id').eq('id', actualId).maybeSingle();
-             if (venue) {
-                ownerId = venue.owner_id;
-                displayName = venue.name;
-                entity = venue as any;
-             }
-          }
-
-          if (!entity || !ownerId) {
-             await sendMaxMessage(chat_id, '❌ Ошибка при привязке: Аккаунт не найден.');
-             return NextResponse.json({ ok: true });
-          }
-
-          // Update ALL master and venue records for this user to have this max_id
-          const { error: mErr } = await supabase.from('masters').update({ max_id: fromId.toString() }).eq('user_id', ownerId);
-          const { error: vErr } = await supabase.from('venues').update({ max_id: fromId.toString() }).eq('owner_id', ownerId);
-
-          if (mErr || vErr) {
-             console.error('Linking error (MAX):', mErr, vErr);
-             await sendMaxMessage(chat_id, '❌ Произошла ошибка при привязке аккаунта. Пожалуйста, попробуйте позже.');
-             return NextResponse.json({ ok: true });
-          }
-
-          await sendMaxMessage(chat_id, `✅ <b>Аккаунт успешно привязан!</b>\n\nТеперь вы (${escapeHtml(displayName || '')}) будете получать уведомления в этот чат.`);
-
-          await supabase.from('events').insert({
-            profile_id: ownerId,
-            type: 'system',
-            message: 'MAX Messenger аккаунт успешно привязан'
-          });
-
-          return NextResponse.json({ ok: true });
-        }
-
-        // Handle Venue Booking
-        if (masterId.startsWith('v_')) {
-           const venueId = masterId.replace('v_', '');
-           const { data: venue } = await supabase.from('venues').select('name').eq('id', venueId).single();
-           if (!venue) {
-             await sendMaxMessage(chat_id, '❌ Площадка не найдена.');
-             return NextResponse.json({ ok: true });
-           }
-
-           const { data: services } = await supabase.from('services').select('id, name, price').eq('venue_id', venueId);
-           const svcButtons = (services || []).map(s => ([{
-             text: `${s.name} — ${s.price} ₽`,
-             callback_data: `svc:${s.id}`
-           }]));
-
-           await sendMaxMessage(chat_id, `👋 Добро пожаловать в <b>${escapeHtml(venue.name)}</b>!\n\nВыберите услугу для записи:`, {
-             inline_keyboard: svcButtons
-           });
-           return NextResponse.json({ ok: true });
-        }
-
-        // Validate UUID format to prevent Supabase error
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (!uuidRegex.test(masterId)) {
-          await sendMaxMessage(chat_id, '❌ Некорректная ссылка (неверный ID).');
-          return NextResponse.json({ ok: true });
-        }
-
-        // Fetch master info
-        const { data: master, error: masterError } = await supabase.from('masters').select('full_name, specialization, user_id').eq('id', masterId).single();
-
-        if (masterError || !master) {
-          console.error('Master lookup error (MAX):', masterError);
-          await sendMaxMessage(chat_id, '❌ Мастер не найден. Проверьте правильность ссылки.');
-          return NextResponse.json({ ok: true });
-        }
-
-        // Upsert client
-        const fullName = user.name || 'Клиент MAX';
-        const { error: upsertError } = await supabase.from('clients').upsert({
-          owner_id: master.user_id,
-          max_id: fromId.toString(),
-          full_name: fullName
-        }, { onConflict: 'owner_id, max_id' }); // Note: unique constraint might need update or different handling
-
-        if (upsertError) {
-          console.error('Client upsert error during /start (MAX):', upsertError);
-        }
-
-        const servicesKeyboard = await getServicesKeyboard(masterId);
-
-        if (servicesKeyboard.length === 0) {
-          await sendMaxMessage(chat_id, `👋 Привет! Вы записываетесь к мастеру <b>${escapeHtml(master.full_name)}</b>.\n\nК сожалению, пока нет настроенных услуг для записи. Пожалуйста, свяжитесь напрямую.`);
-        } else {
-          await sendMaxMessage(chat_id, `👋 Привет! Вы записываетесь к специалисту <b>${escapeHtml(master.full_name)}</b> (${escapeHtml(master.specialization || '')}).\n\nВыберите действие:`, {
-            inline_keyboard: [
-                ...servicesKeyboard,
-                [{ text: '👤 Мои записи / Перенос', callback_data: `my_bookings:${masterId}` }]
-            ]
-          });
-        }
+        await handleStart(chat_id, fromId, user.name || user.full_name, masterId);
       }
-    } else if (body.callback_query) {
-      const { id, payload: data, chat_id, user } = body.callback_query;
+    } else if (botStarted) {
+      const { chat_id, user, payload } = botStarted;
+      console.log(`Bot started by ${user.user_id} with payload: ${payload}`);
+      await handleStart(chat_id, user.user_id, user.name || user.full_name, payload);
+    } else if (callbackQuery) {
+      const { id, payload: data, chat_id, user } = callbackQuery;
       const fromId = user.user_id;
+      console.log(`Processing callback query from ${fromId} (chat: ${chat_id}): ${data}`);
 
       try {
         const [action, ...params] = data.split(':');
-
-        // Always ensure client exists
-        const { data: serviceForClient } = await supabase.from('services').select('master_id').eq('id', params[0]).single();
-        if (serviceForClient) {
-          const { data: master } = await supabase.from('masters').select('user_id').eq('id', serviceForClient.master_id).single();
-          if (master) {
-              const fullName = user.name || 'Клиент MAX';
-              await supabase.from('clients').upsert({
-                owner_id: master.user_id,
-                max_id: fromId.toString(),
-                full_name: fullName
-        }, { onConflict: 'owner_id,max_id' });
-          }
-        }
 
         if (action === 'svc_list') {
           const [masterId] = params;
@@ -412,7 +259,6 @@ export async function POST(request: Request) {
                     return;
                   }
 
-                  // Notify Master & Venue Owner
                   const { data: clientData } = await supabase.from('clients').select('full_name').eq('id', client.id).single();
                   const { data: svcData } = await supabase.from('services').select('name').eq('id', serviceId).single();
 
@@ -423,12 +269,10 @@ export async function POST(request: Request) {
                     `Время: <b>${time}</b>\n\n` +
                     `Для управления записью используйте веб-панель или Telegram-бот.`;
 
-                  // In this version, we just notify without buttons for simplicity or use Telegram for actions
                   if (master.max_id) {
                      await sendMaxMessage(master.max_id, notificationMsg);
                   }
 
-                  // Also notify via Telegram if linked
                   if (master.telegram_id) {
                       const tgMsg = notificationMsg + '\n\n' + `Выберите действие:`;
                       const tgKeyboard = {
@@ -440,7 +284,6 @@ export async function POST(request: Request) {
                             [{ text: '📅 Предложить перенос', callback_data: `tr_rsch:${session.id}` }]
                           ]
                       };
-                      // We'd need to import telegram libs or just call another endpoint
                       fetch(`${url.origin}/api/notify/custom`, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
@@ -466,6 +309,141 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error in MAX bot API:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+async function handleStart(chat_id: any, fromId: any, userName: string, masterId?: string) {
+  console.log(`Handling /start for user ${fromId} with masterId: ${masterId}`);
+  const supabase = getSupabase();
+
+  if (!masterId) {
+    const { data: previousClients } = await supabase.from('clients')
+      .select('owner_id')
+      .eq('max_id', fromId.toString());
+
+    if (previousClients && previousClients.length > 0) {
+      const ownerIds = Array.from(new Set(previousClients.map(pc => pc.owner_id)));
+
+      const { data: previousMasters } = await supabase.from('masters')
+        .select('id, full_name')
+        .in('user_id', ownerIds);
+
+      const masterButtons = (previousMasters || []).map(pm => ([{
+        text: `🏃 Записаться к ${escapeHtml(pm.full_name)}`,
+        callback_data: `svc_list:${pm.id}`
+      }]));
+
+      await sendMaxMessage(chat_id, '👋 <b>С возвращением!</b>\n\nВыберите специалиста из вашей истории для новой записи:', {
+        inline_keyboard: masterButtons
+      });
+    } else {
+      await sendMaxMessage(chat_id, '👋 Привет! Чтобы записаться, используйте специальную ссылку от вашего мастера.');
+    }
+    return;
+  }
+
+  if (masterId.startsWith('link_')) {
+    const actualId = masterId.replace('link_', '');
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(actualId)) {
+      await sendMaxMessage(chat_id, '❌ Некорректная ссылка для привязки.');
+      return;
+    }
+
+    let { data: entity, error: entityError } = await supabase.from('masters').select('full_name, user_id').eq('id', actualId).maybeSingle();
+    let ownerId = entity?.user_id;
+    let displayName = entity?.full_name;
+
+    if (!entity) {
+      const { data: venue, error: venueError } = await supabase.from('venues').select('name, owner_id').eq('id', actualId).maybeSingle();
+      if (venue) {
+        ownerId = venue.owner_id;
+        displayName = venue.name;
+        entity = venue as any;
+      }
+    }
+
+    if (!entity || !ownerId) {
+      await sendMaxMessage(chat_id, '❌ Ошибка при привязке: Аккаунт не найден.');
+      return;
+    }
+
+    const { error: mErr } = await supabase.from('masters').update({ max_id: fromId.toString() }).eq('user_id', ownerId);
+    const { error: vErr } = await supabase.from('venues').update({ max_id: fromId.toString() }).eq('owner_id', ownerId);
+
+    if (mErr || vErr) {
+      console.error('Linking error (MAX):', mErr, vErr);
+      await sendMaxMessage(chat_id, '❌ Произошла ошибка при привязке аккаунта. Пожалуйста, попробуйте позже.');
+      return;
+    }
+
+    await sendMaxMessage(chat_id, `✅ <b>Аккаунт успешно привязан!</b>\n\nТеперь вы (${escapeHtml(displayName || '')}) будете получать уведомления в этот чат.`);
+
+    await supabase.from('events').insert({
+      profile_id: ownerId,
+      type: 'system',
+      message: 'MAX Messenger аккаунт успешно привязан'
+    });
+
+    return;
+  }
+
+  if (masterId.startsWith('v_')) {
+    const venueId = masterId.replace('v_', '');
+    const { data: venue } = await supabase.from('venues').select('name').eq('id', venueId).single();
+    if (!venue) {
+      await sendMaxMessage(chat_id, '❌ Площадка не найдена.');
+      return;
+    }
+
+    const { data: services } = await supabase.from('services').select('id, name, price').eq('venue_id', venueId);
+    const svcButtons = (services || []).map(s => ([{
+      text: `${s.name} — ${s.price} ₽`,
+      callback_data: `svc:${s.id}`
+    }]));
+
+    await sendMaxMessage(chat_id, `👋 Добро пожаловать в <b>${escapeHtml(venue.name)}</b>!\n\nВыберите услугу для записи:`, {
+      inline_keyboard: svcButtons
+    });
+    return;
+  }
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(masterId)) {
+    await sendMaxMessage(chat_id, '❌ Некорректная ссылка (неверный ID).');
+    return;
+  }
+
+  const { data: master, error: masterError } = await supabase.from('masters').select('full_name, specialization, user_id').eq('id', masterId).single();
+
+  if (masterError || !master) {
+    console.error('Master lookup error (MAX):', masterError);
+    await sendMaxMessage(chat_id, '❌ Мастер не найден. Проверьте правильность ссылки.');
+    return;
+  }
+
+  const fullName = userName || 'Клиент MAX';
+  const { error: upsertError } = await supabase.from('clients').upsert({
+    owner_id: master.user_id,
+    max_id: fromId.toString(),
+    full_name: fullName
+  }, { onConflict: 'owner_id, max_id' });
+
+  if (upsertError) {
+    console.error('Client upsert error during /start (MAX):', upsertError);
+  }
+
+  const servicesKeyboard = await getServicesKeyboard(masterId);
+
+  if (servicesKeyboard.length === 0) {
+    await sendMaxMessage(chat_id, `👋 Привет! Вы записываетесь к мастеру <b>${escapeHtml(master.full_name)}</b>.\n\nК сожалению, пока нет настроенных услуг для записи. Пожалуйста, свяжитесь напрямую.`);
+  } else {
+    await sendMaxMessage(chat_id, `👋 Привет! Вы записываетесь к специалисту <b>${escapeHtml(master.full_name)}</b> (${escapeHtml(master.specialization || '')}).\n\nВыберите действие:`, {
+      inline_keyboard: [
+        ...servicesKeyboard,
+        [{ text: '👤 Мои записи / Перенос', callback_data: `my_bookings:${masterId}` }]
+      ]
+    });
   }
 }
 
