@@ -105,11 +105,11 @@ export async function sendMaxMessage(chatId: string | number, text: string, repl
   }
 }
 
-export async function answerMaxCallback(callbackQueryId: string, text?: string) {
+export async function answerMaxCallback(callbackId: string, text?: string) {
   try {
-    await maxRequest('/answers', 'POST', {
-      callback_query_id: callbackQueryId,
-      text: text
+    await maxRequest(`/answers?callback_id=${encodeURIComponent(callbackId)}`, 'POST', {
+      callback_id: callbackId,
+      notification: text
     });
   } catch (error) {
     console.error('Error answering MAX callback query:', error);
