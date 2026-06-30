@@ -33,30 +33,37 @@ export async function POST(request: Request) {
 
     const updateType = body.update_type;
     const message = body.message || body.message_created || body.message_edited;
-    const callbackQuery = body.callback_query || body.message_callback;
+    const callbackQuery = body.callback_query || body.message_callback || body.callback;
     const botStarted = body.bot_started;
 
     console.log(`Detected Update Type: ${updateType}`);
 
     if (updateType === 'bot_started' || botStarted) {
-      const chat_id = body.chat_id || botStarted?.chat_id;
+      const chat_id = body.chat_id || botStarted?.chat_id || body.user_id;
       const user = body.user || botStarted?.user;
       const payload = body.payload || botStarted?.payload;
       const fromId = user?.user_id || body.user_id;
-      const name = user?.name || user?.full_name;
+      const name = user?.name || user?.full_name || user?.first_name;
 
       console.log(`Bot started event for ${fromId} (chat: ${chat_id}) with payload: ${payload}`);
       await handleStart(chat_id, fromId, name, payload);
-    } else if (updateType === 'message_callback' || callbackQuery) {
-      const chat_id = body.chat_id || callbackQuery?.chat_id;
-      const user = body.user || callbackQuery?.user;
-      const payload = body.payload || callbackQuery?.payload;
-      const id = body.id || callbackQuery?.id;
+    } else if (updateType === 'message_callback' || callbackQuery || body.callback) {
+      const cb = body.callback || callbackQuery;
+      const msg = body.message;
+
+      const chat_id = body.chat_id || msg?.recipient?.chat_id || cb?.chat_id;
+      const user = cb?.user || body.user;
+      const payload = cb?.payload || body.payload;
+      const id = cb?.callback_id || body.id || cb?.id;
       const fromId = user?.user_id || body.user_id;
 
-      console.log(`Callback query event from ${fromId} (chat: ${chat_id}): ${payload}`);
+      console.log(`Callback query event from ${fromId} (chat: ${chat_id}): ${payload} (id: ${id})`);
 
-      await handleCallback(id, payload, chat_id, user, url.origin);
+      if (id && payload) {
+        await handleCallback(id, payload, chat_id, user, url.origin);
+      } else {
+        console.warn('Missing callback_id or payload in message_callback event');
+      }
     } else if (message || updateType === 'message_created' || body.text) {
       const chat_id = body.chat_id || message?.chat_id;
       const text = body.text || message?.text;
