@@ -16,8 +16,10 @@ export async function sendMaxMessage(chatId: string | number, text: string, repl
     return;
   }
 
+  const isChat = typeof chatId === 'string' && (chatId.startsWith('c') || chatId.includes('-'));
+  const paramName = isChat ? 'chat_id' : 'user_id';
+
   const payload: any = {
-    chat_id: chatId,
     text,
     format: 'html'
   };
@@ -41,7 +43,7 @@ export async function sendMaxMessage(chatId: string | number, text: string, repl
   }
 
   try {
-    const response = await fetch(`https://platform-api2.max.ru/messages`, {
+    const response = await fetch(`https://platform-api2.max.ru/messages?${paramName}=${chatId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
