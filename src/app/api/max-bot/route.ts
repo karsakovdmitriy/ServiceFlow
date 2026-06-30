@@ -451,14 +451,25 @@ async function handleStart(chat_id: any, fromId: any, userName: string, masterId
   }
 
   const fullName = userName || 'Клиент MAX';
-  const { error: upsertError } = await supabase.from('clients').upsert({
-    owner_id: master.user_id,
-    max_id: fromId.toString(),
-    full_name: fullName
-  }, { onConflict: 'owner_id, max_id' });
 
-  if (upsertError) {
-    console.error('Client upsert error during /start (MAX):', upsertError);
+  // Manual upsert to avoid constraint errors if DB is not fully synced
+  const { data: existingClient } = await supabase.from('clients')
+    .select('id')
+    .eq('owner_id', master.user_id)
+    .eq('max_id', fromId.toString())
+    .maybeSingle();
+
+  if (existingClient) {
+    await supabase.from('clients').update({ full_name: fullName }).eq('id', existingClient.id);
+  } else {
+    const { error: insertError } = await supabase.from('clients').insert({
+      owner_id: master.user_id,
+      max_id: fromId.toString(),
+      full_name: fullName
+    });
+    if (insertError) {
+      console.error('Client insert error during /start (MAX):', insertError);
+    }
   }
 
   const servicesKeyboard = await getServicesKeyboard(masterId);
