@@ -41,7 +41,7 @@ export async function sendMaxMessage(chatId: string | number, text: string, repl
   }
 
   try {
-    const response = await fetch(`https://platform-api.max.ru/messages`, {
+    const response = await fetch(`https://platform-api2.max.ru/messages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -66,7 +66,7 @@ export async function answerMaxCallback(callbackQueryId: string, text?: string) 
   if (!BOT_TOKEN) return;
 
   try {
-    await fetch(`https://platform-api.max.ru/answers`, {
+    await fetch(`https://platform-api2.max.ru/answers`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -87,5 +87,5 @@ export function getMaxBotUsername() {
 }
 
 export function getMasterMaxDeepLink(masterId: string) {
-    return `https://max.ru/bot/${getMaxBotUsername()}?start=${masterId}`;
+    return `https://max.ru/${getMaxBotUsername()}?start=${masterId}`;
 }
