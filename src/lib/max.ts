@@ -10,14 +10,19 @@ export function escapeHtml(text: string): string {
     .replace(/'/g, '&#039;');
 }
 
-export async function sendMaxMessage(chatId: string | number, text: string, replyMarkup?: any) {
+export async function sendMaxMessage(chatId: string | number, text: string, replyMarkup?: any, forceType?: 'chat_id' | 'user_id') {
   if (!BOT_TOKEN) {
     console.warn('MAX_BOT_TOKEN is not defined');
     return;
   }
 
-  const isChat = typeof chatId === 'string' && (chatId.startsWith('c') || chatId.includes('-'));
-  const paramName = isChat ? 'chat_id' : 'user_id';
+  let paramName: string;
+  if (forceType) {
+    paramName = forceType;
+  } else {
+    const isChat = typeof chatId === 'string' && (chatId.startsWith('c') || chatId.includes('-'));
+    paramName = isChat ? 'chat_id' : 'user_id';
+  }
 
   const payload: any = {
     text,

@@ -31,14 +31,41 @@ export async function POST(request: Request) {
     const body = await request.json();
     console.log('MAX Bot Update Body:', JSON.stringify(body, null, 2));
 
+    const updateType = body.update_type;
     const message = body.message || body.message_created || body.message_edited;
     const callbackQuery = body.callback_query || body.message_callback;
     const botStarted = body.bot_started;
 
-    if (message) {
-      const { chat_id, text, user } = message;
-      const fromId = user.user_id;
+    console.log(`Detected Update Type: ${updateType}`);
+
+    if (updateType === 'bot_started' || botStarted) {
+      const chat_id = body.chat_id || botStarted?.chat_id;
+      const user = body.user || botStarted?.user;
+      const payload = body.payload || botStarted?.payload;
+      const fromId = user?.user_id || body.user_id;
+      const name = user?.name || user?.full_name;
+
+      console.log(`Bot started event for ${fromId} (chat: ${chat_id}) with payload: ${payload}`);
+      await handleStart(chat_id, fromId, name, payload);
+    } else if (updateType === 'message_callback' || callbackQuery) {
+      const chat_id = body.chat_id || callbackQuery?.chat_id;
+      const user = body.user || callbackQuery?.user;
+      const payload = body.payload || callbackQuery?.payload;
+      const id = body.id || callbackQuery?.id;
+      const fromId = user?.user_id || body.user_id;
+
+      console.log(`Callback query event from ${fromId} (chat: ${chat_id}): ${payload}`);
+
+      await handleCallback(id, payload, chat_id, user, url.origin);
+    } else if (message || updateType === 'message_created' || body.text) {
+      const chat_id = body.chat_id || message?.chat_id;
+      const text = body.text || message?.text;
+      const user = body.user || message?.user;
+      const fromId = user?.user_id || body.user_id;
       console.log(`Processing message from ${fromId} (chat: ${chat_id}): ${text}`);
+
+      const sendTarget = chat_id || fromId;
+      const targetType = chat_id ? 'chat_id' : 'user_id';
 
       // Handle direct messages to master and Review comments
       if (text) {
@@ -53,7 +80,7 @@ export async function POST(request: Request) {
             if (client.last_bot_state === 'waiting_for_comment' && client.last_session_id) {
                await supabase.from('reviews').update({ comment: text }).eq('session_id', client.last_session_id);
                await supabase.from('clients').update({ last_bot_state: null, last_session_id: null }).eq('id', client.id);
-               await sendMaxMessage(chat_id, '✅ <b>Спасибо за ваш отзыв!</b> Он очень важен для нас.');
+               await sendMaxMessage(sendTarget, '✅ <b>Спасибо за ваш отзыв!</b> Он очень важен для нас.', undefined, targetType);
                await supabase.from('events').insert({
                  profile_id: client.owner_id,
                  type: 'review',
@@ -64,7 +91,7 @@ export async function POST(request: Request) {
 
             if (text === '/skip' && client.last_bot_state === 'waiting_for_comment') {
                 await supabase.from('clients').update({ last_bot_state: null, last_session_id: null }).eq('id', client.id);
-                await sendMaxMessage(chat_id, '👌 Без проблем! Благодарим за оценку.');
+                await sendMaxMessage(sendTarget, '👌 Без проблем! Благодарим за оценку.', undefined, targetType);
                 return NextResponse.json({ ok: true });
             }
 
@@ -84,7 +111,7 @@ export async function POST(request: Request) {
 
                 const { data: master } = await supabase.from('masters').select('telegram_id, max_id').eq('user_id', client.owner_id).limit(1).single();
                 if (master?.max_id) {
-                    await sendMaxMessage(master.max_id, `💬 <b>Новое сообщение (MAX) от ${escapeHtml(client.full_name)}:</b>\n\n${escapeHtml(text)}`);
+                    await sendMaxMessage(master.max_id, `💬 <b>Новое сообщение (MAX) от ${escapeHtml(client.full_name)}:</b>\n\n${escapeHtml(text)}`, undefined, 'user_id');
                 }
             }
          }
@@ -93,31 +120,37 @@ export async function POST(request: Request) {
       if (text?.startsWith('/start')) {
         const parts = text.split(' ');
         let masterId = parts[1];
-        await handleStart(chat_id, fromId, user.name || user.full_name, masterId);
+        await handleStart(chat_id, fromId, user?.name || user?.full_name, masterId);
       }
-    } else if (botStarted) {
-      const { chat_id, user, payload } = botStarted;
-      console.log(`Bot started by ${user.user_id} with payload: ${payload}`);
-      await handleStart(chat_id, user.user_id, user.name || user.full_name, payload);
-    } else if (callbackQuery) {
-      const { id, payload: data, chat_id, user } = callbackQuery;
-      const fromId = user.user_id;
-      console.log(`Processing callback query from ${fromId} (chat: ${chat_id}): ${data}`);
+    }
 
-      try {
-        const [action, ...params] = data.split(':');
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error('Error in MAX bot API:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
 
-        if (action === 'svc_list') {
+async function handleCallback(id: string, data: string, chat_id: any, user: any, origin: string) {
+  const supabase = getSupabase();
+  const fromId = user?.user_id;
+  const sendTarget = chat_id || fromId;
+  const targetType = chat_id ? 'chat_id' : 'user_id';
+
+  try {
+    const [action, ...params] = data.split(':');
+
+    if (action === 'svc_list') {
           const [masterId] = params;
           const { data: master } = await supabase.from('masters').select('full_name, specialization').eq('id', masterId).single();
           if (master) {
              const servicesKeyboard = await getServicesKeyboard(masterId);
-             await sendMaxMessage(chat_id, `🏃 Запись к специалисту <b>${escapeHtml(master.full_name)}</b>\n\nВыберите услугу:`, {
+             await sendMaxMessage(sendTarget, `🏃 Запись к специалисту <b>${escapeHtml(master.full_name)}</b>\n\nВыберите услугу:`, {
                 inline_keyboard: [
                     ...servicesKeyboard,
                     [{ text: '👤 Мои записи / Перенос', callback_data: `my_bookings:${masterId}` }]
                 ]
-             });
+             }, targetType);
           }
         } else if (action === 'rate_init') {
            const [sessionId] = params;
@@ -126,7 +159,7 @@ export async function POST(request: Request) {
            if (session) {
                 await supabase.from('clients').update({ last_bot_state: 'waiting_for_rating', last_session_id: sessionId }).eq('max_id', fromId.toString());
 
-                await sendMaxMessage(chat_id, `⭐ Пожалуйста, оцените ваш визит к специалисту <b>${escapeHtml((session.master as any).full_name)}</b>:`, {
+                await sendMaxMessage(sendTarget, `⭐ Пожалуйста, оцените ваш визит к специалисту <b>${escapeHtml((session.master as any).full_name)}</b>:`, {
                     inline_keyboard: [
                         [
                             { text: '1 ⭐', callback_data: `rate_val:${sessionId}:1` },
@@ -136,7 +169,7 @@ export async function POST(request: Request) {
                             { text: '5 ⭐', callback_data: `rate_val:${sessionId}:5` }
                         ]
                     ]
-                });
+                }, targetType);
            }
         } else if (action === 'rate_val') {
            const [sessionId, rating] = params;
@@ -152,7 +185,7 @@ export async function POST(request: Request) {
 
                 await supabase.from('clients').update({ last_bot_state: 'waiting_for_comment', last_session_id: sessionId }).eq('max_id', fromId.toString());
 
-                await sendMaxMessage(chat_id, '⭐ <b>Оценка сохранена!</b>\n\nТеперь вы можете написать текстовый отзыв или отправить /skip, чтобы пропустить этот шаг.');
+                await sendMaxMessage(sendTarget, '⭐ <b>Оценка сохранена!</b>\n\nТеперь вы можете написать текстовый отзыв или отправить /skip, чтобы пропустить этот шаг.', undefined, targetType);
            }
         } else if (action === 'my_bookings') {
           const [masterId] = params;
@@ -161,7 +194,7 @@ export async function POST(request: Request) {
               const { data: client } = await supabase.from('clients').select('id').eq('owner_id', master.user_id).eq('max_id', fromId.toString()).single();
 
               if (!client) {
-                 await sendMaxMessage(chat_id, '❌ У вас пока нет записей к этому специалисту.');
+                 await sendMaxMessage(sendTarget, '❌ У вас пока нет записей к этому специалисту.', undefined, targetType);
               } else {
                  const { data: sessions } = await supabase.from('sessions')
                     .select('id, start_time, service:services!service_id(name)')
@@ -170,7 +203,7 @@ export async function POST(request: Request) {
                     .order('start_time');
 
                  if (!sessions || sessions.length === 0) {
-                    await sendMaxMessage(chat_id, '📅 У вас нет предстоящих записей.');
+                    await sendMaxMessage(sendTarget, '📅 У вас нет предстоящих записей.', undefined, targetType);
                  } else {
                     let msg = '<b>Ваши предстоящие записи:</b>\n\n';
                     const buttons = [];
@@ -182,7 +215,7 @@ export async function POST(request: Request) {
                         buttons.push([{ text: `🔄 Перенести ${s.start_time.split('T')[1].slice(0, 5)}`, callback_data: `reschedule:${s.id}` }]);
                     }
 
-                    await sendMaxMessage(chat_id, msg, { inline_keyboard: buttons });
+                    await sendMaxMessage(sendTarget, msg, { inline_keyboard: buttons }, targetType);
                  }
               }
           }
@@ -190,36 +223,36 @@ export async function POST(request: Request) {
            const [sessionId] = params;
            const { data: session } = await supabase.from('sessions').select('service_id').eq('id', sessionId).single();
            if (session) {
-                await sendMaxMessage(chat_id, '📅 Выберите новую дату для переноса:', {
+                await sendMaxMessage(sendTarget, '📅 Выберите новую дату для переноса:', {
                     inline_keyboard: await getDatesKeyboard(session.service_id)
-                });
+                }, targetType);
            }
         } else if (action === 'svc') {
           const [serviceId] = params;
           const { data: service } = await supabase.from('services').select('id').eq('id', serviceId).single();
           if (!service) {
-             await sendMaxMessage(chat_id, '❌ Ошибка: Услуга не найдена или была удалена.');
+             await sendMaxMessage(sendTarget, '❌ Ошибка: Услуга не найдена или была удалена.', undefined, targetType);
           } else {
-            await sendMaxMessage(chat_id, '📅 Выберите удобную дату:', {
+            await sendMaxMessage(sendTarget, '📅 Выберите удобную дату:', {
               inline_keyboard: await getDatesKeyboard(serviceId)
-            });
+            }, targetType);
           }
         } else if (action === 'date') {
           const [serviceId, date] = params;
           const { data: service } = await supabase.from('services').select('master_id').eq('id', serviceId).single();
 
           if (!service) {
-            await sendMaxMessage(chat_id, '❌ Ошибка: Услуга не найдена.');
+            await sendMaxMessage(sendTarget, '❌ Ошибка: Услуга не найдена.', undefined, targetType);
           } else {
             const timesKeyboard = await getTimesKeyboard(service.master_id, serviceId, date);
             if (timesKeyboard.length === 0 || (timesKeyboard.length === 1 && timesKeyboard[0][0].callback_data === 'none')) {
-              await sendMaxMessage(chat_id, `❌ К сожалению, на <b>${date}</b> нет доступного времени для записи. Пожалуйста, выберите другую дату.`, {
+              await sendMaxMessage(sendTarget, `❌ К сожалению, на <b>${date}</b> нет доступного времени для записи. Пожалуйста, выберите другую дату.`, {
                 inline_keyboard: await getDatesKeyboard(serviceId)
-              });
+              }, targetType);
             } else {
-              await sendMaxMessage(chat_id, `🕒 Выберите время на <b>${date}</b>:`, {
+              await sendMaxMessage(sendTarget, `🕒 Выберите время на <b>${date}</b>:`, {
                 inline_keyboard: timesKeyboard
-              });
+              }, targetType);
             }
           }
         } else if (action === 'book') {
@@ -227,7 +260,7 @@ export async function POST(request: Request) {
           const { data: service } = await supabase.from('services').select('master_id, duration, venue_id').eq('id', serviceId).single();
 
           if (!service) {
-            await sendMaxMessage(chat_id, '❌ Ошибка: Услуга не найдена.');
+            await sendMaxMessage(sendTarget, '❌ Ошибка: Услуга не найдена.', undefined, targetType);
           } else {
             const { data: master } = await supabase.from('masters').select('user_id, full_name, telegram_id, max_id').eq('id', service.master_id).single();
             if (master) {
@@ -255,7 +288,7 @@ export async function POST(request: Request) {
 
                   if (sessErr) {
                     console.error('Session insert error (MAX):', sessErr);
-                    await sendMaxMessage(chat_id, '❌ Ошибка при создании записи. Пожалуйста, попробуйте позже.');
+                    await sendMaxMessage(sendTarget, '❌ Ошибка при создании записи. Пожалуйста, попробуйте позже.', undefined, targetType);
                     return;
                   }
 
@@ -270,7 +303,7 @@ export async function POST(request: Request) {
                     `Для управления записью используйте веб-панель или Telegram-бот.`;
 
                   if (master.max_id) {
-                     await sendMaxMessage(master.max_id, notificationMsg);
+                     await sendMaxMessage(master.max_id, notificationMsg, undefined, 'user_id');
                   }
 
                   if (master.telegram_id) {
@@ -284,37 +317,32 @@ export async function POST(request: Request) {
                             [{ text: '📅 Предложить перенос', callback_data: `tr_rsch:${session.id}` }]
                           ]
                       };
-                      fetch(`${url.origin}/api/notify/custom`, {
+                      fetch(`${origin}/api/notify/custom`, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ chatId: master.telegram_id, message: tgMsg, replyMarkup: tgKeyboard })
                       }).catch(e => console.error('TG notification from MAX bot failed:', e));
                   }
 
-                  await sendMaxMessage(chat_id, `✅ <b>Заявка отправлена!</b>\n\nМастер получит уведомление и подтвердит вашу запись. Ожидайте сообщения.`);
+                  await sendMaxMessage(sendTarget, `✅ <b>Заявка отправлена!</b>\n\nМастер получит уведомление и подтвердит вашу запись. Ожидайте сообщения.`, undefined, targetType);
                 } else {
-                  await sendMaxMessage(chat_id, '❌ Ошибка: Клиент не найден. Попробуйте перезапустить бот через ссылку мастера.');
+                  await sendMaxMessage(sendTarget, '❌ Ошибка: Клиент не найден. Попробуйте перезапустить бот через ссылку мастера.', undefined, targetType);
                 }
             }
           }
         }
-      } catch (err) {
-        console.error('Callback error (MAX):', err);
-      } finally {
-        await answerMaxCallback(id);
-      }
-    }
-
-    return NextResponse.json({ ok: true });
-  } catch (error) {
-    console.error('Error in MAX bot API:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  } catch (err) {
+    console.error('Callback error (MAX):', err);
+  } finally {
+    await answerMaxCallback(id);
   }
 }
 
 async function handleStart(chat_id: any, fromId: any, userName: string, masterId?: string) {
-  console.log(`Handling /start for user ${fromId} with masterId: ${masterId}`);
+  console.log(`Handling /start for user ${fromId} (chat: ${chat_id}) with masterId: ${masterId}`);
   const supabase = getSupabase();
+  const sendTarget = chat_id || fromId;
+  const targetType = chat_id ? 'chat_id' : 'user_id';
 
   if (!masterId) {
     const { data: previousClients } = await supabase.from('clients')
@@ -333,11 +361,11 @@ async function handleStart(chat_id: any, fromId: any, userName: string, masterId
         callback_data: `svc_list:${pm.id}`
       }]));
 
-      await sendMaxMessage(chat_id, '👋 <b>С возвращением!</b>\n\nВыберите специалиста из вашей истории для новой записи:', {
+      await sendMaxMessage(sendTarget, '👋 <b>С возвращением!</b>\n\nВыберите специалиста из вашей истории для новой записи:', {
         inline_keyboard: masterButtons
-      });
+      }, targetType);
     } else {
-      await sendMaxMessage(chat_id, '👋 Привет! Чтобы записаться, используйте специальную ссылку от вашего мастера.');
+      await sendMaxMessage(sendTarget, '👋 Привет! Чтобы записаться, используйте специальную ссылку от вашего мастера.', undefined, targetType);
     }
     return;
   }
@@ -346,7 +374,7 @@ async function handleStart(chat_id: any, fromId: any, userName: string, masterId
     const actualId = masterId.replace('link_', '');
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(actualId)) {
-      await sendMaxMessage(chat_id, '❌ Некорректная ссылка для привязки.');
+      await sendMaxMessage(sendTarget, '❌ Некорректная ссылка для привязки.', undefined, targetType);
       return;
     }
 
@@ -364,7 +392,7 @@ async function handleStart(chat_id: any, fromId: any, userName: string, masterId
     }
 
     if (!entity || !ownerId) {
-      await sendMaxMessage(chat_id, '❌ Ошибка при привязке: Аккаунт не найден.');
+      await sendMaxMessage(sendTarget, '❌ Ошибка при привязке: Аккаунт не найден.', undefined, targetType);
       return;
     }
 
@@ -373,11 +401,11 @@ async function handleStart(chat_id: any, fromId: any, userName: string, masterId
 
     if (mErr || vErr) {
       console.error('Linking error (MAX):', mErr, vErr);
-      await sendMaxMessage(chat_id, '❌ Произошла ошибка при привязке аккаунта. Пожалуйста, попробуйте позже.');
+      await sendMaxMessage(sendTarget, '❌ Произошла ошибка при привязке аккаунта. Пожалуйста, попробуйте позже.', undefined, targetType);
       return;
     }
 
-    await sendMaxMessage(chat_id, `✅ <b>Аккаунт успешно привязан!</b>\n\nТеперь вы (${escapeHtml(displayName || '')}) будете получать уведомления в этот чат.`);
+    await sendMaxMessage(sendTarget, `✅ <b>Аккаунт успешно привязан!</b>\n\nТеперь вы (${escapeHtml(displayName || '')}) будете получать уведомления в этот чат.`, undefined, targetType);
 
     await supabase.from('events').insert({
       profile_id: ownerId,
@@ -392,7 +420,7 @@ async function handleStart(chat_id: any, fromId: any, userName: string, masterId
     const venueId = masterId.replace('v_', '');
     const { data: venue } = await supabase.from('venues').select('name').eq('id', venueId).single();
     if (!venue) {
-      await sendMaxMessage(chat_id, '❌ Площадка не найдена.');
+      await sendMaxMessage(sendTarget, '❌ Площадка не найдена.', undefined, targetType);
       return;
     }
 
@@ -402,15 +430,15 @@ async function handleStart(chat_id: any, fromId: any, userName: string, masterId
       callback_data: `svc:${s.id}`
     }]));
 
-    await sendMaxMessage(chat_id, `👋 Добро пожаловать в <b>${escapeHtml(venue.name)}</b>!\n\nВыберите услугу для записи:`, {
+    await sendMaxMessage(sendTarget, `👋 Добро пожаловать в <b>${escapeHtml(venue.name)}</b>!\n\nВыберите услугу для записи:`, {
       inline_keyboard: svcButtons
-    });
+    }, targetType);
     return;
   }
 
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidRegex.test(masterId)) {
-    await sendMaxMessage(chat_id, '❌ Некорректная ссылка (неверный ID).');
+    await sendMaxMessage(sendTarget, '❌ Некорректная ссылка (неверный ID).', undefined, targetType);
     return;
   }
 
@@ -418,7 +446,7 @@ async function handleStart(chat_id: any, fromId: any, userName: string, masterId
 
   if (masterError || !master) {
     console.error('Master lookup error (MAX):', masterError);
-    await sendMaxMessage(chat_id, '❌ Мастер не найден. Проверьте правильность ссылки.');
+    await sendMaxMessage(sendTarget, '❌ Мастер не найден. Проверьте правильность ссылки.', undefined, targetType);
     return;
   }
 
@@ -436,14 +464,14 @@ async function handleStart(chat_id: any, fromId: any, userName: string, masterId
   const servicesKeyboard = await getServicesKeyboard(masterId);
 
   if (servicesKeyboard.length === 0) {
-    await sendMaxMessage(chat_id, `👋 Привет! Вы записываетесь к мастеру <b>${escapeHtml(master.full_name)}</b>.\n\nК сожалению, пока нет настроенных услуг для записи. Пожалуйста, свяжитесь напрямую.`);
+    await sendMaxMessage(sendTarget, `👋 Привет! Вы записываетесь к мастеру <b>${escapeHtml(master.full_name)}</b>.\n\nК сожалению, пока нет настроенных услуг для записи. Пожалуйста, свяжитесь напрямую.`, undefined, targetType);
   } else {
-    await sendMaxMessage(chat_id, `👋 Привет! Вы записываетесь к специалисту <b>${escapeHtml(master.full_name)}</b> (${escapeHtml(master.specialization || '')}).\n\nВыберите действие:`, {
+    await sendMaxMessage(sendTarget, `👋 Привет! Вы записываетесь к специалисту <b>${escapeHtml(master.full_name)}</b> (${escapeHtml(master.specialization || '')}).\n\nВыберите действие:`, {
       inline_keyboard: [
         ...servicesKeyboard,
         [{ text: '👤 Мои записи / Перенос', callback_data: `my_bookings:${masterId}` }]
       ]
-    });
+    }, targetType);
   }
 }
 
