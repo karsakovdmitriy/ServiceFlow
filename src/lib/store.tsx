@@ -347,23 +347,26 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           setCompletedSessions(formatted.filter(s => s.status === 'completed'));
         }
 
-        const { data: schedData } = await supabase.from('schedule_config').select('*').eq('master_id', currentMasterId).order('day_of_week');
-        if (schedData && schedData.length > 0) {
-          const sorted = [...schedData].sort((a, b) => (a.day_of_week === 0 ? 7 : a.day_of_week) - (b.day_of_week === 0 ? 7 : b.day_of_week));
-          setSchedule(sorted.map(s => ({
-            name: DAYS[(s.day_of_week + 6) % 7],
-            startTime: s.start_hour?.slice(0, 5) || '09:00',
-            endTime: s.end_hour?.slice(0, 5) || '20:00',
-            on: s.is_active
-          })));
-        } else {
-          setSchedule(DAYS.map((name, i) => ({
-            name,
-            startTime: '09:00',
-            endTime: '20:00',
-            on: i !== 6 // Sunday is last in DAYS now
-          })));
+        const { data: schedData } = await supabase.from('schedule_config').select('*').eq('master_id', currentMasterId);
+        const masterSchedule = DAYS.map((name, i) => ({
+          name,
+          startTime: '09:00',
+          endTime: '20:00',
+          on: i !== 6
+        }));
+
+        if (schedData) {
+          schedData.forEach(s => {
+            const uiIdx = (s.day_of_week + 6) % 7;
+            masterSchedule[uiIdx] = {
+              name: DAYS[uiIdx],
+              startTime: s.start_hour?.slice(0, 5) || '09:00',
+              endTime: s.end_hour?.slice(0, 5) || '20:00',
+              on: s.is_active
+            };
+          });
         }
+        setSchedule(masterSchedule);
 
         const { data: blocksData } = await supabase.from('blocked_slots').select('*').eq('master_id', currentMasterId).order('date');
         if (blocksData) {
@@ -473,23 +476,26 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
           // Fetch Venue Schedule
           if (venueIds.length > 0) {
-            const { data: schedData } = await supabase.from('venue_schedule').select('*').eq('venue_id', venueIds[0]).order('day_of_week');
-            if (schedData && schedData.length > 0) {
-              const sorted = [...schedData].sort((a, b) => (a.day_of_week === 0 ? 7 : a.day_of_week) - (b.day_of_week === 0 ? 7 : b.day_of_week));
-              setSchedule(sorted.map(s => ({
-              name: DAYS[(s.day_of_week + 6) % 7],
-                startTime: s.start_hour?.slice(0, 5) || '09:00',
-                endTime: s.end_hour?.slice(0, 5) || '20:00',
-                on: s.is_active
-              })));
-            } else {
-              setSchedule(DAYS.map((name, i) => ({
-                name,
-                startTime: '09:00',
-                endTime: '20:00',
-                on: i !== 6
-              })));
+            const { data: schedData } = await supabase.from('venue_schedule').select('*').eq('venue_id', venueIds[0]);
+            const venueSchedule = DAYS.map((name, i) => ({
+              name,
+              startTime: '09:00',
+              endTime: '20:00',
+              on: i !== 6
+            }));
+
+            if (schedData) {
+              schedData.forEach(s => {
+                const uiIdx = (s.day_of_week + 6) % 7;
+                venueSchedule[uiIdx] = {
+                  name: DAYS[uiIdx],
+                  startTime: s.start_hour?.slice(0, 5) || '09:00',
+                  endTime: s.end_hour?.slice(0, 5) || '20:00',
+                  on: s.is_active
+                };
+              });
             }
+            setSchedule(venueSchedule);
           }
 
           // Fetch Clients for Venue
@@ -718,13 +724,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       await supabase.from('venue_schedule').upsert({
         venue_id: venues[0].id,
         day_of_week: dbDayOfWeek,
-        is_active: !day.on
+        is_active: !day.on,
+        start_hour: day.startTime,
+        end_hour: day.endTime
       }, { onConflict: 'venue_id,day_of_week' });
     } else {
       await supabase.from('schedule_config').upsert({
         master_id: activeMaster?.id,
         day_of_week: dbDayOfWeek,
-        is_active: !day.on
+        is_active: !day.on,
+        start_hour: day.startTime,
+        end_hour: day.endTime
       }, { onConflict: 'master_id,day_of_week' });
     }
     fetchData();
@@ -745,6 +755,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       await supabase.from('venue_schedule').upsert({
         venue_id: venues[0].id,
         day_of_week: dbDayOfWeek,
+        is_active: day.on,
         start_hour: startTime,
         end_hour: endTime
       }, { onConflict: 'venue_id,day_of_week' });
@@ -752,6 +763,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       await supabase.from('schedule_config').upsert({
         master_id: activeMaster?.id,
         day_of_week: dbDayOfWeek,
+        is_active: day.on,
         start_hour: startTime,
         end_hour: endTime
       }, { onConflict: 'master_id,day_of_week' });

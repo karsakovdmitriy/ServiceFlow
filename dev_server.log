@@ -1,14 +1,21 @@
 
-> web@0.1.0 start
-> next start
+> web@0.1.0 dev
+> next dev
 
-⨯ Failed to start server
-Error: listen EADDRINUSE: address already in use :::3000
-    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
-    at new Promise (<anonymous>) {
-  code: 'EADDRINUSE',
-  errno: -98,
-  syscall: 'listen',
-  address: '::',
-  port: 3000
-}
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+✓ Ready in 534ms
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+
+○ Compiling /schedule ...
+ HEAD /schedule 200 in 4.4s (next.js: 4.0s, application-code: 416ms)
+ GET /schedule 200 in 124ms (next.js: 11ms, application-code: 113ms)
+ GET /schedule 200 in 62ms (next.js: 4ms, application-code: 58ms)
+ GET /schedule 200 in 59ms (next.js: 3ms, application-code: 56ms)
+ GET /schedule 200 in 56ms (next.js: 4ms, application-code: 53ms)
+ GET /schedule 200 in 58ms (next.js: 3ms, application-code: 55ms)
